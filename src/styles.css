@@ -150,3 +150,28 @@
     color: var(--color-foreground);
   }
 }
+
+.dark {
+  --success: oklch(0.66 0.13 150);
+  --success-foreground: oklch(0.18 0.02 200);
+  --speak-highlight: oklch(0.5 0.09 95);
+}
+
+@layer base {
+  body {
+    font-family: var(--font-sans);
+    line-height: 1.85;
+    letter-spacing: 0.005em;
+  }
+
+  h1,
+  h2,
+  h3 {
+    line-height: 1.35;
+  }
+}
+
+@utility reading-text {
+  font-size: 1.1875rem;
+  line-height: 2.05;
+}
