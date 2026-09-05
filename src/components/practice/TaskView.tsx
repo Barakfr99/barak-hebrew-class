@@ -34,6 +34,12 @@ export function TaskView({
   const dirtyRef = useRef<Set<string>>(new Set());
   const speech = useSpeech();
 
+  const cycleRate = useCallback(() => {
+    const idx = SPEECH_RATES.indexOf(speech.rate as (typeof SPEECH_RATES)[number]);
+    const nextIndex = idx >= 0 ? (idx + 1) % SPEECH_RATES.length : 0;
+    speech.setRate(SPEECH_RATES[nextIndex]);
+  }, [speech]);
+
   const persist = useCallback(
     async (ids: string[], answersSnapshot: Record<string, string>) => {
       await Promise.all(
