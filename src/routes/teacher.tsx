@@ -107,9 +107,43 @@ function TeacherPage() {
 
 function TeacherDashboard() {
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("all");
   const [expanded, setExpanded] = useState<string | null>(null);
+  const [testClass, setTestClass] = useState(CLASSES[0]?.slug ?? "");
+  const [testBusy, setTestBusy] = useState(false);
+
+  const openAsTestStudent = async () => {
+    const cls = CLASSES.find((c) => c.slug === testClass);
+    if (!cls) return;
+    setTestBusy(true);
+    try {
+      const id = await ensureTeacherTestStudent(cls);
+      writeDeviceStudentId(id);
+      navigate({ to: "/practice" });
+    } catch {
+      toast.error("לא הצלחתי לפתוח את מצב הבדיקה");
+    } finally {
+      setTestBusy(false);
+    }
+  };
+
+  const resetTestStudent = async () => {
+    const cls = CLASSES.find((c) => c.slug === testClass);
+    if (!cls) return;
+    setTestBusy(true);
+    try {
+      const id = await ensureTeacherTestStudent(cls);
+      await resetTeacherTestStudent(id);
+      toast.success("תשובות הבדיקה נמחקו");
+    } catch {
+      toast.error("לא הצלחתי לאפס את תשובות הבדיקה");
+    } finally {
+      setTestBusy(false);
+    }
+  };
+
 
   const tasksQuery = useQuery({ queryKey: ["tasks"], queryFn: fetchTasks });
   const studentsQuery = useQuery({
