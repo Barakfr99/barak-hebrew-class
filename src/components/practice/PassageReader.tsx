@@ -5,6 +5,7 @@ import { paragraphElementId } from "./ParagraphJump";
 export type SpeechControls = {
   enabled: boolean;
   speakingId: string | null;
+  loadingId: string | null;
   speak: (unit: { id: string; text: string }) => void;
 };
 
@@ -30,12 +31,14 @@ export function PassageReader({
             {splitSentences(paragraph).map((sentence, sIndex) => {
               const id = `${taskId}:p${pIndex}:s${sIndex}`;
               const active = speech.speakingId === id;
+              const loading = speech.loadingId === id;
               return (
                 <span key={id} className="inline">
                   <span
                     className={cn(
                       "rounded-md px-0.5 transition-colors",
                       active && "bg-speak-highlight",
+                      loading && "bg-accent/50",
                       speech.enabled && "cursor-pointer hover:bg-accent/50",
                     )}
                     onClick={
