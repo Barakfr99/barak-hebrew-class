@@ -33,6 +33,7 @@ export function useSpeech() {
   const cancelledRef = useRef(false);
   const browserVoiceRef = useRef<SpeechSynthesisVoice | null>(null);
   const rateRef = useRef(1);
+  const activeIdRef = useRef<string | null>(null);
 
   // Changing the speed adjusts playback only — no extra audio is generated.
   const setRate = useCallback((rate: number) => {
