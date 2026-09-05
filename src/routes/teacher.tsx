@@ -195,7 +195,12 @@ function TeacherDashboard() {
     return true;
   });
 
-  const updateGrade = async (studentId: string, field: string, value: string, max: number) => {
+  const updateGrade = async (
+    studentId: string,
+    field: "grade_required" | "grade_choice_1" | "grade_choice_2",
+    value: string,
+    max: number,
+  ) => {
     const parsed = value.trim() === "" ? null : Number(value);
     if (parsed !== null && (Number.isNaN(parsed) || parsed < 0 || parsed > max)) {
       toast.error(`הציון חייב להיות בין 0 ל-${max}`);
@@ -388,7 +393,12 @@ function StudentDetails({
   requiredTask: Task | undefined;
   answers: { task_id: string; question_id: string; answer_text: string }[];
   feedback: Record<string, unknown> | undefined;
-  onGradeBlur: (studentId: string, field: string, value: string, max: number) => Promise<void>;
+  onGradeBlur: (
+    studentId: string,
+    field: "grade_required" | "grade_choice_1" | "grade_choice_2",
+    value: string,
+    max: number,
+  ) => Promise<void>;
 }) {
   const choiceTasks = tasks.filter((t) => t.kind === "choice");
   const answerFor = (questionId: string) =>
