@@ -62,6 +62,7 @@ export function useSpeech() {
 
   const stop = useCallback(() => {
     cancelledRef.current = true;
+    activeIdRef.current = null;
     if (audioRef.current) {
       audioRef.current.pause();
       audioRef.current = null;
