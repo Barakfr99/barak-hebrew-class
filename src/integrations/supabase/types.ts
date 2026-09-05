@@ -14,7 +14,311 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      answers: {
+        Row: {
+          answer_text: string
+          created_at: string
+          id: string
+          question_id: string
+          student_id: string
+          task_id: string
+          updated_at: string
+        }
+        Insert: {
+          answer_text?: string
+          created_at?: string
+          id?: string
+          question_id: string
+          student_id: string
+          task_id: string
+          updated_at?: string
+        }
+        Update: {
+          answer_text?: string
+          created_at?: string
+          id?: string
+          question_id?: string
+          student_id?: string
+          task_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "answers_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "questions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "answers_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "answers_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      feedback: {
+        Row: {
+          clarity_scale: number | null
+          compare_lesson: string | null
+          created_at: string
+          help_page_usage: string | null
+          id: string
+          learning_scale: number | null
+          still_unclear: string | null
+          student_id: string
+        }
+        Insert: {
+          clarity_scale?: number | null
+          compare_lesson?: string | null
+          created_at?: string
+          help_page_usage?: string | null
+          id?: string
+          learning_scale?: number | null
+          still_unclear?: string | null
+          student_id: string
+        }
+        Update: {
+          clarity_scale?: number | null
+          compare_lesson?: string | null
+          created_at?: string
+          help_page_usage?: string | null
+          id?: string
+          learning_scale?: number | null
+          still_unclear?: string | null
+          student_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "feedback_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: true
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      practice_settings: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          practice_name: string
+          required_choice_count: number
+          speech_mode: string
+          teacher_code: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          practice_name?: string
+          required_choice_count?: number
+          speech_mode?: string
+          teacher_code?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          practice_name?: string
+          required_choice_count?: number
+          speech_mode?: string
+          teacher_code?: string
+        }
+        Relationships: []
+      }
+      questions: {
+        Row: {
+          created_at: string
+          id: string
+          kind: string
+          options: Json
+          points: number
+          prompt: string
+          sort_order: number
+          task_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          kind: string
+          options?: Json
+          points?: number
+          prompt: string
+          sort_order?: number
+          task_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          kind?: string
+          options?: Json
+          points?: number
+          prompt?: string
+          sort_order?: number
+          task_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "questions_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      students: {
+        Row: {
+          choice_slot_1_task_id: string | null
+          choice_slot_2_task_id: string | null
+          class_name: string | null
+          created_at: string
+          finished_at: string | null
+          first_name: string
+          grade_choice_1: number | null
+          grade_choice_2: number | null
+          grade_required: number | null
+          id: string
+          last_name: string
+          mode: string
+          speech_enabled: boolean
+          stage: string
+          updated_at: string
+        }
+        Insert: {
+          choice_slot_1_task_id?: string | null
+          choice_slot_2_task_id?: string | null
+          class_name?: string | null
+          created_at?: string
+          finished_at?: string | null
+          first_name: string
+          grade_choice_1?: number | null
+          grade_choice_2?: number | null
+          grade_required?: number | null
+          id?: string
+          last_name: string
+          mode?: string
+          speech_enabled?: boolean
+          stage?: string
+          updated_at?: string
+        }
+        Update: {
+          choice_slot_1_task_id?: string | null
+          choice_slot_2_task_id?: string | null
+          class_name?: string | null
+          created_at?: string
+          finished_at?: string | null
+          first_name?: string
+          grade_choice_1?: number | null
+          grade_choice_2?: number | null
+          grade_required?: number | null
+          id?: string
+          last_name?: string
+          mode?: string
+          speech_enabled?: boolean
+          stage?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "students_choice_slot_1_task_id_fkey"
+            columns: ["choice_slot_1_task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "students_choice_slot_2_task_id_fkey"
+            columns: ["choice_slot_2_task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      task_completions: {
+        Row: {
+          completed_at: string
+          id: string
+          student_id: string
+          task_id: string
+        }
+        Insert: {
+          completed_at?: string
+          id?: string
+          student_id: string
+          task_id: string
+        }
+        Update: {
+          completed_at?: string
+          id?: string
+          student_id?: string
+          task_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_completions_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "task_completions_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tasks: {
+        Row: {
+          created_at: string
+          description: string
+          id: string
+          is_active: boolean
+          kind: string
+          max_points: number
+          paragraphs: Json
+          sort_order: number
+          title: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string
+          id?: string
+          is_active?: boolean
+          kind: string
+          max_points?: number
+          paragraphs?: Json
+          sort_order?: number
+          title: string
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          id?: string
+          is_active?: boolean
+          kind?: string
+          max_points?: number
+          paragraphs?: Json
+          sort_order?: number
+          title?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
