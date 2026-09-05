@@ -21,7 +21,7 @@ function ParagraphPopover({
   label,
 }: {
   numbers: number[];
-  paragraphs: string[];
+  paragraphs?: string[] | null;
   label: string;
 }) {
   const sorted = [...numbers].sort((a, b) => a - b);
@@ -43,7 +43,7 @@ function ParagraphPopover({
             <div key={n}>
               <p className="mb-1 text-sm font-semibold text-primary">פס' {n}</p>
               <p className="reading-text text-foreground">
-                {paragraphs[n - 1] ?? "הפסקה לא נמצאה."}
+                {(paragraphs ?? [])[n - 1] ?? "הפסקה לא נמצאה."}
               </p>
             </div>
           ))}
@@ -61,7 +61,7 @@ export function ParagraphJump({
 }: {
   taskId?: string;
   numbers: number[];
-  paragraphs: string[];
+  paragraphs?: string[] | null;
   eachSeparately?: boolean;
 }) {
   if (numbers.length === 0) return null;
