@@ -128,34 +128,6 @@ export function TaskView({
         )}
 
 
-        {speechEnabled && (
-          <div className="mt-4 flex flex-wrap items-center gap-2">
-            <Button
-              variant={speech.isPlayingSequence ? "secondary" : "outline"}
-              onClick={() =>
-                speech.isPlayingSequence ? speech.stop() : void speech.speakSequence(sequence)
-              }
-            >
-              {speech.isPlayingSequence ? (
-                <>
-                  <Square className="size-4" /> עצירת ההקראה
-                </>
-              ) : speech.loadingId ? (
-                <>
-                  <Loader2 className="size-4 animate-spin" /> מכין את ההקראה...
-                </>
-              ) : (
-                <>
-                  <Play className="size-4" /> הקראה רציפה
-                </>
-              )}
-            </Button>
-            <span className="text-sm text-muted-foreground">
-              אפשר גם ללחוץ על משפט או שאלה כדי להקריא רק אותם.
-            </span>
-          </div>
-        )}
-
         {speechEnabled && speech.cloudFailed && (
           <Alert className="mt-4">
             <AlertDescription>
