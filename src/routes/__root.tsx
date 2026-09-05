@@ -121,10 +121,12 @@ function RootComponent() {
   const { queryClient } = Route.useRouteContext();
 
   return (
+    <DirectionProvider dir="rtl">
     <QueryClientProvider client={queryClient}>
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
       <Outlet />
       <Toaster position="top-center" richColors />
     </QueryClientProvider>
+    </DirectionProvider>
   );
 }
