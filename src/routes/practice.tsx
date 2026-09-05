@@ -185,7 +185,7 @@ function PracticePage() {
       <div className="mt-5">
         <ProgressSteps
           current={singleMode ? Math.min(step, 1) : Math.min(step, 3)}
-          steps={singleMode ? ["המשימה", "משוב"] : undefined}
+          {...(singleMode ? { steps: ["המשימה", "משוב"] } : {})}
         />
       </div>
       <div className="mt-8">{children}</div>

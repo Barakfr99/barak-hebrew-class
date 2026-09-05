@@ -12,7 +12,7 @@ export function jumpToParagraphs(taskId: string, numbers: number[]) {
     .map((n) => document.getElementById(paragraphElementId(taskId, n)))
     .filter((el): el is HTMLElement => Boolean(el));
   if (elements.length === 0) return;
-  elements[0].scrollIntoView({ behavior: "smooth", block: "center" });
+  elements[0]!.scrollIntoView({ behavior: "smooth", block: "center" });
   elements.forEach((el) => {
     el.classList.add("paragraph-flash");
     window.setTimeout(() => el.classList.remove("paragraph-flash"), 2400);
@@ -22,7 +22,7 @@ export function jumpToParagraphs(taskId: string, numbers: number[]) {
 function rangeLabel(numbers: number[]) {
   if (numbers.length === 1) return `עבור לפסקה ${numbers[0]}`;
   const sorted = [...numbers].sort((a, b) => a - b);
-  const contiguous = sorted.every((n, i) => i === 0 || n === sorted[i - 1] + 1);
+  const contiguous = sorted.every((n, i) => i === 0 || n === sorted[i - 1]! + 1);
   if (contiguous) return `עבור לפסקאות ${sorted[0]}–${sorted[sorted.length - 1]}`;
   return `עבור לפסקאות ${sorted.join(", ")}`;
 }

@@ -27,6 +27,7 @@ export function QuestionBlock({
   speech: SpeechControls;
 }) {
   const first = group.items[0];
+  if (!first) return null;
   const promptId = `${first.id}:prompt`;
   const multi = group.items.length > 1;
   const showPoints = group.items.some((q) => typeof q.points === "number");
