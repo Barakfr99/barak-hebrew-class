@@ -37,7 +37,7 @@ export function TaskView({
   const cycleRate = useCallback(() => {
     const idx = SPEECH_RATES.indexOf(speech.rate as (typeof SPEECH_RATES)[number]);
     const nextIndex = idx >= 0 ? (idx + 1) % SPEECH_RATES.length : 0;
-    speech.setRate(SPEECH_RATES[nextIndex]);
+    speech.setRate(SPEECH_RATES[nextIndex]!);
   }, [speech]);
 
   const persist = useCallback(
