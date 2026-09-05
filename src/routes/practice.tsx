@@ -248,7 +248,6 @@ function PracticePage() {
   }
 
   // Choice list
-  const previewTask = choiceTasks.find((t) => t.id === previewTaskId);
   return shell(
     <div className="space-y-5">
       <div>
@@ -333,8 +332,6 @@ function PracticePage() {
           );
         })}
       </div>
-
-      {previewTask === undefined && null}
 
       <div className="sticky bottom-0 -mx-4 flex flex-wrap items-center gap-3 border-t border-border bg-background/95 px-4 py-4 backdrop-blur">
         <Button

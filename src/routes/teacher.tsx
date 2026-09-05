@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import { ChevronDown, GraduationCap, Search } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -305,8 +305,8 @@ function TeacherDashboard() {
                   (student.grade_choice_2 ?? 0);
                 const isOpen = expanded === student.id;
                 return (
-                  <>
-                    <tr key={student.id} className="border-t border-border">
+                  <Fragment key={student.id}>
+                    <tr className="border-t border-border">
                       <td className="px-4 py-3 font-medium">{fullName(student)}</td>
                       <td className="px-4 py-3 text-muted-foreground">
                         {student.class_name ?? "—"}
@@ -335,7 +335,7 @@ function TeacherDashboard() {
                       </td>
                     </tr>
                     {isOpen && (
-                      <tr key={`${student.id}-details`} className="border-t border-border bg-background/60">
+                      <tr className="border-t border-border bg-background/60">
                         <td colSpan={6} className="px-4 py-5">
                           <StudentDetails
                             student={student}
@@ -348,7 +348,7 @@ function TeacherDashboard() {
                         </td>
                       </tr>
                     )}
-                  </>
+                  </Fragment>
                 );
               })}
               {filtered.length === 0 && (
