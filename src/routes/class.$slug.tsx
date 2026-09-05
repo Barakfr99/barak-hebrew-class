@@ -366,12 +366,6 @@ function SignupForm({
         )}
       </div>
 
-      {speechMode !== "off" && (
-        <Alert>
-          <AlertDescription>בתרגול הזה ההקראה הקולית זמינה לכל התלמידים.</AlertDescription>
-        </Alert>
-      )}
-
       <Button type="submit" size="lg" className="w-full" disabled={!valid || submit.isPending}>
         {submit.isPending ? "רגע..." : "פתיחת חשבון והתחלה"}
       </Button>
