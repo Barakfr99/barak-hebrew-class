@@ -303,7 +303,7 @@ function SignupForm({
       }
       toast.error("השם הזה כבר רשום בכיתה. עברו ללשונית ההתחברות.");
     },
-    onError: () => toast.error("לא הצלחנו לפתוח חשבון. נסו שוב בעוד רגע.");
+    onError: () => toast.error("לא הצלחנו לפתוח חשבון. נסו שוב בעוד רגע."),
   });
 
   const valid =
