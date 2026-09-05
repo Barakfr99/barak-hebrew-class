@@ -305,9 +305,22 @@ function TeacherDashboard() {
           <h1 className="text-3xl font-bold">לוח מורה</h1>
           <p className="text-muted-foreground">הנתונים מתעדכנים מעצמם, אין צורך לרענן.</p>
         </div>
-        <Button asChild variant="outline">
-          <Link to="/">לדף הפתיחה</Link>
-        </Button>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button
+            variant="outline"
+            onClick={() => {
+              window.sessionStorage.removeItem("reading-practice.teacher-ok");
+              window.sessionStorage.removeItem("reading-practice.teacher-code");
+              window.location.reload();
+            }}
+          >
+            יציאה מלוח המורה
+          </Button>
+          <Button asChild variant="outline">
+            <Link to="/">לדף הפתיחה</Link>
+          </Button>
+        </div>
+
       </div>
 
       <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
