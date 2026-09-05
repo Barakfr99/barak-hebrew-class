@@ -139,10 +139,16 @@ function PracticePage() {
   const feedbackDone = Boolean(feedbackQuery.data);
   const speechEnabled = Boolean(studentQuery.data?.speech_enabled);
 
+  /** עמוד חלקי הדיבר הוא עמוד נוסף בתוך המשימה, ולכן אינו מופיע ברשימת המשימות. */
+  const posTask = tasks.find((t) => t.kind === "parts_of_speech");
+  const posDone = posTask ? completedIds.has(posTask.id) : true;
+
   /** לכיתה בלי משימות בחירה: רשימת המשימות של הכיתה לפי הסדר ואז משוב. */
   const singleMode = choiceTasks.length === 0 && tasks.length > 0;
-  const listTasks = singleMode ? tasks.filter((t) => t.kind !== "choice") : choiceTasks;
-  const singleAllDone = singleMode && listTasks.every((t) => completedIds.has(t.id));
+  const listTasks = (singleMode ? tasks.filter((t) => t.kind !== "choice") : choiceTasks).filter(
+    (t) => t.kind !== "parts_of_speech",
+  );
+  const singleAllDone = singleMode && listTasks.every((t) => completedIds.has(t.id)) && posDone;
 
   const step = singleMode
     ? feedbackDone
