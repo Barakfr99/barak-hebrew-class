@@ -5,6 +5,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { SpeakButton } from "./SpeakButton";
 import { InfoHint } from "./InfoHint";
 import { ParagraphJump } from "./ParagraphJump";
+import { ParagraphChoice } from "./ParagraphChoice";
 import type { SpeechControls } from "./PassageReader";
 
 const ROWS: Record<Question["input_size"], number> = { short: 3, long: 5, essay: 10 };
