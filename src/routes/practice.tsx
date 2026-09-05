@@ -266,41 +266,26 @@ function PracticePage() {
   // Answering a chosen task
   const openTask = listTasks.find((t) => t.id === openTaskId);
   if (openTask) {
+    const lastInList = listTasks.filter((t) => !completedIds.has(t.id)).length <= 1;
+    const finishLabel = !lastInList
+      ? "סיימתי"
+      : singleMode && posTask && !posDone
+        ? "סיימתי — לעמוד הבא"
+        : "סיימתי — למשוב";
     return shell(
       <div className="space-y-4">
         <Button variant="ghost" size="sm" onClick={() => setOpenTaskId(null)}>
           <ChevronRight className="size-4" /> חזרה לרשימת המשימות
         </Button>
-        {openTask.kind === "parts_of_speech" ? (
-          <PartsOfSpeechTask
-            task={openTask}
-            studentId={studentId}
-            speechEnabled={speechEnabled}
-            initialAnswers={answersMap}
-            readOnly={completedIds.has(openTask.id)}
-            articleParagraphs={requiredTask?.paragraphs}
-            finishLabel={
-              listTasks.filter((t) => !completedIds.has(t.id)).length <= 1
-                ? "סיימתי — למשוב"
-                : "סיימתי"
-            }
-            onFinish={() => completeTask.mutate(openTask)}
-          />
-        ) : (
-          <TaskView
-            task={openTask}
-            studentId={studentId}
-            speechEnabled={speechEnabled}
-            initialAnswers={answersMap}
-            readOnly={completedIds.has(openTask.id)}
-            finishLabel={
-              listTasks.filter((t) => !completedIds.has(t.id)).length <= 1
-                ? "סיימתי — למשוב"
-                : "סיימתי"
-            }
-            onFinish={() => completeTask.mutate(openTask)}
-          />
-        )}
+        <TaskView
+          task={openTask}
+          studentId={studentId}
+          speechEnabled={speechEnabled}
+          initialAnswers={answersMap}
+          readOnly={completedIds.has(openTask.id)}
+          finishLabel={finishLabel}
+          onFinish={() => completeTask.mutate(openTask)}
+        />
       </div>,
     );
   }
