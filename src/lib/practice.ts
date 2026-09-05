@@ -155,12 +155,16 @@ export async function fetchTasks(): Promise<Task[]> {
   const [tasksRes, questionsRes] = await Promise.all([
     supabase
       .from("tasks")
-      .select("id, kind, title, description, paragraphs, max_points, sort_order, help_sections")
+      .select(
+        "id, kind, class_slug, title, article_title, source_note, footnote, description, paragraphs, max_points, sort_order, help_sections",
+      )
       .eq("is_active", true)
       .order("sort_order", { ascending: true }),
     supabase
       .from("questions")
-      .select("id, task_id, kind, prompt, options, points, sort_order")
+      .select(
+        "id, task_id, kind, prompt, options, points, sort_order, note, passage, paragraph_refs, group_label, parent_key, input_size",
+      )
       .order("sort_order", { ascending: true }),
   ]);
   if (tasksRes.error) throw tasksRes.error;
@@ -169,6 +173,8 @@ export async function fetchTasks(): Promise<Task[]> {
   const questions = (questionsRes.data ?? []).map((q) => ({
     ...q,
     options: Array.isArray(q.options) ? (q.options as string[]) : [],
+    paragraph_refs: Array.isArray(q.paragraph_refs) ? (q.paragraph_refs as number[]) : [],
+    note: (q.note ?? null) as QuestionNote | null,
   })) as Question[];
 
   return (tasksRes.data ?? []).map((t) => ({
