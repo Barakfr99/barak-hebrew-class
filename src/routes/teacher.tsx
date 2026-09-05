@@ -269,13 +269,13 @@ function TeacherDashboard() {
           <div className="flex-1 min-w-56">
             <Label htmlFor="search">חיפוש תלמיד/ה</Label>
             <div className="relative mt-1">
-              <Search className="pointer-events-none absolute right-3 top-2.5 size-4 text-muted-foreground" />
+              <Search className="pointer-events-none absolute start-3 top-2.5 size-4 text-muted-foreground" />
               <Input
                 id="search"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="שם או כיתה"
-                className="bg-card pr-9"
+                className="bg-card ps-9"
               />
             </div>
           </div>
@@ -298,7 +298,7 @@ function TeacherDashboard() {
         </div>
 
         <div className="mt-4 overflow-hidden rounded-2xl border border-border bg-card">
-          <table className="w-full text-right">
+          <table className="w-full text-start">
             <thead className="bg-secondary/60 text-sm">
               <tr>
                 <th className="px-4 py-3 font-semibold">שם</th>

@@ -2,7 +2,7 @@ import { createFileRoute, Link, notFound, useNavigate } from "@tanstack/react-ro
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useMemo, useState } from "react";
-import { BookOpen, ChevronRight, KeyRound, UserPlus, Volume2 } from "lucide-react";
+import { ChevronRight, KeyRound, UserPlus } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -281,7 +281,6 @@ function SignupForm({
   const [lastName, setLastName] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
-  const [mode, setMode] = useState<"regular" | "adaptive">("regular");
 
   const submit = useMutation({
     mutationFn: async () =>
@@ -292,8 +291,8 @@ function SignupForm({
           firstName: firstName.trim(),
           lastName: lastName.trim(),
           password,
-          mode: speechMode === "always" ? "adaptive" : mode,
-          speechEnabled: speechMode === "off" ? false : speechMode === "always" || mode === "adaptive",
+          mode: speechMode === "off" ? "regular" : "adaptive",
+          speechEnabled: speechMode !== "off",
         },
       }),
     onSuccess: async (result) => {
@@ -344,7 +343,7 @@ function SignupForm({
       </div>
 
       <div>
-        <Label htmlFor="newPassword">סיסמה שאבחר</Label>
+        <Label htmlFor="newPassword">בחרו סיסמה</Label>
         <Input
           id="newPassword"
           type="password"
@@ -371,27 +370,7 @@ function SignupForm({
         )}
       </div>
 
-      {speechMode === "two_tracks" && (
-        <div className="rounded-2xl border border-border bg-background p-4">
-          <p className="font-medium">איזה תרגול מתאים לי?</p>
-          <div className="mt-3 grid gap-2 sm:grid-cols-2">
-            <TrackButton
-              active={mode === "regular"}
-              icon={<BookOpen className="size-4" />}
-              title="תרגול רגיל"
-              onClick={() => setMode("regular")}
-            />
-            <TrackButton
-              active={mode === "adaptive"}
-              icon={<Volume2 className="size-4" />}
-              title="תרגול מותאם (עם הקראה)"
-              onClick={() => setMode("adaptive")}
-            />
-          </div>
-        </div>
-      )}
-
-      {speechMode === "always" && (
+      {speechMode !== "off" && (
         <Alert>
           <AlertDescription>בתרגול הזה ההקראה הקולית זמינה לכל התלמידים.</AlertDescription>
         </Alert>
@@ -401,31 +380,6 @@ function SignupForm({
         {submit.isPending ? "רגע..." : "פתיחת חשבון והתחלה"}
       </Button>
     </form>
-  );
-}
-
-function TrackButton({
-  active,
-  icon,
-  title,
-  onClick,
-}: {
-  active: boolean;
-  icon: React.ReactNode;
-  title: string;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`flex items-center gap-2 rounded-xl border p-3 text-right transition-colors ${
-        active ? "border-primary bg-primary/10 text-primary" : "border-border bg-card"
-      }`}
-    >
-      {icon}
-      <span className="font-medium">{title}</span>
-    </button>
   );
 }
 
