@@ -199,8 +199,7 @@ function PracticePage() {
         <PartyPopper className="mx-auto size-10 text-primary" />
         <h2 className="mt-4 text-2xl font-bold">סיימתם. תודה רבה!</h2>
         <p className="mt-2 text-muted-foreground">
-          כל התשובות שלכם נשמרו והמורה רואה אותן. אפשר לסגור את החלון או לפנות את המחשב לתלמיד/ה
-          הבא/ה.
+          כל התשובות שלכם נשמרו והמורה רואה אותן. אפשר לסגור את החלון או להתנתק לטובת התלמיד/ה הבא/ה.
         </p>
         <div className="mt-6 flex justify-center">
           <ClearDeviceButton size="lg" />
