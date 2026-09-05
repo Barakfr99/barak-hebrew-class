@@ -332,6 +332,12 @@ function PracticePage() {
                     )}
                   </div>
                   <p className="mt-1 text-muted-foreground">{task.description}</p>
+                  {singleMode && posTask && (
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      המשימה כוללת שני עמודים: שאלות על המאמר, ואחריהן עמוד תרגול "
+                      {posTask.title}".
+                    </p>
+                  )}
                   {task.questions.some((q) => typeof q.points === "number") && (
                     <p className="mt-1 text-sm text-muted-foreground">
                       {task.questions.length} שאלות · עד {task.max_points} נקודות
