@@ -1,0 +1,223 @@
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Check, Play, Square, Save } from "lucide-react";
+import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { saveAnswer, splitSentences, type Task } from "@/lib/practice";
+import { useSpeech } from "@/hooks/useSpeech";
+import { cn } from "@/lib/utils";
+import { PassageReader } from "./PassageReader";
+import { QuestionBlock } from "./QuestionBlock";
+
+export function TaskView({
+  task,
+  studentId,
+  speechEnabled,
+  readOnly = false,
+  initialAnswers,
+  onFinish,
+  finishLabel = "סיימתי את המשימה",
+}: {
+  task: Task;
+  studentId: string;
+  speechEnabled: boolean;
+  readOnly?: boolean;
+  initialAnswers: Record<string, string>;
+  onFinish?: () => void;
+  finishLabel?: string;
+}) {
+  const [answers, setAnswers] = useState<Record<string, string>>(initialAnswers);
+  const [justSaved, setJustSaved] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const dirtyRef = useRef<Set<string>>(new Set());
+  const speech = useSpeech();
+
+  const persist = useCallback(
+    async (ids: string[], answersSnapshot: Record<string, string>) => {
+      await Promise.all(
+        ids.map((questionId) =>
+          saveAnswer({
+            studentId,
+            taskId: task.id,
+            questionId,
+            answerText: answersSnapshot[questionId] ?? "",
+          }),
+        ),
+      );
+    },
+    [studentId, task.id],
+  );
+
+  // Automatic background save a few seconds after each change.
+  useEffect(() => {
+    if (readOnly || dirtyRef.current.size === 0) return;
+    const timer = setTimeout(() => {
+      const ids = Array.from(dirtyRef.current);
+      dirtyRef.current.clear();
+      void persist(ids, answers).catch(() => {
+        ids.forEach((id) => dirtyRef.current.add(id));
+      });
+    }, 2500);
+    return () => clearTimeout(timer);
+  }, [answers, persist, readOnly]);
+
+  const saveDraft = async () => {
+    setSaving(true);
+    try {
+      await persist(
+        task.questions.map((q) => q.id),
+        answers,
+      );
+      dirtyRef.current.clear();
+      setJustSaved(true);
+      toast.success("התשובות נשמרו");
+      setTimeout(() => setJustSaved(false), 2600);
+    } catch {
+      toast.error("השמירה לא הצליחה. נסו שוב.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const sequence = useMemo(() => {
+    const units: { id: string; text: string }[] = [];
+    task.paragraphs.forEach((paragraph, pIndex) => {
+      splitSentences(paragraph).forEach((sentence, sIndex) => {
+        units.push({ id: `${task.id}:p${pIndex}:s${sIndex}`, text: sentence });
+      });
+    });
+    task.questions.forEach((question) => {
+      units.push({ id: `${question.id}:prompt`, text: question.prompt });
+      question.options.forEach((option, oIndex) => {
+        units.push({ id: `${question.id}:o${oIndex}`, text: option });
+      });
+    });
+    return units;
+  }, [task]);
+
+  const speechControls = {
+    enabled: speechEnabled && speech.supported,
+    speakingId: speech.speakingId,
+    speak: (unit: { id: string; text: string }) => void speech.speak(unit),
+  };
+
+  const answeredAll = task.questions.every((q) => (answers[q.id] ?? "").trim().length > 0);
+
+  return (
+    <div className="space-y-6">
+      <header className="rounded-3xl border border-border bg-card p-6">
+        <h2 className="text-2xl font-bold">{task.title}</h2>
+        <p className="mt-1 text-muted-foreground">{task.description}</p>
+        <p className="mt-2 text-sm text-muted-foreground">
+          {task.questions.length} שאלות · עד {task.max_points} נקודות
+        </p>
+
+        {speechEnabled && speech.supported && (
+          <div className="mt-4 flex flex-wrap items-center gap-2">
+            <Button
+              variant={speech.isPlayingSequence ? "secondary" : "outline"}
+              onClick={() =>
+                speech.isPlayingSequence ? speech.stop() : void speech.speakSequence(sequence)
+              }
+            >
+              {speech.isPlayingSequence ? (
+                <>
+                  <Square className="size-4" /> עצירת ההקראה
+                </>
+              ) : (
+                <>
+                  <Play className="size-4" /> הקראה רציפה
+                </>
+              )}
+            </Button>
+            <span className="text-sm text-muted-foreground">
+              אפשר גם ללחוץ על משפט או שאלה כדי להקריא רק אותם.
+            </span>
+          </div>
+        )}
+
+        {speechEnabled && !speech.supported && (
+          <Alert className="mt-4">
+            <AlertDescription>
+              הדפדפן הזה לא תומך בהקראה קולית. אפשר להמשיך בתרגול בקריאה רגילה.
+            </AlertDescription>
+          </Alert>
+        )}
+        {speechEnabled && speech.supported && !speech.hebrewVoiceAvailable && (
+          <Alert className="mt-4">
+            <AlertDescription>
+              לא נמצא קול בעברית בדפדפן הזה, ולכן ההקראה עשויה להישמע במבטא זר או לא לפעול. אפשר
+              להמשיך בקריאה רגילה.
+            </AlertDescription>
+          </Alert>
+        )}
+      </header>
+
+      <section className="rounded-3xl border border-border bg-card p-6">
+        <h3 className="text-lg font-semibold text-primary">קטע הקריאה</h3>
+        <div className="mt-3">
+          <PassageReader taskId={task.id} paragraphs={task.paragraphs} speech={speechControls} />
+        </div>
+      </section>
+
+      <section className="space-y-4">
+        <h3 className="text-lg font-semibold text-primary">
+          {readOnly ? "השאלות במשימה" : "השאלות"}
+        </h3>
+        {task.questions.map((question, index) => (
+          <QuestionBlock
+            key={question.id}
+            question={question}
+            index={index}
+            value={answers[question.id] ?? ""}
+            readOnly={readOnly}
+            speech={speechControls}
+            onChange={(value) => {
+              dirtyRef.current.add(question.id);
+              setAnswers((prev) => ({ ...prev, [question.id]: value }));
+            }}
+          />
+        ))}
+      </section>
+
+      {!readOnly && (
+        <div className="sticky bottom-0 -mx-4 flex flex-wrap items-center gap-3 border-t border-border bg-background/95 px-4 py-4 backdrop-blur">
+          <Button
+            variant="outline"
+            onClick={() => void saveDraft()}
+            disabled={saving}
+            className={cn(
+              "transition-colors",
+              justSaved && "border-success bg-success text-success-foreground hover:bg-success",
+            )}
+          >
+            {justSaved ? (
+              <>
+                <Check className="size-4" /> נשמר!
+              </>
+            ) : (
+              <>
+                <Save className="size-4" /> שמירת טיוטה
+              </>
+            )}
+          </Button>
+          <Button
+            size="lg"
+            onClick={async () => {
+              await saveDraft();
+              onFinish?.();
+            }}
+            disabled={saving}
+          >
+            {finishLabel}
+          </Button>
+          {!answeredAll && (
+            <span className="text-sm text-muted-foreground">
+              יש שאלות שעדיין לא ענית עליהן — אפשר לסיים בכל מקרה.
+            </span>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
