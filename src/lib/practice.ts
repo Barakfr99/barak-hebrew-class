@@ -10,14 +10,31 @@ export type Settings = {
   required_choice_count: number;
 };
 
+export type QuestionNote = { kind: "tip" | "info"; title: string; body: string };
+
 export type Question = {
   id: string;
   task_id: string;
   kind: "open" | "multiple_choice";
   prompt: string;
   options: string[];
-  points: number;
+  points: number | null;
   sort_order: number;
+  note: QuestionNote | null;
+  passage: string | null;
+  paragraph_refs: number[];
+  group_label: string | null;
+  parent_key: string | null;
+  input_size: "short" | "long" | "essay";
+};
+
+/** שאלה בודדת או קבוצת שדות (שורות טבלה / סעיפי משנה) המוצגות יחד. */
+export type QuestionGroup = {
+  key: string;
+  prompt: string;
+  note: QuestionNote | null;
+  passage: string | null;
+  items: Question[];
 };
 
 export type HelpSection = { title: string; body: string };
@@ -25,7 +42,11 @@ export type HelpSection = { title: string; body: string };
 export type Task = {
   id: string;
   kind: "required" | "choice";
+  class_slug: string | null;
   title: string;
+  article_title: string | null;
+  source_note: string | null;
+  footnote: string | null;
   description: string;
   paragraphs: string[];
   max_points: number;
@@ -33,6 +54,39 @@ export type Task = {
   help_sections: HelpSection[];
   questions: Question[];
 };
+
+/** מקבץ שאלות לפי parent_key, כדי להציג טבלאות וסעיפי משנה תחת שאלה אחת. */
+export function groupQuestions(questions: Question[]): QuestionGroup[] {
+  const groups: QuestionGroup[] = [];
+  questions.forEach((question) => {
+    const key = question.parent_key ?? question.id;
+    const existing = groups.find((g) => g.key === key);
+    if (existing) {
+      existing.items.push(question);
+      if (!existing.passage && question.passage) existing.passage = question.passage;
+      if (!existing.note && question.note) existing.note = question.note;
+      return;
+    }
+    groups.push({
+      key,
+      prompt: question.prompt,
+      note: question.note,
+      passage: question.passage,
+      items: [question],
+    });
+  });
+  return groups;
+}
+
+/**
+ * משימות לפי כיתה: אם לכיתה יש משימות משויכות — הן בלבד מוצגות,
+ * אחרת מוצגות המשימות הכלליות (ללא שיוך).
+ */
+export function tasksForClass(tasks: Task[], classSlug: string | null | undefined): Task[] {
+  const classTasks = classSlug ? tasks.filter((t) => t.class_slug === classSlug) : [];
+  if (classTasks.length > 0) return classTasks;
+  return tasks.filter((t) => !t.class_slug);
+}
 
 export type Student = {
   id: string;
