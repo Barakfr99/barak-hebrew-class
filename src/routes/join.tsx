@@ -11,6 +11,7 @@ import { fetchSettings, writeDeviceStudentId } from "@/lib/practice";
 
 const searchSchema = z.object({
   mode: z.enum(["regular", "adaptive"]).default("regular"),
+  className: z.string().optional(),
 });
 
 export const Route = createFileRoute("/join")({
@@ -27,11 +28,11 @@ export const Route = createFileRoute("/join")({
 });
 
 function JoinPage() {
-  const { mode } = Route.useSearch();
+  const { mode, className: presetClass } = Route.useSearch();
   const navigate = useNavigate();
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
-  const [className, setClassName] = useState("");
+  const [className, setClassName] = useState(presetClass ?? "");
   const { data: settings } = useQuery({ queryKey: ["settings"], queryFn: fetchSettings });
 
   const create = useMutation({
@@ -97,12 +98,13 @@ function JoinPage() {
           />
         </div>
         <div>
-          <Label htmlFor="className">כיתה (לא חובה)</Label>
+          <Label htmlFor="className">{presetClass ? "כיתה" : "כיתה (לא חובה)"}</Label>
           <Input
             id="className"
             value={className}
             onChange={(e) => setClassName(e.target.value)}
-            placeholder="למשל: י'2"
+            placeholder="למשל: כיתה י' 1"
+            readOnly={Boolean(presetClass)}
             className="mt-1 bg-card"
           />
         </div>
@@ -112,7 +114,7 @@ function JoinPage() {
       </form>
 
       <Link to="/" className="mt-6 text-sm text-muted-foreground underline">
-        חזרה לדף הפתיחה
+        חזרה לרשימת הכיתות
       </Link>
     </main>
   );
