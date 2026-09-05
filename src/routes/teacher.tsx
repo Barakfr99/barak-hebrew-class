@@ -176,7 +176,7 @@ function TeacherDashboard() {
   const taskById = useMemo(() => new Map(tasks.map((t) => [t.id, t])), [tasks]);
   const choiceTasks = tasks.filter((t) => t.kind === "choice");
   const requiredTask = tasks.find((t) => t.kind === "required");
-  const students = studentsQuery.data ?? [];
+  const students = (studentsQuery.data ?? []).filter((s) => !isTeacherTestStudent(s));
   const completions = completionsQuery.data ?? [];
   const answers = answersQuery.data ?? [];
   const feedback = feedbackQuery.data ?? [];
