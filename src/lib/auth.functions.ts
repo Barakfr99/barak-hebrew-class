@@ -154,7 +154,7 @@ export const teacherResetPassword = createServerFn({ method: "POST" })
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle();
-    const expected = settings?.teacher_code ?? "1234";
+    const expected = settings?.teacher_code ?? "5598956";
     if (data.teacherCode.trim() !== expected) {
       return { ok: false as const, reason: "bad_code" as const };
     }
