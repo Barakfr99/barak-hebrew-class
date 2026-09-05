@@ -150,25 +150,6 @@ export function TaskView({
                 </>
               )}
             </Button>
-            <div className="flex items-center gap-1 rounded-full border border-border bg-card p-1">
-              <span className="px-2 text-sm text-muted-foreground">מהירות</span>
-              {SPEECH_RATES.map((rate) => (
-                <button
-                  key={rate}
-                  type="button"
-                  onClick={() => speech.setRate(rate)}
-                  aria-pressed={speech.rate === rate}
-                  className={cn(
-                    "rounded-full px-3 py-1 text-sm transition-colors",
-                    speech.rate === rate
-                      ? "bg-primary text-primary-foreground"
-                      : "text-foreground hover:bg-accent/60",
-                  )}
-                >
-                  {rate === 1 ? "רגיל" : `${rate}×`}
-                </button>
-              ))}
-            </div>
             <span className="text-sm text-muted-foreground">
               אפשר גם ללחוץ על משפט או שאלה כדי להקריא רק אותם.
             </span>
