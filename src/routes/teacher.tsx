@@ -32,6 +32,13 @@ import {
   type Task,
   type TaskGrade,
 } from "@/lib/practice";
+import {
+  POS_EXERCISES,
+  describePosAnswer,
+  exerciseByKey,
+  parseJson,
+  type SelectionAnswer,
+} from "@/lib/parts-of-speech";
 import { cn } from "@/lib/utils";
 import { useServerFn } from "@tanstack/react-start";
 import { teacherResetPassword } from "@/lib/auth.functions";
@@ -584,6 +591,9 @@ function StudentDetails({
         .map((task) => {
           const answered = task.questions.filter((q) => answerFor(q.id));
           if (answered.length === 0) return null;
+          if (task.kind === "parts_of_speech") {
+            return <PosTaskAnswers key={task.id} task={task} answerFor={answerFor} />;
+          }
           return (
             <div key={task.id}>
               <h3 className="font-semibold text-primary">{task.title}</h3>
@@ -620,6 +630,52 @@ function StudentDetails({
           </ul>
         </div>
       )}
+    </div>
+  );
+}
+
+/** סעיף "זיהוי חלקי דיבר" בהרחבת התלמיד/ה: אילו תרגילים נבחרו, התשובות והתשובות התקפות. */
+function PosTaskAnswers({
+  task,
+  answerFor,
+}: {
+  task: Task;
+  answerFor: (questionId: string) => string;
+}) {
+  const idByLabel: Record<string, string> = {};
+  task.questions.forEach((q) => {
+    if (q.group_label) idByLabel[q.group_label] = q.id;
+  });
+  const selection = parseJson<SelectionAnswer>(answerFor(idByLabel["selection"] ?? "") , {
+    chosen: [],
+    done: [],
+  });
+
+  return (
+    <div>
+      <h3 className="font-semibold text-primary">{task.title}</h3>
+      <p className="mt-1 text-sm text-muted-foreground">
+        הושלמו {selection.done.length} תרגילים
+        {selection.done.length > 0
+          ? `: ${selection.done
+              .map((key) => exerciseByKey(key)?.title ?? key)
+              .join(" · ")}`
+          : ""}
+      </p>
+      <ul className="mt-2 space-y-2">
+        {POS_EXERCISES.filter((ex) => answerFor(idByLabel[ex.key] ?? "")).map((ex) => (
+          <li key={ex.key} className="rounded-xl border border-border bg-card p-3">
+            <p className="text-sm font-semibold text-primary">{ex.title}</p>
+            <ul className="mt-1 space-y-1">
+              {describePosAnswer(ex.key, answerFor(idByLabel[ex.key] ?? "")).map((line, i) => (
+                <li key={i} className="reading-text text-sm">
+                  {line}
+                </li>
+              ))}
+            </ul>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }
