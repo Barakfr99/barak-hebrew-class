@@ -21,12 +21,12 @@ export function ClearDeviceButton({ size = "sm" }: { size?: "sm" | "lg" }) {
       <AlertDialogTrigger asChild>
         <Button variant={size === "lg" ? "default" : "outline"} size={size === "lg" ? "lg" : "sm"}>
           <LogOut className="size-4" />
-          פינוי המחשב לתלמיד/ה הבא/ה
+          התנתקות
         </Button>
       </AlertDialogTrigger>
       <AlertDialogContent dir="rtl">
         <AlertDialogHeader>
-          <AlertDialogTitle>לפנות את המחשב?</AlertDialogTitle>
+          <AlertDialogTitle>להתנתק?</AlertDialogTitle>
           <AlertDialogDescription>
             כל התשובות שנשמרו נשארות שמורות אצל המורה. רק הזיהוי במחשב הזה יימחק, ותחזרו לדף הפתיחה.
           </AlertDialogDescription>
@@ -39,7 +39,7 @@ export function ClearDeviceButton({ size = "sm" }: { size?: "sm" | "lg" }) {
               navigate({ to: "/" });
             }}
           >
-            כן, לפנות את המחשב
+            כן, להתנתק
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
