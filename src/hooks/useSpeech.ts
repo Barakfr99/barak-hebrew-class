@@ -93,7 +93,7 @@ export function useSpeech() {
       synth.resume();
       const utterance = new SpeechSynthesisUtterance(unit.text.trim());
       utterance.lang = "he-IL";
-      utterance.rate = 0.92;
+      utterance.rate = Math.min(2, Math.max(0.5, 0.92 * rateRef.current));
       if (browserVoiceRef.current) utterance.voice = browserVoiceRef.current;
       let done = false;
       const finish = () => {
@@ -121,6 +121,7 @@ export function useSpeech() {
         if (cancelledRef.current) return;
         await new Promise<void>((resolve) => {
           const audio = new Audio(url);
+          audio.playbackRate = rateRef.current;
           audioRef.current = audio;
           const finish = () => {
             audio.onended = null;
@@ -168,5 +169,5 @@ export function useSpeech() {
     [speakOne, stop],
   );
 
-  return { ...state, speak, speakSequence, stop };
+  return { ...state, speak, speakSequence, stop, setRate };
 }
