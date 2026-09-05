@@ -8,7 +8,10 @@ type SpeechState = {
   loadingId: string | null;
   isPlayingSequence: boolean;
   cloudFailed: boolean;
+  rate: number;
 };
+
+export const SPEECH_RATES = [0.85, 1, 1.25, 1.5] as const;
 
 /**
  * Reading aloud with a natural cloud voice (GPT-4o Mini TTS through the app's
