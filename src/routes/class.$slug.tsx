@@ -69,7 +69,11 @@ function ClassPage() {
     queryKey: ["class-students", schoolClass.slug],
     queryFn: () => listStudents({ data: { classSlug: schoolClass.slug } }),
   });
-  const students = useMemo(() => studentsQuery.data ?? [], [studentsQuery.data]);
+  const students = useMemo(
+    () => (studentsQuery.data ?? []).filter((s) => !isTeacherTestStudent(s)),
+    [studentsQuery.data],
+  );
+
 
   const enter = (id: string) => {
     writeDeviceStudentId(id);
