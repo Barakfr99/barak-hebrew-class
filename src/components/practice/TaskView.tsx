@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Check, Play, Square, Save } from "lucide-react";
+import { Check, Play, Square, Save, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -121,7 +121,7 @@ export function TaskView({
         )}
 
 
-        {speechEnabled && speech.supported && (
+        {speechEnabled && (
           <div className="mt-4 flex flex-wrap items-center gap-2">
             <Button
               variant={speech.isPlayingSequence ? "secondary" : "outline"}
@@ -132,6 +132,10 @@ export function TaskView({
               {speech.isPlayingSequence ? (
                 <>
                   <Square className="size-4" /> עצירת ההקראה
+                </>
+              ) : speech.loadingId ? (
+                <>
+                  <Loader2 className="size-4 animate-spin" /> מכין את ההקראה...
                 </>
               ) : (
                 <>
@@ -145,18 +149,11 @@ export function TaskView({
           </div>
         )}
 
-        {speechEnabled && !speech.supported && (
+        {speechEnabled && speech.cloudFailed && (
           <Alert className="mt-4">
             <AlertDescription>
-              הדפדפן הזה לא תומך בהקראה קולית. אפשר להמשיך בתרגול בקריאה רגילה.
-            </AlertDescription>
-          </Alert>
-        )}
-        {speechEnabled && speech.supported && !speech.hebrewVoiceAvailable && (
-          <Alert className="mt-4">
-            <AlertDescription>
-              לא נמצא קול בעברית בדפדפן הזה, ולכן ההקראה עשויה להישמע במבטא זר או לא לפעול. אפשר
-              להמשיך בקריאה רגילה.
+              ההקראה בקול הטבעי לא זמינה כרגע, ולכן היא מושמעת בקול של הדפדפן. אפשר להמשיך בתרגול
+              כרגיל.
             </AlertDescription>
           </Alert>
         )}
