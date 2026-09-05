@@ -100,12 +100,6 @@ export function TaskView({
         units.push({ id: `${task.id}:p${pIndex}:s${sIndex}`, text: sentence });
       });
     });
-    task.questions.forEach((question) => {
-      units.push({ id: `${question.id}:prompt`, text: question.prompt });
-      question.options.forEach((option, oIndex) => {
-        units.push({ id: `${question.id}:o${oIndex}`, text: option });
-      });
-    });
     return units;
   }, [task, titleUnit]);
 
@@ -133,34 +127,6 @@ export function TaskView({
           </p>
         )}
 
-
-        {speechEnabled && (
-          <div className="mt-4 flex flex-wrap items-center gap-2">
-            <Button
-              variant={speech.isPlayingSequence ? "secondary" : "outline"}
-              onClick={() =>
-                speech.isPlayingSequence ? speech.stop() : void speech.speakSequence(sequence)
-              }
-            >
-              {speech.isPlayingSequence ? (
-                <>
-                  <Square className="size-4" /> עצירת ההקראה
-                </>
-              ) : speech.loadingId ? (
-                <>
-                  <Loader2 className="size-4 animate-spin" /> מכין את ההקראה...
-                </>
-              ) : (
-                <>
-                  <Play className="size-4" /> הקראה רציפה
-                </>
-              )}
-            </Button>
-            <span className="text-sm text-muted-foreground">
-              אפשר גם ללחוץ על משפט או שאלה כדי להקריא רק אותם.
-            </span>
-          </div>
-        )}
 
         {speechEnabled && speech.cloudFailed && (
           <Alert className="mt-4">
@@ -216,6 +182,33 @@ export function TaskView({
           </div>
         ) : (
           <h3 className="text-lg font-semibold text-primary">קטע הקריאה</h3>
+        )}
+        {speechEnabled && (
+          <div className="mt-4 flex flex-wrap items-center gap-2">
+            <Button
+              variant={speech.isPlayingSequence ? "secondary" : "outline"}
+              onClick={() =>
+                speech.isPlayingSequence ? speech.stop() : void speech.speakSequence(sequence)
+              }
+            >
+              {speech.isPlayingSequence ? (
+                <>
+                  <Square className="size-4" /> עצירת ההקראה
+                </>
+              ) : speech.loadingId ? (
+                <>
+                  <Loader2 className="size-4 animate-spin" /> מכין את ההקראה...
+                </>
+              ) : (
+                <>
+                  <Play className="size-4" /> הקראה רציפה של הטקסט
+                </>
+              )}
+            </Button>
+            <span className="text-sm text-muted-foreground">
+              אפשר גם ללחוץ על משפט כדי להקריא רק אותו.
+            </span>
+          </div>
         )}
         <div className="mt-3">
           <PassageReader

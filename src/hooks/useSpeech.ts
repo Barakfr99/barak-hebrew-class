@@ -33,6 +33,7 @@ export function useSpeech() {
   const cancelledRef = useRef(false);
   const browserVoiceRef = useRef<SpeechSynthesisVoice | null>(null);
   const rateRef = useRef(1);
+  const activeIdRef = useRef<string | null>(null);
 
   // Changing the speed adjusts playback only — no extra audio is generated.
   const setRate = useCallback((rate: number) => {
@@ -61,6 +62,7 @@ export function useSpeech() {
 
   const stop = useCallback(() => {
     cancelledRef.current = true;
+    activeIdRef.current = null;
     if (audioRef.current) {
       audioRef.current.pause();
       audioRef.current = null;
@@ -147,9 +149,14 @@ export function useSpeech() {
 
   const speak = useCallback(
     async (unit: SpeechUnit) => {
+      // A second tap on the same item stops it instead of restarting.
+      const wasActive = activeIdRef.current === unit.id;
       stop();
+      if (wasActive) return;
       cancelledRef.current = false;
+      activeIdRef.current = unit.id;
       await speakOne(unit);
+      activeIdRef.current = null;
       setState((s) => ({ ...s, speakingId: null }));
     },
     [speakOne, stop],
