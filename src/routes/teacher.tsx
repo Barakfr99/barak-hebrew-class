@@ -1,7 +1,7 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Fragment, useEffect, useMemo, useState } from "react";
-import { ChevronDown, GraduationCap, KeyRound, Search } from "lucide-react";
+import { ChevronDown, GraduationCap, KeyRound, PlayCircle, RotateCcw, Search } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,14 +15,19 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
+import { CLASSES } from "@/lib/classes";
 import {
+  ensureTeacherTestStudent,
   fetchSettings,
   fetchTaskGrades,
   fetchTasks,
   fullName,
   groupQuestions,
+  isTeacherTestStudent,
+  resetTeacherTestStudent,
   saveTaskGrade,
   tasksForClass,
+  writeDeviceStudentId,
   type Student,
   type Task,
   type TaskGrade,
@@ -30,6 +35,7 @@ import {
 import { cn } from "@/lib/utils";
 import { useServerFn } from "@tanstack/react-start";
 import { teacherResetPassword } from "@/lib/auth.functions";
+
 
 const TEACHER_KEY = "reading-practice.teacher-ok";
 const TEACHER_CODE_KEY = "reading-practice.teacher-code";
@@ -101,9 +107,43 @@ function TeacherPage() {
 
 function TeacherDashboard() {
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("all");
   const [expanded, setExpanded] = useState<string | null>(null);
+  const [testClass, setTestClass] = useState(CLASSES[0]?.slug ?? "");
+  const [testBusy, setTestBusy] = useState(false);
+
+  const openAsTestStudent = async () => {
+    const cls = CLASSES.find((c) => c.slug === testClass);
+    if (!cls) return;
+    setTestBusy(true);
+    try {
+      const id = await ensureTeacherTestStudent(cls);
+      writeDeviceStudentId(id);
+      navigate({ to: "/practice" });
+    } catch {
+      toast.error("לא הצלחתי לפתוח את מצב הבדיקה");
+    } finally {
+      setTestBusy(false);
+    }
+  };
+
+  const resetTestStudent = async () => {
+    const cls = CLASSES.find((c) => c.slug === testClass);
+    if (!cls) return;
+    setTestBusy(true);
+    try {
+      const id = await ensureTeacherTestStudent(cls);
+      await resetTeacherTestStudent(id);
+      toast.success("תשובות הבדיקה נמחקו");
+    } catch {
+      toast.error("לא הצלחתי לאפס את תשובות הבדיקה");
+    } finally {
+      setTestBusy(false);
+    }
+  };
+
 
   const tasksQuery = useQuery({ queryKey: ["tasks"], queryFn: fetchTasks });
   const studentsQuery = useQuery({
@@ -176,7 +216,7 @@ function TeacherDashboard() {
   const taskById = useMemo(() => new Map(tasks.map((t) => [t.id, t])), [tasks]);
   const choiceTasks = tasks.filter((t) => t.kind === "choice");
   const requiredTask = tasks.find((t) => t.kind === "required");
-  const students = studentsQuery.data ?? [];
+  const students = (studentsQuery.data ?? []).filter((s) => !isTeacherTestStudent(s));
   const completions = completionsQuery.data ?? [];
   const answers = answersQuery.data ?? [];
   const feedback = feedbackQuery.data ?? [];
@@ -272,6 +312,40 @@ function TeacherDashboard() {
           value={students.filter((s) => s.speech_enabled).length}
         />
       </div>
+
+      <section className="mt-8 rounded-2xl border border-border bg-card p-4">
+        <h2 className="text-xl font-bold">בדיקת המשימות כתלמיד/ה</h2>
+        <p className="mt-1 text-sm text-muted-foreground">
+          נכנסים ישר למשימות של הכיתה, בלי שם וסיסמה. התשובות נשמרות בנפרד ואינן מופיעות בטבלה.
+        </p>
+        <div className="mt-4 flex flex-wrap items-end gap-3">
+          <div className="w-56">
+            <Label>כיתה</Label>
+            <Select value={testClass} onValueChange={setTestClass}>
+              <SelectTrigger className="mt-1 bg-background">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent dir="rtl">
+                {CLASSES.map((c) => (
+                  <SelectItem key={c.slug} value={c.slug}>
+                    {c.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <Button onClick={openAsTestStudent} disabled={testBusy}>
+            <PlayCircle className="me-2 size-4" />
+            פתיחת המשימות
+          </Button>
+          <Button variant="outline" onClick={resetTestStudent} disabled={testBusy}>
+            <RotateCcw className="me-2 size-4" />
+            מחיקת תשובות הבדיקה
+          </Button>
+        </div>
+      </section>
+
+
 
       <section className="mt-8">
         <h2 className="text-xl font-bold">בחירות המשימות</h2>

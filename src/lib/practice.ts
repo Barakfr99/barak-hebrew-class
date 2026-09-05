@@ -233,6 +233,73 @@ export function fullName(student: { first_name: string; last_name: string }) {
   return `${student.first_name} ${student.last_name}`.trim();
 }
 
+/** שם משפחה שמסמן תלמיד/ת בדיקה של המורה (לא מוצג לתלמידים ולא נספר בלוח). */
+export const TEACHER_TEST_LAST_NAME = "בדיקת מורה";
+
+export function isTeacherTestStudent(student: { last_name: string }) {
+  return student.last_name === TEACHER_TEST_LAST_NAME;
+}
+
+/** מחזיר (ויוצר בפעם הראשונה) תלמיד/ת בדיקה לכיתה, כדי לפתוח את המשימות בלי רישום. */
+export async function ensureTeacherTestStudent(cls: {
+  slug: string;
+  name: string;
+}): Promise<string> {
+  const { data, error } = await supabase
+    .from("students")
+    .select("id")
+    .eq("class_slug", cls.slug)
+    .eq("last_name", TEACHER_TEST_LAST_NAME)
+    .limit(1)
+    .maybeSingle();
+  if (error) throw error;
+  if (data?.id) return data.id;
+
+  const { data: created, error: insertError } = await supabase
+    .from("students")
+    .insert({
+      first_name: cls.name,
+      last_name: TEACHER_TEST_LAST_NAME,
+      class_name: cls.name,
+      class_slug: cls.slug,
+      mode: "regular",
+      speech_enabled: true,
+      stage: "choice",
+    })
+    .select("id")
+    .single();
+  if (insertError) throw insertError;
+  return created.id;
+}
+
+/** מנקה את התשובות וההתקדמות של תלמיד/ת הבדיקה, כדי להתחיל בדיקה מחדש. */
+export async function resetTeacherTestStudent(studentId: string) {
+  const results = await Promise.all([
+    supabase.from("answers").delete().eq("student_id", studentId),
+    supabase.from("task_completions").delete().eq("student_id", studentId),
+    supabase.from("feedback").delete().eq("student_id", studentId),
+    supabase.from("task_grades").delete().eq("student_id", studentId),
+  ]);
+  const failed = results.find((r) => r.error);
+  if (failed?.error) throw failed.error;
+
+  const { error } = await supabase
+    .from("students")
+    .update({
+      stage: "choice",
+      choice_slot_1_task_id: null,
+      choice_slot_2_task_id: null,
+      grade_required: null,
+      grade_choice_1: null,
+      grade_choice_2: null,
+      finished_at: null,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", studentId);
+  if (error) throw error;
+}
+
+
 export type TaskGrade = { student_id: string; task_id: string; grade: number | null };
 
 export async function fetchTaskGrades(): Promise<TaskGrade[]> {

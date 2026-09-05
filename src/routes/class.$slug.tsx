@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CLASSES, findClass } from "@/lib/classes";
-import { fetchSettings, writeDeviceStudentId } from "@/lib/practice";
+import { fetchSettings, isTeacherTestStudent, writeDeviceStudentId } from "@/lib/practice";
 import {
   listClassStudents,
   loginStudent,
@@ -69,7 +69,11 @@ function ClassPage() {
     queryKey: ["class-students", schoolClass.slug],
     queryFn: () => listStudents({ data: { classSlug: schoolClass.slug } }),
   });
-  const students = useMemo(() => studentsQuery.data ?? [], [studentsQuery.data]);
+  const students = useMemo(
+    () => (studentsQuery.data ?? []).filter((s) => !isTeacherTestStudent(s)),
+    [studentsQuery.data],
+  );
+
 
   const enter = (id: string) => {
     writeDeviceStudentId(id);
