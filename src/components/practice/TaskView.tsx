@@ -100,7 +100,7 @@ export function TaskView({
       });
     });
     return units;
-  }, [task]);
+  }, [task, titleUnit]);
 
   const speechControls = {
     enabled: speechEnabled,
