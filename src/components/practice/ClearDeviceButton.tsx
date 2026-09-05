@@ -39,7 +39,7 @@ export function ClearDeviceButton({ size = "sm" }: { size?: "sm" | "lg" }) {
               navigate({ to: "/" });
             }}
           >
-            כן, לפנות את המחשב
+            כן, להתנתק
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
