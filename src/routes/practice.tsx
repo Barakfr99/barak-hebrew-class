@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
-import { Check, ChevronLeft, Eye, PartyPopper } from "lucide-react";
+import { Check, ChevronRight, Eye, PartyPopper } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -227,7 +227,7 @@ function PracticePage() {
     return shell(
       <div className="space-y-4">
         <Button variant="ghost" size="sm" onClick={() => setOpenTaskId(null)}>
-          <ChevronLeft className="size-4" /> חזרה לרשימת המשימות
+          <ChevronRight className="size-4" /> חזרה לרשימת המשימות
         </Button>
         <TaskView
           task={openTask}
