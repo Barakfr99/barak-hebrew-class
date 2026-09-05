@@ -337,10 +337,21 @@ function TeacherDashboard() {
             <tbody>
               {filtered.map((student) => {
                 const done = completionsByStudent.get(student.id) ?? [];
-                const total =
-                  (student.grade_required ?? 0) +
-                  (student.grade_choice_1 ?? 0) +
-                  (student.grade_choice_2 ?? 0);
+                const studentClassTasks = tasksForClass(tasks, student.class_slug).filter(
+                  (t) => t.class_slug === student.class_slug,
+                );
+                const total = studentClassTasks.length
+                  ? studentClassTasks.reduce(
+                      (sum, t) =>
+                        sum +
+                        (taskGrades.find(
+                          (g) => g.student_id === student.id && g.task_id === t.id,
+                        )?.grade ?? 0),
+                      0,
+                    )
+                  : (student.grade_required ?? 0) +
+                    (student.grade_choice_1 ?? 0) +
+                    (student.grade_choice_2 ?? 0);
                 const isOpen = expanded === student.id;
                 return (
                   <Fragment key={student.id}>
