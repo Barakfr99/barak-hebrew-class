@@ -178,11 +178,41 @@ export type Database = {
           },
         ]
       }
+      student_credentials: {
+        Row: {
+          created_at: string
+          password_hash: string
+          student_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          password_hash: string
+          student_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          password_hash?: string
+          student_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_credentials_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: true
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       students: {
         Row: {
           choice_slot_1_task_id: string | null
           choice_slot_2_task_id: string | null
           class_name: string | null
+          class_slug: string | null
           created_at: string
           finished_at: string | null
           first_name: string
@@ -192,6 +222,7 @@ export type Database = {
           id: string
           last_name: string
           mode: string
+          must_reset_password: boolean
           speech_enabled: boolean
           stage: string
           updated_at: string
@@ -200,6 +231,7 @@ export type Database = {
           choice_slot_1_task_id?: string | null
           choice_slot_2_task_id?: string | null
           class_name?: string | null
+          class_slug?: string | null
           created_at?: string
           finished_at?: string | null
           first_name: string
@@ -209,6 +241,7 @@ export type Database = {
           id?: string
           last_name: string
           mode?: string
+          must_reset_password?: boolean
           speech_enabled?: boolean
           stage?: string
           updated_at?: string
@@ -217,6 +250,7 @@ export type Database = {
           choice_slot_1_task_id?: string | null
           choice_slot_2_task_id?: string | null
           class_name?: string | null
+          class_slug?: string | null
           created_at?: string
           finished_at?: string | null
           first_name?: string
@@ -226,6 +260,7 @@ export type Database = {
           id?: string
           last_name?: string
           mode?: string
+          must_reset_password?: boolean
           speech_enabled?: boolean
           stage?: string
           updated_at?: string
@@ -287,6 +322,7 @@ export type Database = {
         Row: {
           created_at: string
           description: string
+          help_sections: Json
           id: string
           is_active: boolean
           kind: string
@@ -298,6 +334,7 @@ export type Database = {
         Insert: {
           created_at?: string
           description?: string
+          help_sections?: Json
           id?: string
           is_active?: boolean
           kind: string
@@ -309,6 +346,7 @@ export type Database = {
         Update: {
           created_at?: string
           description?: string
+          help_sections?: Json
           id?: string
           is_active?: boolean
           kind?: string

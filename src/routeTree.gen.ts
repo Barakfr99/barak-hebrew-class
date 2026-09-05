@@ -10,8 +10,6 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as HelpRouteImport } from './routes/help'
-import { Route as JoinRouteImport } from './routes/join'
 import { Route as PracticeRouteImport } from './routes/practice'
 import { Route as TeacherRouteImport } from './routes/teacher'
 import { Route as ClassSlugRouteImport } from './routes/class.$slug'
@@ -19,16 +17,6 @@ import { Route as ClassSlugRouteImport } from './routes/class.$slug'
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const HelpRoute = HelpRouteImport.update({
-  id: '/help',
-  path: '/help',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const JoinRoute = JoinRouteImport.update({
-  id: '/join',
-  path: '/join',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PracticeRoute = PracticeRouteImport.update({
@@ -49,16 +37,12 @@ const ClassSlugRoute = ClassSlugRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/help': typeof HelpRoute
-  '/join': typeof JoinRoute
   '/practice': typeof PracticeRoute
   '/teacher': typeof TeacherRoute
   '/class/$slug': typeof ClassSlugRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/help': typeof HelpRoute
-  '/join': typeof JoinRoute
   '/practice': typeof PracticeRoute
   '/teacher': typeof TeacherRoute
   '/class/$slug': typeof ClassSlugRoute
@@ -66,31 +50,20 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/help': typeof HelpRoute
-  '/join': typeof JoinRoute
   '/practice': typeof PracticeRoute
   '/teacher': typeof TeacherRoute
   '/class/$slug': typeof ClassSlugRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/help' | '/join' | '/practice' | '/teacher' | '/class/$slug'
+  fullPaths: '/' | '/practice' | '/teacher' | '/class/$slug'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/help' | '/join' | '/practice' | '/teacher' | '/class/$slug'
-  id:
-    | '__root__'
-    | '/'
-    | '/help'
-    | '/join'
-    | '/practice'
-    | '/teacher'
-    | '/class/$slug'
+  to: '/' | '/practice' | '/teacher' | '/class/$slug'
+  id: '__root__' | '/' | '/practice' | '/teacher' | '/class/$slug'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  HelpRoute: typeof HelpRoute
-  JoinRoute: typeof JoinRoute
   PracticeRoute: typeof PracticeRoute
   TeacherRoute: typeof TeacherRoute
   ClassSlugRoute: typeof ClassSlugRoute
@@ -103,20 +76,6 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/help': {
-      id: '/help'
-      path: '/help'
-      fullPath: '/help'
-      preLoaderRoute: typeof HelpRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/join': {
-      id: '/join'
-      path: '/join'
-      fullPath: '/join'
-      preLoaderRoute: typeof JoinRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/practice': {
@@ -145,8 +104,6 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  HelpRoute: HelpRoute,
-  JoinRoute: JoinRoute,
   PracticeRoute: PracticeRoute,
   TeacherRoute: TeacherRoute,
   ClassSlugRoute: ClassSlugRoute,

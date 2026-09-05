@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Fragment, useEffect, useMemo, useState } from "react";
-import { ChevronDown, GraduationCap, Search } from "lucide-react";
+import { ChevronDown, GraduationCap, KeyRound, Search } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -23,8 +23,11 @@ import {
   type Task,
 } from "@/lib/practice";
 import { cn } from "@/lib/utils";
+import { useServerFn } from "@tanstack/react-start";
+import { teacherResetPassword } from "@/lib/auth.functions";
 
 const TEACHER_KEY = "reading-practice.teacher-ok";
+const TEACHER_CODE_KEY = "reading-practice.teacher-code";
 
 export const Route = createFileRoute("/teacher")({
   ssr: false,
@@ -63,6 +66,7 @@ function TeacherPage() {
             e.preventDefault();
             if (code.trim() === settingsQuery.data?.teacher_code) {
               window.sessionStorage.setItem(TEACHER_KEY, "1");
+              window.sessionStorage.setItem(TEACHER_CODE_KEY, code.trim());
               setUnlocked(true);
             } else {
               toast.error("הקוד לא נכון");
@@ -410,6 +414,8 @@ function StudentDetails({
 
   return (
     <div className="space-y-6">
+      <ResetPasswordButton student={student} />
+
       <div className="grid gap-3 sm:grid-cols-3">
         <GradeField
           label={`משימת חובה${requiredTask ? ` — ${requiredTask.title}` : ""}`}
@@ -464,6 +470,53 @@ function StudentDetails({
           </ul>
         </div>
       )}
+    </div>
+  );
+}
+
+function ResetPasswordButton({ student }: { student: Student }) {
+  const queryClient = useQueryClient();
+  const resetPassword = useServerFn(teacherResetPassword);
+  const [pending, setPending] = useState(false);
+
+  if (student.must_reset_password) {
+    return (
+      <p className="text-sm text-muted-foreground">
+        הסיסמה אופסה — בכניסה הבאה התלמיד/ה יבחר/תבחר סיסמה חדשה.
+      </p>
+    );
+  }
+
+  return (
+    <div className="flex flex-wrap items-center gap-3">
+      <Button
+        variant="outline"
+        size="sm"
+        disabled={pending}
+        onClick={async () => {
+          if (!window.confirm(`לאפס את הסיסמה של ${fullName(student)}?`)) return;
+          setPending(true);
+          try {
+            const teacherCode = window.sessionStorage.getItem(TEACHER_CODE_KEY) ?? "";
+            const result = await resetPassword({ data: { studentId: student.id, teacherCode } });
+            if (result.ok) {
+              toast.success("הסיסמה אופסה. התלמיד/ה יבחר/תבחר סיסמה חדשה בכניסה הבאה.");
+              await queryClient.invalidateQueries({ queryKey: ["teacher-students"] });
+            } else {
+              toast.error("קוד המורה לא תקין. היכנסו שוב ללוח.");
+            }
+          } catch {
+            toast.error("איפוס הסיסמה לא הצליח. נסו שוב.");
+          } finally {
+            setPending(false);
+          }
+        }}
+      >
+        <KeyRound className="size-4" /> איפוס סיסמה
+      </Button>
+      <span className="text-sm text-muted-foreground">
+        אחרי איפוס, התלמיד/ה בוחר/ת סיסמה חדשה בדף ההתחברות של הכיתה.
+      </span>
     </div>
   );
 }
