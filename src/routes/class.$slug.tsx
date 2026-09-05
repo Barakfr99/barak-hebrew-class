@@ -371,27 +371,7 @@ function SignupForm({
         )}
       </div>
 
-      {speechMode === "two_tracks" && (
-        <div className="rounded-2xl border border-border bg-background p-4">
-          <p className="font-medium">איזה תרגול מתאים לי?</p>
-          <div className="mt-3 grid gap-2 sm:grid-cols-2">
-            <TrackButton
-              active={mode === "regular"}
-              icon={<BookOpen className="size-4" />}
-              title="תרגול רגיל"
-              onClick={() => setMode("regular")}
-            />
-            <TrackButton
-              active={mode === "adaptive"}
-              icon={<Volume2 className="size-4" />}
-              title="תרגול מותאם (עם הקראה)"
-              onClick={() => setMode("adaptive")}
-            />
-          </div>
-        </div>
-      )}
-
-      {speechMode === "always" && (
+      {speechMode !== "off" && (
         <Alert>
           <AlertDescription>בתרגול הזה ההקראה הקולית זמינה לכל התלמידים.</AlertDescription>
         </Alert>
