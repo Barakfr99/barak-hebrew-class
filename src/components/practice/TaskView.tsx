@@ -164,27 +164,45 @@ export function TaskView({
       <TaskHelp taskId={task.id} sections={task.help_sections} />
 
       <section className="rounded-3xl border border-border bg-card p-6">
-        <h3 className="text-lg font-semibold text-primary">קטע הקריאה</h3>
+        {task.article_title ? (
+          <div>
+            <h3 className="text-xl font-bold">{task.article_title}</h3>
+            {task.source_note && (
+              <p className="mt-1 text-sm text-muted-foreground">{task.source_note}</p>
+            )}
+          </div>
+        ) : (
+          <h3 className="text-lg font-semibold text-primary">קטע הקריאה</h3>
+        )}
         <div className="mt-3">
-          <PassageReader taskId={task.id} paragraphs={task.paragraphs} speech={speechControls} />
+          <PassageReader
+            taskId={task.id}
+            paragraphs={task.paragraphs}
+            speech={speechControls}
+            numbered={Boolean(task.article_title)}
+          />
         </div>
+        {task.footnote && (
+          <p className="mt-5 text-sm text-muted-foreground">{task.footnote}</p>
+        )}
       </section>
 
       <section className="space-y-4">
         <h3 className="text-lg font-semibold text-primary">
           {readOnly ? "השאלות במשימה" : "השאלות"}
         </h3>
-        {task.questions.map((question, index) => (
+        {groups.map((group, index) => (
           <QuestionBlock
-            key={question.id}
-            question={question}
+            key={group.key}
+            group={group}
             index={index}
-            value={answers[question.id] ?? ""}
+            taskId={task.id}
+            answers={answers}
             readOnly={readOnly}
             speech={speechControls}
-            onChange={(value) => {
-              dirtyRef.current.add(question.id);
-              setAnswers((prev) => ({ ...prev, [question.id]: value }));
+            onChange={(questionId, value) => {
+              dirtyRef.current.add(questionId);
+              setAnswers((prev) => ({ ...prev, [questionId]: value }));
             }}
           />
         ))}
