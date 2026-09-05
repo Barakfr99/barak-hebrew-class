@@ -1,40 +1,67 @@
 import { FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 export function paragraphElementId(taskId: string, paragraphNumber: number) {
   return `para-${taskId}-${paragraphNumber}`;
 }
 
-/** גולל אל הפסקאות המבוקשות ומדגיש אותן לרגע. */
-export function jumpToParagraphs(taskId: string, numbers: number[]) {
-  if (typeof document === "undefined" || numbers.length === 0) return;
-  const elements = numbers
-    .map((n) => document.getElementById(paragraphElementId(taskId, n)))
-    .filter((el): el is HTMLElement => Boolean(el));
-  if (elements.length === 0) return;
-  elements[0]!.scrollIntoView({ behavior: "smooth", block: "center" });
-  elements.forEach((el) => {
-    el.classList.add("paragraph-flash");
-    window.setTimeout(() => el.classList.remove("paragraph-flash"), 2400);
-  });
-}
-
 function rangeLabel(numbers: number[]) {
-  if (numbers.length === 1) return `עבור לפסקה ${numbers[0]}`;
+  if (numbers.length === 1) return `פסקה ${numbers[0]}`;
   const sorted = [...numbers].sort((a, b) => a - b);
   const contiguous = sorted.every((n, i) => i === 0 || n === sorted[i - 1]! + 1);
-  if (contiguous) return `עבור לפסקאות ${sorted[0]}–${sorted[sorted.length - 1]}`;
-  return `עבור לפסקאות ${sorted.join(", ")}`;
+  if (contiguous) return `פסקאות ${sorted[0]}–${sorted[sorted.length - 1]}`;
+  return `פסקאות ${sorted.join(", ")}`;
 }
 
-/** כפתור מעבר לפסקה או לטווח פסקאות — נבנה מתוך מספרי הפסקאות שבנתוני השאלה. */
-export function ParagraphJump({
-  taskId,
+/** מציג את הפסקאות המבוקשות במסגרת מרחפת, בלי לצאת מהשאלה. */
+function ParagraphPopover({
   numbers,
+  paragraphs,
+  label,
+}: {
+  numbers: number[];
+  paragraphs: string[];
+  label: string;
+}) {
+  const sorted = [...numbers].sort((a, b) => a - b);
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button type="button" variant="outline" size="sm" className="h-10">
+          <FileText className="size-4" /> {label}
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent
+        align="start"
+        side="bottom"
+        collisionPadding={12}
+        className="max-h-[60vh] w-[min(28rem,calc(100vw-2rem))] overflow-y-auto text-right"
+      >
+        <div className="space-y-4">
+          {sorted.map((n) => (
+            <div key={n}>
+              <p className="mb-1 text-sm font-semibold text-primary">פס' {n}</p>
+              <p className="reading-text text-foreground">
+                {paragraphs[n - 1] ?? "הפסקה לא נמצאה."}
+              </p>
+            </div>
+          ))}
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+/** קישורי פסקאות — נבנים מתוך מספרי הפסקאות שבנתוני השאלה. */
+export function ParagraphJump({
+  numbers,
+  paragraphs,
   eachSeparately = false,
 }: {
-  taskId: string;
+  taskId?: string;
   numbers: number[];
+  paragraphs: string[];
   eachSeparately?: boolean;
 }) {
   if (numbers.length === 0) return null;
@@ -43,30 +70,13 @@ export function ParagraphJump({
     return (
       <div className="flex flex-wrap gap-2">
         {numbers.map((n) => (
-          <Button
-            key={n}
-            type="button"
-            variant="outline"
-            size="sm"
-            className="h-10"
-            onClick={() => jumpToParagraphs(taskId, [n])}
-          >
-            <FileText className="size-4" /> פסקה {n}
-          </Button>
+          <ParagraphPopover key={n} numbers={[n]} paragraphs={paragraphs} label={`פסקה ${n}`} />
         ))}
       </div>
     );
   }
 
   return (
-    <Button
-      type="button"
-      variant="outline"
-      size="sm"
-      className="h-10"
-      onClick={() => jumpToParagraphs(taskId, numbers)}
-    >
-      <FileText className="size-4" /> {rangeLabel(numbers)}
-    </Button>
+    <ParagraphPopover numbers={numbers} paragraphs={paragraphs} label={rangeLabel(numbers)} />
   );
 }
