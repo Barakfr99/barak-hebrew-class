@@ -13,6 +13,7 @@ import {
   fetchStudent,
   fetchTasks,
   readDeviceStudentId,
+  tasksForClass,
   type Task,
 } from "@/lib/practice";
 import { ClearDeviceButton } from "@/components/practice/ClearDeviceButton";
@@ -182,7 +183,10 @@ function PracticePage() {
         </div>
       </div>
       <div className="mt-5">
-        <ProgressSteps current={Math.min(step, 3)} />
+        <ProgressSteps
+          current={singleMode ? Math.min(step, 1) : Math.min(step, 3)}
+          steps={singleMode ? ["המשימה", "משוב"] : undefined}
+        />
       </div>
       <div className="mt-8">{children}</div>
     </main>
@@ -218,7 +222,7 @@ function PracticePage() {
   }
 
   // Required task
-  if (completedChoice.length >= requiredCount && requiredTask) {
+  if (!singleMode && completedChoice.length >= requiredCount && requiredTask) {
     return shell(
       <TaskView
         task={requiredTask}
@@ -232,7 +236,7 @@ function PracticePage() {
   }
 
   // Answering a chosen task
-  const openTask = choiceTasks.find((t) => t.id === openTaskId);
+  const openTask = listTasks.find((t) => t.id === openTaskId);
   if (openTask) {
     return shell(
       <div className="space-y-4">
@@ -245,7 +249,7 @@ function PracticePage() {
           speechEnabled={speechEnabled}
           initialAnswers={answersMap}
           readOnly={completedIds.has(openTask.id)}
-          finishLabel="סיימתי"
+          finishLabel={singleMode ? "סיימתי — למשוב" : "סיימתי"}
           onFinish={() => completeTask.mutate(openTask)}
         />
       </div>,
@@ -256,15 +260,17 @@ function PracticePage() {
   return shell(
     <div className="space-y-5">
       <div>
-        <h2 className="text-xl font-bold">בחירת משימה</h2>
-        <p className="mt-1 text-muted-foreground">
-          עליכם להשלים {requiredCount} משימות בחירה. אפשר להציץ בכל משימה לפני שמחליטים — לחצו
-          "תצוגה מקדימה".
-        </p>
+        <h2 className="text-xl font-bold">{singleMode ? "המשימה שלי" : "בחירת משימה"}</h2>
+        {!singleMode && (
+          <p className="mt-1 text-muted-foreground">
+            עליכם להשלים {requiredCount} משימות בחירה. אפשר להציץ בכל משימה לפני שמחליטים — לחצו
+            "תצוגה מקדימה".
+          </p>
+        )}
       </div>
 
       <div className="space-y-3">
-        {choiceTasks.map((task) => {
+        {listTasks.map((task) => {
           const done = completedIds.has(task.id);
           const isPreviewOpen = previewTaskId === task.id;
           const isSelected = selectedTaskId === task.id;
@@ -290,9 +296,11 @@ function PracticePage() {
                     )}
                   </div>
                   <p className="mt-1 text-muted-foreground">{task.description}</p>
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    {task.questions.length} שאלות · עד {task.max_points} נקודות
-                  </p>
+                  {task.questions.some((q) => typeof q.points === "number") && (
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      {task.questions.length} שאלות · עד {task.max_points} נקודות
+                    </p>
+                  )}
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
                   <Button
@@ -344,11 +352,13 @@ function PracticePage() {
           disabled={!selectedTaskId}
           onClick={() => selectedTaskId && setOpenTaskId(selectedTaskId)}
         >
-          בחר/י וענה/י
+          {singleMode ? "פתיחת המשימה ומענה" : "בחר/י וענה/י"}
         </Button>
-        <span className="text-sm text-muted-foreground">
-          הושלמו {completedChoice.length} מתוך {requiredCount} משימות בחירה.
-        </span>
+        {!singleMode && (
+          <span className="text-sm text-muted-foreground">
+            הושלמו {completedChoice.length} מתוך {requiredCount} משימות בחירה.
+          </span>
+        )}
       </div>
     </div>,
   );
