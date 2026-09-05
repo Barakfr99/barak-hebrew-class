@@ -7,6 +7,7 @@ import { saveAnswer, splitSentences, type Task } from "@/lib/practice";
 import { useSpeech } from "@/hooks/useSpeech";
 import { cn } from "@/lib/utils";
 import { PassageReader } from "./PassageReader";
+import { TaskHelp } from "./TaskHelp";
 import { QuestionBlock } from "./QuestionBlock";
 
 export function TaskView({
@@ -152,6 +153,8 @@ export function TaskView({
           </Alert>
         )}
       </header>
+
+      <TaskHelp taskId={task.id} sections={task.help_sections} />
 
       <section className="rounded-3xl border border-border bg-card p-6">
         <h3 className="text-lg font-semibold text-primary">קטע הקריאה</h3>

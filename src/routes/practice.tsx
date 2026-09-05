@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
-import { Check, ChevronLeft, Eye, HelpCircle, PartyPopper } from "lucide-react";
+import { Check, ChevronLeft, Eye, PartyPopper } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -168,11 +168,6 @@ function PracticePage() {
           <h1 className="text-2xl font-bold">{settingsQuery.data?.practice_name}</h1>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <Button asChild variant="ghost" size="sm">
-            <a href="/help" target="_blank" rel="noopener noreferrer">
-              <HelpCircle className="size-4" /> דף עזרה
-            </a>
-          </Button>
           <ClearDeviceButton />
         </div>
       </div>

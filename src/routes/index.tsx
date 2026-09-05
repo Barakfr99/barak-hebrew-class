@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowLeft, GraduationCap, HelpCircle, Users } from "lucide-react";
+import { ArrowLeft, GraduationCap, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { CLASSES } from "@/lib/classes";
 
@@ -41,12 +41,6 @@ function Landing() {
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <Button asChild variant="outline">
-            <a href="/help" target="_blank" rel="noopener noreferrer">
-              <HelpCircle className="size-4" />
-              דף עזרה
-            </a>
-          </Button>
           <Button asChild variant="ghost">
             <Link to="/teacher">
               <GraduationCap className="size-4" />
