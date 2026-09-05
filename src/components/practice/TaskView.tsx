@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Check, Play, Square, Save, Loader2 } from "lucide-react";
+import { Check, Play, Square, Save, Loader2, Gauge } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -165,6 +165,28 @@ export function TaskView({
           </Alert>
         )}
       </header>
+
+      {speechEnabled && (
+        <>
+          <button
+            type="button"
+            onClick={cycleRate}
+            aria-label="שינוי מהירות הקראה"
+            className={cn(
+              "fixed bottom-24 left-6 z-50 flex size-16 flex-col items-center justify-center gap-0.5 rounded-full border border-border bg-card shadow-xl transition-transform active:scale-95 hover:bg-accent",
+              speech.rate !== 1 && "bg-primary text-primary-foreground hover:bg-primary/90",
+            )}
+          >
+            <Gauge className="size-5" />
+            <span className="text-xs font-semibold leading-none">
+              {speech.rate === 1 ? "רגיל" : `${speech.rate}×`}
+            </span>
+          </button>
+          <span aria-live="polite" className="sr-only">
+            {speech.rate === 1 ? "מהירות רגילה" : `מהירות ${speech.rate}×`}
+          </span>
+        </>
+      )}
 
       <TaskHelp taskId={task.id} sections={task.help_sections} />
 
