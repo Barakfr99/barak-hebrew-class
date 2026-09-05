@@ -80,8 +80,14 @@ export function TaskView({
     }
   };
 
+  const titleUnit = useMemo(
+    () => ({ id: `${task.id}:article-title`, text: task.article_title || task.title }),
+    [task.id, task.article_title, task.title],
+  );
+
   const sequence = useMemo(() => {
     const units: { id: string; text: string }[] = [];
+    if (titleUnit.text) units.push(titleUnit);
     task.paragraphs.forEach((paragraph, pIndex) => {
       splitSentences(paragraph).forEach((sentence, sIndex) => {
         units.push({ id: `${task.id}:p${pIndex}:s${sIndex}`, text: sentence });
