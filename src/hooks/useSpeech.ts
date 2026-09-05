@@ -147,9 +147,14 @@ export function useSpeech() {
 
   const speak = useCallback(
     async (unit: SpeechUnit) => {
+      // A second tap on the same item stops it instead of restarting.
+      const wasActive = activeIdRef.current === unit.id;
       stop();
+      if (wasActive) return;
       cancelledRef.current = false;
+      activeIdRef.current = unit.id;
       await speakOne(unit);
+      activeIdRef.current = null;
       setState((s) => ({ ...s, speakingId: null }));
     },
     [speakOne, stop],
