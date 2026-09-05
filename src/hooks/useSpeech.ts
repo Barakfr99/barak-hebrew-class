@@ -4,36 +4,41 @@ export type SpeechUnit = { id: string; text: string };
 
 type SpeechState = {
   supported: boolean;
-  hebrewVoiceAvailable: boolean;
   speakingId: string | null;
+  loadingId: string | null;
   isPlayingSequence: boolean;
+  cloudFailed: boolean;
 };
 
 /**
- * Reading aloud through the browser's own speech engine (SpeechSynthesis).
- * No audio files are used.
+ * Reading aloud with a natural cloud voice (GPT-4o Mini TTS through the app's
+ * own /api/tts route). If the cloud voice is unavailable we fall back to the
+ * browser's built-in speech engine so practice never stops.
  */
 export function useSpeech() {
   const [state, setState] = useState<SpeechState>({
-    supported: false,
-    hebrewVoiceAvailable: false,
+    supported: true,
     speakingId: null,
+    loadingId: null,
     isPlayingSequence: false,
+    cloudFailed: false,
   });
-  const voiceRef = useRef<SpeechSynthesisVoice | null>(null);
-  const queueRef = useRef<SpeechUnit[]>([]);
+
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const cacheRef = useRef<Map<string, string>>(new Map());
   const cancelledRef = useRef(false);
+  const browserVoiceRef = useRef<SpeechSynthesisVoice | null>(null);
 
   useEffect(() => {
     if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
-
     const pickVoice = () => {
       const voices = window.speechSynthesis.getVoices();
-      const hebrew = voices.find((v) => v.lang?.toLowerCase().startsWith("he"));
-      voiceRef.current = hebrew ?? voices.find((v) => v.default) ?? voices[0] ?? null;
-      setState((s) => ({ ...s, supported: true, hebrewVoiceAvailable: Boolean(hebrew) }));
+      browserVoiceRef.current =
+        voices.find((v) => v.lang?.toLowerCase().startsWith("he")) ??
+        voices.find((v) => v.default) ??
+        voices[0] ??
+        null;
     };
-
     pickVoice();
     window.speechSynthesis.addEventListener("voiceschanged", pickVoice);
     return () => {
@@ -44,29 +49,40 @@ export function useSpeech() {
 
   const stop = useCallback(() => {
     cancelledRef.current = true;
-    queueRef.current = [];
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current = null;
+    }
     if (typeof window !== "undefined" && "speechSynthesis" in window) {
       window.speechSynthesis.cancel();
     }
-    setState((s) => ({ ...s, speakingId: null, isPlayingSequence: false }));
+    setState((s) => ({ ...s, speakingId: null, loadingId: null, isPlayingSequence: false }));
   }, []);
 
-  const speakOne = useCallback((unit: SpeechUnit): Promise<void> => {
+  const fetchAudioUrl = useCallback(async (text: string) => {
+    const cached = cacheRef.current.get(text);
+    if (cached) return cached;
+    const response = await fetch("/api/tts", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text }),
+    });
+    if (!response.ok) throw new Error(`tts ${response.status}`);
+    const blob = await response.blob();
+    const url = URL.createObjectURL(blob);
+    cacheRef.current.set(text, url);
+    return url;
+  }, []);
+
+  const speakBrowser = useCallback((unit: SpeechUnit): Promise<void> => {
     return new Promise((resolve) => {
       if (typeof window === "undefined" || !("speechSynthesis" in window)) return resolve();
       const synth = window.speechSynthesis;
-      const text = unit.text.trim();
-      if (!text) return resolve();
-
-      // Some browsers stay paused after a cancel(); make sure the engine is awake.
       synth.resume();
-
-      const utterance = new SpeechSynthesisUtterance(text);
+      const utterance = new SpeechSynthesisUtterance(unit.text.trim());
       utterance.lang = "he-IL";
       utterance.rate = 0.92;
-      utterance.volume = 1;
-      if (voiceRef.current) utterance.voice = voiceRef.current;
-
+      if (browserVoiceRef.current) utterance.voice = browserVoiceRef.current;
       let done = false;
       const finish = () => {
         if (done) return;
@@ -76,22 +92,50 @@ export function useSpeech() {
       };
       utterance.onend = finish;
       utterance.onerror = finish;
-
-      // Safety net: if the engine never fires onend, don't block the queue forever.
-      const watchdog = window.setTimeout(finish, Math.max(4000, text.length * 220));
-
-      setState((s) => ({ ...s, speakingId: unit.id }));
+      const watchdog = window.setTimeout(finish, Math.max(4000, unit.text.length * 220));
+      setState((s) => ({ ...s, speakingId: unit.id, loadingId: null }));
       synth.speak(utterance);
     });
   }, []);
+
+  const speakOne = useCallback(
+    async (unit: SpeechUnit): Promise<void> => {
+      const text = unit.text.trim();
+      if (!text) return;
+
+      try {
+        setState((s) => ({ ...s, loadingId: unit.id }));
+        const url = await fetchAudioUrl(text);
+        if (cancelledRef.current) return;
+        await new Promise<void>((resolve) => {
+          const audio = new Audio(url);
+          audioRef.current = audio;
+          const finish = () => {
+            audio.onended = null;
+            audio.onerror = null;
+            resolve();
+          };
+          audio.onended = finish;
+          audio.onerror = finish;
+          setState((s) => ({ ...s, speakingId: unit.id, loadingId: null }));
+          void audio.play().catch(finish);
+        });
+        setState((s) => ({ ...s, cloudFailed: false }));
+      } catch {
+        if (cancelledRef.current) return;
+        setState((s) => ({ ...s, cloudFailed: true, loadingId: null }));
+        await speakBrowser(unit);
+      } finally {
+        setState((s) => ({ ...s, loadingId: null }));
+      }
+    },
+    [fetchAudioUrl, speakBrowser],
+  );
 
   const speak = useCallback(
     async (unit: SpeechUnit) => {
       stop();
       cancelledRef.current = false;
-      // Chrome drops an utterance queued in the same tick as cancel().
-      await new Promise((r) => window.setTimeout(r, 80));
-      if (cancelledRef.current) return;
       await speakOne(unit);
       setState((s) => ({ ...s, speakingId: null }));
     },
@@ -103,12 +147,11 @@ export function useSpeech() {
       stop();
       cancelledRef.current = false;
       setState((s) => ({ ...s, isPlayingSequence: true }));
-      await new Promise((r) => window.setTimeout(r, 80));
       for (const unit of units) {
         if (cancelledRef.current) break;
         await speakOne(unit);
       }
-      setState((s) => ({ ...s, speakingId: null, isPlayingSequence: false }));
+      setState((s) => ({ ...s, speakingId: null, loadingId: null, isPlayingSequence: false }));
     },
     [speakOne, stop],
   );
