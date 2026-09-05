@@ -21,7 +21,7 @@ function ParagraphPopover({
   label,
 }: {
   numbers: number[];
-  paragraphs?: string[] | null;
+  paragraphs?: string[] | null | undefined;
   label: string;
 }) {
   const sorted = [...numbers].sort((a, b) => a - b);
@@ -61,8 +61,8 @@ export function ParagraphJump({
 }: {
   taskId?: string;
   numbers: number[];
-  paragraphs?: string[] | null;
-  eachSeparately?: boolean;
+  paragraphs?: string[] | null | undefined;
+  eachSeparately?: boolean | undefined;
 }) {
   if (numbers.length === 0) return null;
 

@@ -20,10 +20,10 @@ export function ParagraphChoice({
   readOnly,
 }: {
   numbers: number[];
-  paragraphs?: string[] | null;
+  paragraphs?: string[] | null | undefined;
   value: string;
   onSelect: (next: string) => void;
-  readOnly?: boolean;
+  readOnly?: boolean | undefined;
 }) {
   const selected = selectedParagraph(value);
 
