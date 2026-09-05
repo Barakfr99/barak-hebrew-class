@@ -1,6 +1,5 @@
 import { splitSentences } from "@/lib/practice";
 import { cn } from "@/lib/utils";
-import { SpeakButton } from "./SpeakButton";
 import { paragraphElementId } from "./ParagraphJump";
 
 export type SpeechControls = {
@@ -42,17 +41,10 @@ export function PassageReader({
                     onClick={
                       speech.enabled ? () => speech.speak({ id, text: sentence }) : undefined
                     }
+                    title={speech.enabled ? "הקשה על המשפט להקראה" : undefined}
                   >
                     {sentence}
                   </span>{" "}
-                  {speech.enabled && (
-                    <SpeakButton
-                      onClick={() => speech.speak({ id, text: sentence })}
-                      active={active}
-                      label="הקראת המשפט"
-                      className="size-7 align-middle"
-                    />
-                  )}{" "}
                 </span>
               );
             })}
