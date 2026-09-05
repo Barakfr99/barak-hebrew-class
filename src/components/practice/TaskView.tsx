@@ -149,6 +149,25 @@ export function TaskView({
                 </>
               )}
             </Button>
+            <div className="flex items-center gap-1 rounded-full border border-border bg-card p-1">
+              <span className="px-2 text-sm text-muted-foreground">מהירות</span>
+              {SPEECH_RATES.map((rate) => (
+                <button
+                  key={rate}
+                  type="button"
+                  onClick={() => speech.setRate(rate)}
+                  aria-pressed={speech.rate === rate}
+                  className={cn(
+                    "rounded-full px-3 py-1 text-sm transition-colors",
+                    speech.rate === rate
+                      ? "bg-primary text-primary-foreground"
+                      : "text-foreground hover:bg-accent/60",
+                  )}
+                >
+                  {rate === 1 ? "רגיל" : `${rate}×`}
+                </button>
+              ))}
+            </div>
             <span className="text-sm text-muted-foreground">
               אפשר גם ללחוץ על משפט או שאלה כדי להקריא רק אותם.
             </span>
@@ -169,11 +188,21 @@ export function TaskView({
 
       <section className="rounded-3xl border border-border bg-card p-6">
         {task.article_title ? (
-          <div>
-            <h3 className="text-xl font-bold">{task.article_title}</h3>
-            {task.source_note && (
-              <p className="mt-1 text-sm text-muted-foreground">{task.source_note}</p>
+          <div className="flex items-start gap-2">
+            {speechEnabled && (
+              <SpeakButton
+                onClick={() => speechControls.speak(titleUnit)}
+                active={speech.speakingId === titleUnit.id}
+                loading={speech.loadingId === titleUnit.id}
+                label="הקראת כותרת הטקסט"
+              />
             )}
+            <div>
+              <h3 className="text-xl font-bold">{task.article_title}</h3>
+              {task.source_note && (
+                <p className="mt-1 text-sm text-muted-foreground">{task.source_note}</p>
+              )}
+            </div>
           </div>
         ) : (
           <h3 className="text-lg font-semibold text-primary">קטע הקריאה</h3>
