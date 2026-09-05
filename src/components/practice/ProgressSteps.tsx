@@ -26,7 +26,7 @@ export function ProgressSteps({ current, steps = STEPS }: { current: number; ste
               )}
               <span>{step}</span>
             </div>
-            {i < STEPS.length - 1 && <span className="h-px w-4 bg-border" aria-hidden />}
+            {i < steps.length - 1 && <span className="h-px w-4 bg-border" aria-hidden />}
           </li>
         );
       })}
