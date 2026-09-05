@@ -14,6 +14,7 @@ import { Route as HelpRouteImport } from './routes/help'
 import { Route as JoinRouteImport } from './routes/join'
 import { Route as PracticeRouteImport } from './routes/practice'
 import { Route as TeacherRouteImport } from './routes/teacher'
+import { Route as ClassSlugRouteImport } from './routes/class.$slug'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -40,6 +41,11 @@ const TeacherRoute = TeacherRouteImport.update({
   path: '/teacher',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ClassSlugRoute = ClassSlugRouteImport.update({
+  id: '/class/$slug',
+  path: '/class/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -47,6 +53,7 @@ export interface FileRoutesByFullPath {
   '/join': typeof JoinRoute
   '/practice': typeof PracticeRoute
   '/teacher': typeof TeacherRoute
+  '/class/$slug': typeof ClassSlugRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -54,6 +61,7 @@ export interface FileRoutesByTo {
   '/join': typeof JoinRoute
   '/practice': typeof PracticeRoute
   '/teacher': typeof TeacherRoute
+  '/class/$slug': typeof ClassSlugRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -62,13 +70,21 @@ export interface FileRoutesById {
   '/join': typeof JoinRoute
   '/practice': typeof PracticeRoute
   '/teacher': typeof TeacherRoute
+  '/class/$slug': typeof ClassSlugRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/help' | '/join' | '/practice' | '/teacher'
+  fullPaths: '/' | '/help' | '/join' | '/practice' | '/teacher' | '/class/$slug'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/help' | '/join' | '/practice' | '/teacher'
-  id: '__root__' | '/' | '/help' | '/join' | '/practice' | '/teacher'
+  to: '/' | '/help' | '/join' | '/practice' | '/teacher' | '/class/$slug'
+  id:
+    | '__root__'
+    | '/'
+    | '/help'
+    | '/join'
+    | '/practice'
+    | '/teacher'
+    | '/class/$slug'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -77,6 +93,7 @@ export interface RootRouteChildren {
   JoinRoute: typeof JoinRoute
   PracticeRoute: typeof PracticeRoute
   TeacherRoute: typeof TeacherRoute
+  ClassSlugRoute: typeof ClassSlugRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -116,6 +133,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TeacherRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/class/$slug': {
+      id: '/class/$slug'
+      path: '/class/$slug'
+      fullPath: '/class/$slug'
+      preLoaderRoute: typeof ClassSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -125,6 +149,7 @@ const rootRouteChildren: RootRouteChildren = {
   JoinRoute: JoinRoute,
   PracticeRoute: PracticeRoute,
   TeacherRoute: TeacherRoute,
+  ClassSlugRoute: ClassSlugRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
