@@ -88,10 +88,6 @@ function ClassPage() {
       <header className="mt-4">
         <p className="text-sm font-medium text-primary">{schoolClass.subtitle}</p>
         <h1 className="mt-1 text-4xl font-extrabold tracking-tight">{schoolClass.name}</h1>
-        <p className="mt-3 text-lg text-muted-foreground">
-          התרגול הפעיל בכיתה: {settings?.practice_name ?? "תרגול הבנת הנקרא"}. בפעם הראשונה יוצרים
-          חשבון עם השם והסיסמה שלכם, ובכל פעם הבאה בוחרים את השם מהרשימה ומקישים את הסיסמה.
-        </p>
       </header>
 
       <div className="mt-8 rounded-3xl border border-border bg-card p-6">
