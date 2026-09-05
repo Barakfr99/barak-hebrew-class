@@ -1,7 +1,7 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Fragment, useEffect, useMemo, useState } from "react";
-import { ChevronDown, GraduationCap, KeyRound, Search } from "lucide-react";
+import { ChevronDown, GraduationCap, KeyRound, PlayCircle, RotateCcw, Search } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,14 +15,19 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
+import { CLASSES } from "@/lib/classes";
 import {
+  ensureTeacherTestStudent,
   fetchSettings,
   fetchTaskGrades,
   fetchTasks,
   fullName,
   groupQuestions,
+  isTeacherTestStudent,
+  resetTeacherTestStudent,
   saveTaskGrade,
   tasksForClass,
+  writeDeviceStudentId,
   type Student,
   type Task,
   type TaskGrade,
@@ -30,6 +35,7 @@ import {
 import { cn } from "@/lib/utils";
 import { useServerFn } from "@tanstack/react-start";
 import { teacherResetPassword } from "@/lib/auth.functions";
+
 
 const TEACHER_KEY = "reading-practice.teacher-ok";
 const TEACHER_CODE_KEY = "reading-practice.teacher-code";
