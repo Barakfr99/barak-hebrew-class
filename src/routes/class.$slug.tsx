@@ -95,7 +95,7 @@ function ClassPage() {
       </header>
 
       <div className="mt-8 rounded-3xl border border-border bg-card p-6">
-        <Tabs defaultValue={students.length > 0 ? "login" : "signup"}>
+        <Tabs defaultValue="login">
           <TabsList className="w-full">
             <TabsTrigger value="login" className="flex-1">
               <KeyRound className="size-4" /> התחברות
