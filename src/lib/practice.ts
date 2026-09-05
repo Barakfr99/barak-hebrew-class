@@ -232,3 +232,28 @@ export async function saveAnswer(input: {
 export function fullName(student: { first_name: string; last_name: string }) {
   return `${student.first_name} ${student.last_name}`.trim();
 }
+
+export type TaskGrade = { student_id: string; task_id: string; grade: number | null };
+
+export async function fetchTaskGrades(): Promise<TaskGrade[]> {
+  const { data, error } = await supabase.from("task_grades").select("student_id, task_id, grade");
+  if (error) throw error;
+  return (data ?? []) as TaskGrade[];
+}
+
+export async function saveTaskGrade(input: {
+  studentId: string;
+  taskId: string;
+  grade: number | null;
+}) {
+  const { error } = await supabase.from("task_grades").upsert(
+    {
+      student_id: input.studentId,
+      task_id: input.taskId,
+      grade: input.grade,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: "student_id,task_id" },
+  );
+  if (error) throw error;
+}
