@@ -127,7 +127,7 @@ function PracticePage() {
     return map;
   }, [answersQuery.data]);
 
-  const tasks = tasksQuery.data ?? [];
+  const tasks = tasksForClass(tasksQuery.data ?? [], studentQuery.data?.class_slug ?? null);
   const choiceTasks = tasks.filter((t) => t.kind === "choice");
   const requiredTask = tasks.find((t) => t.kind === "required");
   const completedIds = new Set((completionsQuery.data ?? []).map((c) => c.task_id));
@@ -137,13 +137,23 @@ function PracticePage() {
   const feedbackDone = Boolean(feedbackQuery.data);
   const speechEnabled = Boolean(studentQuery.data?.speech_enabled);
 
-  const step = feedbackDone
-    ? 4
-    : requiredDone
-      ? 3
-      : completedChoice.length >= requiredCount
-        ? 2
-        : completedChoice.length;
+  /** לכיתה שיש לה משימה אחת בלבד: רשימה עם משימה אחת ואז משוב. */
+  const singleMode = choiceTasks.length === 0 && Boolean(requiredTask);
+  const listTasks = singleMode ? [requiredTask!] : choiceTasks;
+
+  const step = singleMode
+    ? feedbackDone
+      ? 2
+      : requiredDone
+        ? 1
+        : 0
+    : feedbackDone
+      ? 4
+      : requiredDone
+        ? 3
+        : completedChoice.length >= requiredCount
+          ? 2
+          : completedChoice.length;
 
   const loading =
     !studentId ||
