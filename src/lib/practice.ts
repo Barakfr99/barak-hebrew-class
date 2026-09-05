@@ -20,6 +20,8 @@ export type Question = {
   sort_order: number;
 };
 
+export type HelpSection = { title: string; body: string };
+
 export type Task = {
   id: string;
   kind: "required" | "choice";
@@ -28,6 +30,7 @@ export type Task = {
   paragraphs: string[];
   max_points: number;
   sort_order: number;
+  help_sections: HelpSection[];
   questions: Question[];
 };
 
@@ -36,6 +39,8 @@ export type Student = {
   first_name: string;
   last_name: string;
   class_name: string | null;
+  class_slug: string | null;
+  must_reset_password: boolean;
   mode: "regular" | "adaptive";
   speech_enabled: boolean;
   stage: string;
@@ -96,7 +101,7 @@ export async function fetchTasks(): Promise<Task[]> {
   const [tasksRes, questionsRes] = await Promise.all([
     supabase
       .from("tasks")
-      .select("id, kind, title, description, paragraphs, max_points, sort_order")
+      .select("id, kind, title, description, paragraphs, max_points, sort_order, help_sections")
       .eq("is_active", true)
       .order("sort_order", { ascending: true }),
     supabase
@@ -115,6 +120,7 @@ export async function fetchTasks(): Promise<Task[]> {
   return (tasksRes.data ?? []).map((t) => ({
     ...t,
     paragraphs: Array.isArray(t.paragraphs) ? (t.paragraphs as string[]) : [],
+    help_sections: Array.isArray(t.help_sections) ? (t.help_sections as HelpSection[]) : [],
     questions: questions.filter((q) => q.task_id === t.id),
   })) as Task[];
 }
