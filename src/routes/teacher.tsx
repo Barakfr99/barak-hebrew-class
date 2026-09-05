@@ -17,10 +17,15 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import {
   fetchSettings,
+  fetchTaskGrades,
   fetchTasks,
   fullName,
+  groupQuestions,
+  saveTaskGrade,
+  tasksForClass,
   type Student,
   type Task,
+  type TaskGrade,
 } from "@/lib/practice";
 import { cn } from "@/lib/utils";
 import { useServerFn } from "@tanstack/react-start";
@@ -132,6 +137,7 @@ function TeacherDashboard() {
       return data ?? [];
     },
   });
+  const gradesQuery = useQuery({ queryKey: ["teacher-task-grades"], queryFn: fetchTaskGrades });
   const feedbackQuery = useQuery({
     queryKey: ["teacher-feedback"],
     queryFn: async () => {
@@ -157,6 +163,9 @@ function TeacherDashboard() {
       .on("postgres_changes", { event: "*", schema: "public", table: "feedback" }, () =>
         queryClient.invalidateQueries({ queryKey: ["teacher-feedback"] }),
       )
+      .on("postgres_changes", { event: "*", schema: "public", table: "task_grades" }, () =>
+        queryClient.invalidateQueries({ queryKey: ["teacher-task-grades"] }),
+      )
       .subscribe();
     return () => {
       void supabase.removeChannel(channel);
@@ -171,6 +180,7 @@ function TeacherDashboard() {
   const completions = completionsQuery.data ?? [];
   const answers = answersQuery.data ?? [];
   const feedback = feedbackQuery.data ?? [];
+  const taskGrades = gradesQuery.data ?? [];
 
   const completionsByStudent = useMemo(() => {
     const map = new Map<string, string[]>();
@@ -224,6 +234,21 @@ function TeacherDashboard() {
     }
     toast.success("הציון נשמר");
     await queryClient.invalidateQueries({ queryKey: ["teacher-students"] });
+  };
+
+  const updateTaskGrade = async (studentId: string, taskId: string, value: string) => {
+    const parsed = value.trim() === "" ? null : Number(value);
+    if (parsed !== null && (Number.isNaN(parsed) || parsed < 0 || parsed > 100)) {
+      toast.error("הציון חייב להיות בין 0 ל-100");
+      return;
+    }
+    try {
+      await saveTaskGrade({ studentId, taskId, grade: parsed });
+      toast.success("הציון נשמר");
+      await queryClient.invalidateQueries({ queryKey: ["teacher-task-grades"] });
+    } catch {
+      toast.error("הציון לא נשמר");
+    }
   };
 
   return (
@@ -357,6 +382,9 @@ function TeacherDashboard() {
                             answers={answers.filter((a) => a.student_id === student.id)}
                             feedback={feedback.find((f) => f.student_id === student.id)}
                             onGradeBlur={updateGrade}
+                            allTasks={tasks}
+                            taskGrades={taskGrades.filter((g) => g.student_id === student.id)}
+                            onTaskGradeBlur={updateTaskGrade}
                           />
                         </td>
                       </tr>
@@ -395,6 +423,9 @@ function StudentDetails({
   answers,
   feedback,
   onGradeBlur,
+  allTasks,
+  taskGrades,
+  onTaskGradeBlur,
 }: {
   student: Student;
   tasks: Task[];
@@ -407,15 +438,37 @@ function StudentDetails({
     value: string,
     max: number,
   ) => Promise<void>;
+  allTasks: Task[];
+  taskGrades: TaskGrade[];
+  onTaskGradeBlur: (studentId: string, taskId: string, value: string) => Promise<void>;
 }) {
   const choiceTasks = tasks.filter((t) => t.kind === "choice");
   const answerFor = (questionId: string) =>
     answers.find((a) => a.question_id === questionId)?.answer_text ?? "";
 
+  // משימות המשויכות לכיתה של התלמיד/ה מקבלות שדה ציון כולל אחד (0–100).
+  const classTasks = tasksForClass(allTasks, student.class_slug).filter(
+    (t) => t.class_slug === student.class_slug,
+  );
+  const overallMode = classTasks.length > 0;
+
   return (
     <div className="space-y-6">
       <ResetPasswordButton student={student} />
 
+      {overallMode ? (
+        <div className="grid gap-3 sm:grid-cols-2">
+          {classTasks.map((task) => (
+            <GradeField
+              key={task.id}
+              label={`ציון כולל — ${task.title}`}
+              max={100}
+              value={taskGrades.find((g) => g.task_id === task.id)?.grade ?? null}
+              onCommit={(v) => onTaskGradeBlur(student.id, task.id, v)}
+            />
+          ))}
+        </div>
+      ) : (
       <div className="grid gap-3 sm:grid-cols-3">
         <GradeField
           label={`משימת חובה${requiredTask ? ` — ${requiredTask.title}` : ""}`}
@@ -439,24 +492,36 @@ function StudentDetails({
           onCommit={(v) => onGradeBlur(student.id, "grade_choice_2", v, 20)}
         />
       </div>
+      )}
 
-      {[...(requiredTask ? [requiredTask] : []), ...choiceTasks].map((task) => {
-        const taskAnswers = task.questions.filter((q) => answerFor(q.id));
-        if (taskAnswers.length === 0) return null;
-        return (
-          <div key={task.id}>
-            <h3 className="font-semibold text-primary">{task.title}</h3>
-            <ul className="mt-2 space-y-2">
-              {task.questions.map((q) => (
-                <li key={q.id} className="rounded-xl border border-border bg-card p-3">
-                  <p className="text-sm text-muted-foreground">{q.prompt}</p>
-                  <p className="reading-text mt-1">{answerFor(q.id) || "— לא נענתה"}</p>
-                </li>
-              ))}
-            </ul>
-          </div>
-        );
-      })}
+      {[...(requiredTask ? [requiredTask] : []), ...choiceTasks, ...classTasks]
+        .filter((task, i, arr) => arr.findIndex((t) => t.id === task.id) === i)
+        .map((task) => {
+          const answered = task.questions.filter((q) => answerFor(q.id));
+          if (answered.length === 0) return null;
+          return (
+            <div key={task.id}>
+              <h3 className="font-semibold text-primary">{task.title}</h3>
+              <ul className="mt-2 space-y-2">
+                {groupQuestions(task.questions).map((group) => (
+                  <li key={group.key} className="rounded-xl border border-border bg-card p-3">
+                    <p className="text-sm text-muted-foreground">{group.prompt}</p>
+                    <div className="mt-1 space-y-2">
+                      {group.items.map((q) => (
+                        <div key={q.id}>
+                          {q.group_label && (
+                            <p className="text-sm font-semibold text-primary">{q.group_label}</p>
+                          )}
+                          <p className="reading-text">{answerFor(q.id) || "— לא נענתה"}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          );
+        })}
 
       {feedback && (
         <div className="rounded-xl border border-border bg-card p-4">
