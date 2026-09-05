@@ -22,7 +22,7 @@ export function QuestionBlock({
   group: QuestionGroup;
   index: number;
   taskId: string;
-  paragraphs: string[];
+  paragraphs?: string[] | null;
   answers: Record<string, string>;
   onChange?: (questionId: string, value: string) => void;
   readOnly?: boolean;
