@@ -25,12 +25,21 @@ export function useSpeech() {
     loadingId: null,
     isPlayingSequence: false,
     cloudFailed: false,
+    rate: 1,
   });
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const cacheRef = useRef<Map<string, string>>(new Map());
   const cancelledRef = useRef(false);
   const browserVoiceRef = useRef<SpeechSynthesisVoice | null>(null);
+  const rateRef = useRef(1);
+
+  // Changing the speed adjusts playback only — no extra audio is generated.
+  const setRate = useCallback((rate: number) => {
+    rateRef.current = rate;
+    if (audioRef.current) audioRef.current.playbackRate = rate;
+    setState((s) => ({ ...s, rate }));
+  }, []);
 
   useEffect(() => {
     if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
