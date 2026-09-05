@@ -100,12 +100,6 @@ export function TaskView({
         units.push({ id: `${task.id}:p${pIndex}:s${sIndex}`, text: sentence });
       });
     });
-    task.questions.forEach((question) => {
-      units.push({ id: `${question.id}:prompt`, text: question.prompt });
-      question.options.forEach((option, oIndex) => {
-        units.push({ id: `${question.id}:o${oIndex}`, text: option });
-      });
-    });
     return units;
   }, [task, titleUnit]);
 
