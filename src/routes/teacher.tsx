@@ -313,6 +313,40 @@ function TeacherDashboard() {
         />
       </div>
 
+      <section className="mt-8 rounded-2xl border border-border bg-card p-4">
+        <h2 className="text-xl font-bold">בדיקת המשימות כתלמיד/ה</h2>
+        <p className="mt-1 text-sm text-muted-foreground">
+          נכנסים ישר למשימות של הכיתה, בלי שם וסיסמה. התשובות נשמרות בנפרד ואינן מופיעות בטבלה.
+        </p>
+        <div className="mt-4 flex flex-wrap items-end gap-3">
+          <div className="w-56">
+            <Label>כיתה</Label>
+            <Select value={testClass} onValueChange={setTestClass}>
+              <SelectTrigger className="mt-1 bg-background">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent dir="rtl">
+                {CLASSES.map((c) => (
+                  <SelectItem key={c.slug} value={c.slug}>
+                    {c.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <Button onClick={openAsTestStudent} disabled={testBusy}>
+            <PlayCircle className="me-2 size-4" />
+            פתיחת המשימות
+          </Button>
+          <Button variant="outline" onClick={resetTestStudent} disabled={testBusy}>
+            <RotateCcw className="me-2 size-4" />
+            מחיקת תשובות הבדיקה
+          </Button>
+        </div>
+      </section>
+
+
+
       <section className="mt-8">
         <h2 className="text-xl font-bold">בחירות המשימות</h2>
         <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
