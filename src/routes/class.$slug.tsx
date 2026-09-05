@@ -344,7 +344,7 @@ function SignupForm({
       </div>
 
       <div>
-        <Label htmlFor="newPassword">סיסמה שאבחר</Label>
+        <Label htmlFor="newPassword">בחרו סיסמה</Label>
         <Input
           id="newPassword"
           type="password"
