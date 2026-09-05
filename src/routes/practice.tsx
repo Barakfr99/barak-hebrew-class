@@ -368,24 +368,13 @@ function PracticePage() {
                   <p className="mb-3 text-sm font-medium text-primary">
                     תצוגה מקדימה — קריאה בלבד, אין אפשרות לענות בשלב הזה.
                   </p>
-                  {task.kind === "parts_of_speech" ? (
-                    <PartsOfSpeechTask
-                      task={task}
-                      studentId={studentId}
-                      speechEnabled={speechEnabled}
-                      initialAnswers={{}}
-                      articleParagraphs={requiredTask?.paragraphs}
-                      readOnly
-                    />
-                  ) : (
-                    <TaskView
-                      task={task}
-                      studentId={studentId}
-                      speechEnabled={speechEnabled}
-                      initialAnswers={{}}
-                      readOnly
-                    />
-                  )}
+                  <TaskView
+                    task={task}
+                    studentId={studentId}
+                    speechEnabled={speechEnabled}
+                    initialAnswers={{}}
+                    readOnly
+                  />
                 </div>
               )}
             </div>
