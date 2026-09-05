@@ -3,10 +3,10 @@ import { cn } from "@/lib/utils";
 
 const STEPS = ["משימת בחירה ראשונה", "משימת בחירה שנייה", "משימת חובה", "משוב"];
 
-export function ProgressSteps({ current }: { current: number }) {
+export function ProgressSteps({ current, steps = STEPS }: { current: number; steps?: string[] }) {
   return (
     <ol className="flex flex-wrap items-center gap-2" aria-label="התקדמות בתרגול">
-      {STEPS.map((step, i) => {
+      {steps.map((step, i) => {
         const done = i < current;
         const active = i === current;
         return (
@@ -26,7 +26,7 @@ export function ProgressSteps({ current }: { current: number }) {
               )}
               <span>{step}</span>
             </div>
-            {i < STEPS.length - 1 && <span className="h-px w-4 bg-border" aria-hidden />}
+            {i < steps.length - 1 && <span className="h-px w-4 bg-border" aria-hidden />}
           </li>
         );
       })}

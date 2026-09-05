@@ -3,7 +3,7 @@ import { Check, Play, Square, Save } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { saveAnswer, splitSentences, type Task } from "@/lib/practice";
+import { groupQuestions, saveAnswer, splitSentences, type Task } from "@/lib/practice";
 import { useSpeech } from "@/hooks/useSpeech";
 import { cn } from "@/lib/utils";
 import { PassageReader } from "./PassageReader";
@@ -102,6 +102,9 @@ export function TaskView({
     speak: (unit: { id: string; text: string }) => void speech.speak(unit),
   };
 
+  const groups = useMemo(() => groupQuestions(task.questions), [task.questions]);
+  const showPoints = task.questions.some((q) => typeof q.points === "number");
+
   const answeredAll = task.questions.every((q) => (answers[q.id] ?? "").trim().length > 0);
 
   return (
@@ -109,9 +112,13 @@ export function TaskView({
       <header className="rounded-3xl border border-border bg-card p-6">
         <h2 className="text-2xl font-bold">{task.title}</h2>
         <p className="mt-1 text-muted-foreground">{task.description}</p>
-        <p className="mt-2 text-sm text-muted-foreground">
-          {task.questions.length} שאלות · עד {task.max_points} נקודות
-        </p>
+        {!showPoints && <p className="mt-2 text-sm text-muted-foreground">{groups.length} שאלות</p>}
+        {showPoints && (
+          <p className="mt-2 text-sm text-muted-foreground">
+            {task.questions.length} שאלות · עד {task.max_points} נקודות
+          </p>
+        )}
+
 
         {speechEnabled && speech.supported && (
           <div className="mt-4 flex flex-wrap items-center gap-2">
@@ -157,27 +164,45 @@ export function TaskView({
       <TaskHelp taskId={task.id} sections={task.help_sections} />
 
       <section className="rounded-3xl border border-border bg-card p-6">
-        <h3 className="text-lg font-semibold text-primary">קטע הקריאה</h3>
+        {task.article_title ? (
+          <div>
+            <h3 className="text-xl font-bold">{task.article_title}</h3>
+            {task.source_note && (
+              <p className="mt-1 text-sm text-muted-foreground">{task.source_note}</p>
+            )}
+          </div>
+        ) : (
+          <h3 className="text-lg font-semibold text-primary">קטע הקריאה</h3>
+        )}
         <div className="mt-3">
-          <PassageReader taskId={task.id} paragraphs={task.paragraphs} speech={speechControls} />
+          <PassageReader
+            taskId={task.id}
+            paragraphs={task.paragraphs}
+            speech={speechControls}
+            numbered={Boolean(task.article_title)}
+          />
         </div>
+        {task.footnote && (
+          <p className="mt-5 text-sm text-muted-foreground">{task.footnote}</p>
+        )}
       </section>
 
       <section className="space-y-4">
         <h3 className="text-lg font-semibold text-primary">
           {readOnly ? "השאלות במשימה" : "השאלות"}
         </h3>
-        {task.questions.map((question, index) => (
+        {groups.map((group, index) => (
           <QuestionBlock
-            key={question.id}
-            question={question}
+            key={group.key}
+            group={group}
             index={index}
-            value={answers[question.id] ?? ""}
+            taskId={task.id}
+            answers={answers}
             readOnly={readOnly}
             speech={speechControls}
-            onChange={(value) => {
-              dirtyRef.current.add(question.id);
-              setAnswers((prev) => ({ ...prev, [question.id]: value }));
+            onChange={(questionId, value) => {
+              dirtyRef.current.add(questionId);
+              setAnswers((prev) => ({ ...prev, [questionId]: value }));
             }}
           />
         ))}

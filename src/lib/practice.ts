@@ -10,14 +10,31 @@ export type Settings = {
   required_choice_count: number;
 };
 
+export type QuestionNote = { kind: "tip" | "info"; title: string; body: string };
+
 export type Question = {
   id: string;
   task_id: string;
   kind: "open" | "multiple_choice";
   prompt: string;
   options: string[];
-  points: number;
+  points: number | null;
   sort_order: number;
+  note: QuestionNote | null;
+  passage: string | null;
+  paragraph_refs: number[];
+  group_label: string | null;
+  parent_key: string | null;
+  input_size: "short" | "long" | "essay";
+};
+
+/** שאלה בודדת או קבוצת שדות (שורות טבלה / סעיפי משנה) המוצגות יחד. */
+export type QuestionGroup = {
+  key: string;
+  prompt: string;
+  note: QuestionNote | null;
+  passage: string | null;
+  items: Question[];
 };
 
 export type HelpSection = { title: string; body: string };
@@ -25,7 +42,11 @@ export type HelpSection = { title: string; body: string };
 export type Task = {
   id: string;
   kind: "required" | "choice";
+  class_slug: string | null;
   title: string;
+  article_title: string | null;
+  source_note: string | null;
+  footnote: string | null;
   description: string;
   paragraphs: string[];
   max_points: number;
@@ -33,6 +54,39 @@ export type Task = {
   help_sections: HelpSection[];
   questions: Question[];
 };
+
+/** מקבץ שאלות לפי parent_key, כדי להציג טבלאות וסעיפי משנה תחת שאלה אחת. */
+export function groupQuestions(questions: Question[]): QuestionGroup[] {
+  const groups: QuestionGroup[] = [];
+  questions.forEach((question) => {
+    const key = question.parent_key ?? question.id;
+    const existing = groups.find((g) => g.key === key);
+    if (existing) {
+      existing.items.push(question);
+      if (!existing.passage && question.passage) existing.passage = question.passage;
+      if (!existing.note && question.note) existing.note = question.note;
+      return;
+    }
+    groups.push({
+      key,
+      prompt: question.prompt,
+      note: question.note,
+      passage: question.passage,
+      items: [question],
+    });
+  });
+  return groups;
+}
+
+/**
+ * משימות לפי כיתה: אם לכיתה יש משימות משויכות — הן בלבד מוצגות,
+ * אחרת מוצגות המשימות הכלליות (ללא שיוך).
+ */
+export function tasksForClass(tasks: Task[], classSlug: string | null | undefined): Task[] {
+  const classTasks = classSlug ? tasks.filter((t) => t.class_slug === classSlug) : [];
+  if (classTasks.length > 0) return classTasks;
+  return tasks.filter((t) => !t.class_slug);
+}
 
 export type Student = {
   id: string;
@@ -101,12 +155,16 @@ export async function fetchTasks(): Promise<Task[]> {
   const [tasksRes, questionsRes] = await Promise.all([
     supabase
       .from("tasks")
-      .select("id, kind, title, description, paragraphs, max_points, sort_order, help_sections")
+      .select(
+        "id, kind, class_slug, title, article_title, source_note, footnote, description, paragraphs, max_points, sort_order, help_sections",
+      )
       .eq("is_active", true)
       .order("sort_order", { ascending: true }),
     supabase
       .from("questions")
-      .select("id, task_id, kind, prompt, options, points, sort_order")
+      .select(
+        "id, task_id, kind, prompt, options, points, sort_order, note, passage, paragraph_refs, group_label, parent_key, input_size",
+      )
       .order("sort_order", { ascending: true }),
   ]);
   if (tasksRes.error) throw tasksRes.error;
@@ -115,6 +173,8 @@ export async function fetchTasks(): Promise<Task[]> {
   const questions = (questionsRes.data ?? []).map((q) => ({
     ...q,
     options: Array.isArray(q.options) ? (q.options as string[]) : [],
+    paragraph_refs: Array.isArray(q.paragraph_refs) ? (q.paragraph_refs as number[]) : [],
+    note: (q.note ?? null) as QuestionNote | null,
   })) as Question[];
 
   return (tasksRes.data ?? []).map((t) => ({
@@ -171,4 +231,29 @@ export async function saveAnswer(input: {
 
 export function fullName(student: { first_name: string; last_name: string }) {
   return `${student.first_name} ${student.last_name}`.trim();
+}
+
+export type TaskGrade = { student_id: string; task_id: string; grade: number | null };
+
+export async function fetchTaskGrades(): Promise<TaskGrade[]> {
+  const { data, error } = await supabase.from("task_grades").select("student_id, task_id, grade");
+  if (error) throw error;
+  return (data ?? []) as TaskGrade[];
+}
+
+export async function saveTaskGrade(input: {
+  studentId: string;
+  taskId: string;
+  grade: number | null;
+}) {
+  const { error } = await supabase.from("task_grades").upsert(
+    {
+      student_id: input.studentId,
+      task_id: input.taskId,
+      grade: input.grade,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: "student_id,task_id" },
+  );
+  if (error) throw error;
 }
