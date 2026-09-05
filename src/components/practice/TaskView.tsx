@@ -97,8 +97,9 @@ export function TaskView({
   }, [task]);
 
   const speechControls = {
-    enabled: speechEnabled && speech.supported,
+    enabled: speechEnabled,
     speakingId: speech.speakingId,
+    loadingId: speech.loadingId,
     speak: (unit: { id: string; text: string }) => void speech.speak(unit),
   };
 

@@ -62,6 +62,7 @@ export function QuestionBlock({
             <SpeakButton
               onClick={() => speech.speak({ id: promptId, text: group.prompt })}
               active={speech.speakingId === promptId}
+              loading={speech.loadingId === promptId}
               label="הקראת השאלה"
             />
           )}
@@ -78,6 +79,7 @@ export function QuestionBlock({
                   speech.speak({ id: `${first.id}:passage`, text: group.passage as string })
                 }
                 active={speech.speakingId === `${first.id}:passage`}
+                loading={speech.loadingId === `${first.id}:passage`}
                 label="הקראת הקטע"
               />
             )}
@@ -143,6 +145,7 @@ export function QuestionBlock({
                           <SpeakButton
                             onClick={() => speech.speak({ id: optionId, text: option })}
                             active={speech.speakingId === optionId}
+                            loading={speech.loadingId === optionId}
                             label="הקראת האפשרות"
                           />
                         )}
