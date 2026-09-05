@@ -1,14 +1,16 @@
-import { Volume2, Square } from "lucide-react";
+import { Volume2, Square, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export function SpeakButton({
   onClick,
   active,
+  loading,
   label = "הקראה",
   className,
 }: {
   onClick: () => void;
   active?: boolean;
+  loading?: boolean;
   label?: string;
   className?: string;
 }) {
@@ -24,7 +26,13 @@ export function SpeakButton({
         className,
       )}
     >
-      {active ? <Square className="size-4" /> : <Volume2 className="size-4" />}
+      {loading ? (
+        <Loader2 className="size-4 animate-spin" />
+      ) : active ? (
+        <Square className="size-4" />
+      ) : (
+        <Volume2 className="size-4" />
+      )}
     </button>
   );
 }

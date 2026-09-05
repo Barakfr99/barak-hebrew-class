@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as PracticeRouteImport } from './routes/practice'
 import { Route as TeacherRouteImport } from './routes/teacher'
+import { Route as ApiTtsRouteImport } from './routes/api/tts'
 import { Route as ClassSlugRouteImport } from './routes/class.$slug'
 
 const IndexRoute = IndexRouteImport.update({
@@ -29,6 +30,11 @@ const TeacherRoute = TeacherRouteImport.update({
   path: '/teacher',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiTtsRoute = ApiTtsRouteImport.update({
+  id: '/api/tts',
+  path: '/api/tts',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ClassSlugRoute = ClassSlugRouteImport.update({
   id: '/class/$slug',
   path: '/class/$slug',
@@ -39,12 +45,14 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/practice': typeof PracticeRoute
   '/teacher': typeof TeacherRoute
+  '/api/tts': typeof ApiTtsRoute
   '/class/$slug': typeof ClassSlugRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/practice': typeof PracticeRoute
   '/teacher': typeof TeacherRoute
+  '/api/tts': typeof ApiTtsRoute
   '/class/$slug': typeof ClassSlugRoute
 }
 export interface FileRoutesById {
@@ -52,20 +60,22 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/practice': typeof PracticeRoute
   '/teacher': typeof TeacherRoute
+  '/api/tts': typeof ApiTtsRoute
   '/class/$slug': typeof ClassSlugRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/practice' | '/teacher' | '/class/$slug'
+  fullPaths: '/' | '/practice' | '/teacher' | '/api/tts' | '/class/$slug'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/practice' | '/teacher' | '/class/$slug'
-  id: '__root__' | '/' | '/practice' | '/teacher' | '/class/$slug'
+  to: '/' | '/practice' | '/teacher' | '/api/tts' | '/class/$slug'
+  id: '__root__' | '/' | '/practice' | '/teacher' | '/api/tts' | '/class/$slug'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   PracticeRoute: typeof PracticeRoute
   TeacherRoute: typeof TeacherRoute
+  ApiTtsRoute: typeof ApiTtsRoute
   ClassSlugRoute: typeof ClassSlugRoute
 }
 
@@ -92,6 +102,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TeacherRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/tts': {
+      id: '/api/tts'
+      path: '/api/tts'
+      fullPath: '/api/tts'
+      preLoaderRoute: typeof ApiTtsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/class/$slug': {
       id: '/class/$slug'
       path: '/class/$slug'
@@ -106,6 +123,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   PracticeRoute: PracticeRoute,
   TeacherRoute: TeacherRoute,
+  ApiTtsRoute: ApiTtsRoute,
   ClassSlugRoute: ClassSlugRoute,
 }
 export const routeTree = rootRouteImport
