@@ -216,6 +216,27 @@ function PracticePage() {
     );
   }
 
+  // עמוד נוסף בתוך המשימה: זיהוי חלקי דיבר (אחרי מענה על שאלות המשימה)
+  if (
+    singleMode &&
+    posTask &&
+    !posDone &&
+    listTasks.every((t) => completedIds.has(t.id)) &&
+    !openTaskId
+  ) {
+    return shell(
+      <PartsOfSpeechTask
+        task={posTask}
+        studentId={studentId}
+        speechEnabled={speechEnabled}
+        initialAnswers={answersMap}
+        articleParagraphs={listTasks[0]?.paragraphs ?? requiredTask?.paragraphs}
+        finishLabel="סיימתי — למשוב"
+        onFinish={() => completeTask.mutate(posTask)}
+      />,
+    );
+  }
+
   // Feedback questionnaire
   if (singleMode ? singleAllDone : requiredDone) {
     return shell(
