@@ -13,6 +13,7 @@ export function QuestionBlock({
   group,
   index,
   taskId,
+  paragraphs,
   answers,
   onChange,
   readOnly,
@@ -21,6 +22,7 @@ export function QuestionBlock({
   group: QuestionGroup;
   index: number;
   taskId: string;
+  paragraphs: string[];
   answers: Record<string, string>;
   onChange?: (questionId: string, value: string) => void;
   readOnly?: boolean;
@@ -91,7 +93,11 @@ export function QuestionBlock({
                 <p className="reading-text font-semibold text-primary">{question.group_label}</p>
               )}
               {refs.length > 0 && (
-                <ParagraphJump taskId={taskId} numbers={refs} eachSeparately={refs.length > 3} />
+                <ParagraphJump
+                  numbers={refs}
+                  paragraphs={paragraphs}
+                  eachSeparately={refs.length > 3}
+                />
               )}
 
               {question.kind === "multiple_choice" ? (

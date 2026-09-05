@@ -197,6 +197,7 @@ export function TaskView({
             group={group}
             index={index}
             taskId={task.id}
+            paragraphs={task.paragraphs}
             answers={answers}
             readOnly={readOnly}
             speech={speechControls}
