@@ -143,7 +143,7 @@ export async function fetchSettings(): Promise<Settings> {
     return {
       id: "default",
       practice_name: "תרגול הבנת הנקרא",
-      teacher_code: "1234",
+      teacher_code: "5598956",
       speech_mode: "two_tracks",
       required_choice_count: 2,
     };
