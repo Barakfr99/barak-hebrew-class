@@ -102,6 +102,9 @@ export function TaskView({
     speak: (unit: { id: string; text: string }) => void speech.speak(unit),
   };
 
+  const groups = useMemo(() => groupQuestions(task.questions), [task.questions]);
+  const showPoints = task.questions.some((q) => typeof q.points === "number");
+
   const answeredAll = task.questions.every((q) => (answers[q.id] ?? "").trim().length > 0);
 
   return (
