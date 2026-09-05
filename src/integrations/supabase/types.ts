@@ -140,30 +140,48 @@ export type Database = {
       questions: {
         Row: {
           created_at: string
+          group_label: string | null
           id: string
+          input_size: string
           kind: string
+          note: Json | null
           options: Json
-          points: number
+          paragraph_refs: Json
+          parent_key: string | null
+          passage: string | null
+          points: number | null
           prompt: string
           sort_order: number
           task_id: string
         }
         Insert: {
           created_at?: string
+          group_label?: string | null
           id?: string
+          input_size?: string
           kind: string
+          note?: Json | null
           options?: Json
-          points?: number
+          paragraph_refs?: Json
+          parent_key?: string | null
+          passage?: string | null
+          points?: number | null
           prompt: string
           sort_order?: number
           task_id: string
         }
         Update: {
           created_at?: string
+          group_label?: string | null
           id?: string
+          input_size?: string
           kind?: string
+          note?: Json | null
           options?: Json
-          points?: number
+          paragraph_refs?: Json
+          parent_key?: string | null
+          passage?: string | null
+          points?: number | null
           prompt?: string
           sort_order?: number
           task_id?: string
@@ -318,10 +336,55 @@ export type Database = {
           },
         ]
       }
-      tasks: {
+      task_grades: {
         Row: {
           created_at: string
+          grade: number | null
+          id: string
+          student_id: string
+          task_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          grade?: number | null
+          id?: string
+          student_id: string
+          task_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          grade?: number | null
+          id?: string
+          student_id?: string
+          task_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_grades_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "task_grades_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tasks: {
+        Row: {
+          article_title: string | null
+          class_slug: string | null
+          created_at: string
           description: string
+          footnote: string | null
           help_sections: Json
           id: string
           is_active: boolean
@@ -329,11 +392,15 @@ export type Database = {
           max_points: number
           paragraphs: Json
           sort_order: number
+          source_note: string | null
           title: string
         }
         Insert: {
+          article_title?: string | null
+          class_slug?: string | null
           created_at?: string
           description?: string
+          footnote?: string | null
           help_sections?: Json
           id?: string
           is_active?: boolean
@@ -341,11 +408,15 @@ export type Database = {
           max_points?: number
           paragraphs?: Json
           sort_order?: number
+          source_note?: string | null
           title: string
         }
         Update: {
+          article_title?: string | null
+          class_slug?: string | null
           created_at?: string
           description?: string
+          footnote?: string | null
           help_sections?: Json
           id?: string
           is_active?: boolean
@@ -353,6 +424,7 @@ export type Database = {
           max_points?: number
           paragraphs?: Json
           sort_order?: number
+          source_note?: string | null
           title?: string
         }
         Relationships: []
