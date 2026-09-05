@@ -139,10 +139,16 @@ function PracticePage() {
   const feedbackDone = Boolean(feedbackQuery.data);
   const speechEnabled = Boolean(studentQuery.data?.speech_enabled);
 
+  /** עמוד חלקי הדיבר הוא עמוד נוסף בתוך המשימה, ולכן אינו מופיע ברשימת המשימות. */
+  const posTask = tasks.find((t) => t.kind === "parts_of_speech");
+  const posDone = posTask ? completedIds.has(posTask.id) : true;
+
   /** לכיתה בלי משימות בחירה: רשימת המשימות של הכיתה לפי הסדר ואז משוב. */
   const singleMode = choiceTasks.length === 0 && tasks.length > 0;
-  const listTasks = singleMode ? tasks.filter((t) => t.kind !== "choice") : choiceTasks;
-  const singleAllDone = singleMode && listTasks.every((t) => completedIds.has(t.id));
+  const listTasks = (singleMode ? tasks.filter((t) => t.kind !== "choice") : choiceTasks).filter(
+    (t) => t.kind !== "parts_of_speech",
+  );
+  const singleAllDone = singleMode && listTasks.every((t) => completedIds.has(t.id)) && posDone;
 
   const step = singleMode
     ? feedbackDone
@@ -210,6 +216,27 @@ function PracticePage() {
     );
   }
 
+  // עמוד נוסף בתוך המשימה: זיהוי חלקי דיבר (אחרי מענה על שאלות המשימה)
+  if (
+    singleMode &&
+    posTask &&
+    !posDone &&
+    listTasks.every((t) => completedIds.has(t.id)) &&
+    !openTaskId
+  ) {
+    return shell(
+      <PartsOfSpeechTask
+        task={posTask}
+        studentId={studentId}
+        speechEnabled={speechEnabled}
+        initialAnswers={answersMap}
+        articleParagraphs={listTasks[0]?.paragraphs ?? requiredTask?.paragraphs}
+        finishLabel="סיימתי — למשוב"
+        onFinish={() => completeTask.mutate(posTask)}
+      />,
+    );
+  }
+
   // Feedback questionnaire
   if (singleMode ? singleAllDone : requiredDone) {
     return shell(
@@ -239,41 +266,26 @@ function PracticePage() {
   // Answering a chosen task
   const openTask = listTasks.find((t) => t.id === openTaskId);
   if (openTask) {
+    const lastInList = listTasks.filter((t) => !completedIds.has(t.id)).length <= 1;
+    const finishLabel = !lastInList
+      ? "סיימתי"
+      : singleMode && posTask && !posDone
+        ? "סיימתי — לעמוד הבא"
+        : "סיימתי — למשוב";
     return shell(
       <div className="space-y-4">
         <Button variant="ghost" size="sm" onClick={() => setOpenTaskId(null)}>
           <ChevronRight className="size-4" /> חזרה לרשימת המשימות
         </Button>
-        {openTask.kind === "parts_of_speech" ? (
-          <PartsOfSpeechTask
-            task={openTask}
-            studentId={studentId}
-            speechEnabled={speechEnabled}
-            initialAnswers={answersMap}
-            readOnly={completedIds.has(openTask.id)}
-            articleParagraphs={requiredTask?.paragraphs}
-            finishLabel={
-              listTasks.filter((t) => !completedIds.has(t.id)).length <= 1
-                ? "סיימתי — למשוב"
-                : "סיימתי"
-            }
-            onFinish={() => completeTask.mutate(openTask)}
-          />
-        ) : (
-          <TaskView
-            task={openTask}
-            studentId={studentId}
-            speechEnabled={speechEnabled}
-            initialAnswers={answersMap}
-            readOnly={completedIds.has(openTask.id)}
-            finishLabel={
-              listTasks.filter((t) => !completedIds.has(t.id)).length <= 1
-                ? "סיימתי — למשוב"
-                : "סיימתי"
-            }
-            onFinish={() => completeTask.mutate(openTask)}
-          />
-        )}
+        <TaskView
+          task={openTask}
+          studentId={studentId}
+          speechEnabled={speechEnabled}
+          initialAnswers={answersMap}
+          readOnly={completedIds.has(openTask.id)}
+          finishLabel={finishLabel}
+          onFinish={() => completeTask.mutate(openTask)}
+        />
       </div>,
     );
   }
@@ -320,6 +332,12 @@ function PracticePage() {
                     )}
                   </div>
                   <p className="mt-1 text-muted-foreground">{task.description}</p>
+                  {singleMode && posTask && (
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      המשימה כוללת שני עמודים: שאלות על המאמר, ואחריהן עמוד תרגול "
+                      {posTask.title}".
+                    </p>
+                  )}
                   {task.questions.some((q) => typeof q.points === "number") && (
                     <p className="mt-1 text-sm text-muted-foreground">
                       {task.questions.length} שאלות · עד {task.max_points} נקודות
@@ -356,24 +374,13 @@ function PracticePage() {
                   <p className="mb-3 text-sm font-medium text-primary">
                     תצוגה מקדימה — קריאה בלבד, אין אפשרות לענות בשלב הזה.
                   </p>
-                  {task.kind === "parts_of_speech" ? (
-                    <PartsOfSpeechTask
-                      task={task}
-                      studentId={studentId}
-                      speechEnabled={speechEnabled}
-                      initialAnswers={{}}
-                      articleParagraphs={requiredTask?.paragraphs}
-                      readOnly
-                    />
-                  ) : (
-                    <TaskView
-                      task={task}
-                      studentId={studentId}
-                      speechEnabled={speechEnabled}
-                      initialAnswers={{}}
-                      readOnly
-                    />
-                  )}
+                  <TaskView
+                    task={task}
+                    studentId={studentId}
+                    speechEnabled={speechEnabled}
+                    initialAnswers={{}}
+                    readOnly
+                  />
                 </div>
               )}
             </div>
