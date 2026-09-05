@@ -8,7 +8,10 @@ type SpeechState = {
   loadingId: string | null;
   isPlayingSequence: boolean;
   cloudFailed: boolean;
+  rate: number;
 };
+
+export const SPEECH_RATES = [0.85, 1, 1.25, 1.5] as const;
 
 /**
  * Reading aloud with a natural cloud voice (GPT-4o Mini TTS through the app's
@@ -22,12 +25,21 @@ export function useSpeech() {
     loadingId: null,
     isPlayingSequence: false,
     cloudFailed: false,
+    rate: 1,
   });
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const cacheRef = useRef<Map<string, string>>(new Map());
   const cancelledRef = useRef(false);
   const browserVoiceRef = useRef<SpeechSynthesisVoice | null>(null);
+  const rateRef = useRef(1);
+
+  // Changing the speed adjusts playback only — no extra audio is generated.
+  const setRate = useCallback((rate: number) => {
+    rateRef.current = rate;
+    if (audioRef.current) audioRef.current.playbackRate = rate;
+    setState((s) => ({ ...s, rate }));
+  }, []);
 
   useEffect(() => {
     if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
@@ -81,7 +93,7 @@ export function useSpeech() {
       synth.resume();
       const utterance = new SpeechSynthesisUtterance(unit.text.trim());
       utterance.lang = "he-IL";
-      utterance.rate = 0.92;
+      utterance.rate = Math.min(2, Math.max(0.5, 0.92 * rateRef.current));
       if (browserVoiceRef.current) utterance.voice = browserVoiceRef.current;
       let done = false;
       const finish = () => {
@@ -109,6 +121,7 @@ export function useSpeech() {
         if (cancelledRef.current) return;
         await new Promise<void>((resolve) => {
           const audio = new Audio(url);
+          audio.playbackRate = rateRef.current;
           audioRef.current = audio;
           const finish = () => {
             audio.onended = null;
@@ -156,5 +169,5 @@ export function useSpeech() {
     [speakOne, stop],
   );
 
-  return { ...state, speak, speakSequence, stop };
+  return { ...state, speak, speakSequence, stop, setRate };
 }
