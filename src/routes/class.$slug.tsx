@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CLASSES, findClass } from "@/lib/classes";
-import { fetchSettings, writeDeviceStudentId } from "@/lib/practice";
+import { fetchSettings, isTeacherTestStudent, writeDeviceStudentId } from "@/lib/practice";
 import {
   listClassStudents,
   loginStudent,
