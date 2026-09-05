@@ -3,7 +3,7 @@ import { cn } from "@/lib/utils";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { SpeakButton } from "./SpeakButton";
-import { InfoHint } from "./InfoHint";
+import { InfoHint, renderPromptWithTerm } from "./InfoHint";
 import { ParagraphJump } from "./ParagraphJump";
 import { ParagraphChoice } from "./ParagraphChoice";
 import type { SpeechControls } from "./PassageReader";
@@ -50,14 +50,14 @@ export function QuestionBlock({
               speech.speakingId === promptId && "bg-speak-highlight",
             )}
           >
-            {group.prompt}
+            {promptWithTerm ?? group.prompt}
           </p>
           {showPoints && (
             <p className="mt-1 text-sm text-muted-foreground">{totalPoints} נקודות</p>
           )}
         </div>
         <div className="flex shrink-0 items-center gap-2">
-          {group.note && <InfoHint note={group.note} />}
+          {group.note && !promptWithTerm && <InfoHint note={group.note} />}
           {speech.enabled && (
             <SpeakButton
               onClick={() => speech.speak({ id: promptId, text: group.prompt })}
