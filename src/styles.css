@@ -175,3 +175,21 @@
   font-size: 1.1875rem;
   line-height: 2.05;
 }
+
+/* הדגשה זמנית של פסקה אחרי מעבר אליה מתוך שאלה */
+.paragraph-flash {
+  animation: paragraph-flash 2.4s ease-out;
+  border-radius: 1rem;
+  outline: 2px solid var(--color-primary);
+  outline-offset: 6px;
+}
+
+@keyframes paragraph-flash {
+  0%,
+  60% {
+    background-color: var(--color-accent);
+  }
+  100% {
+    background-color: transparent;
+  }
+}
