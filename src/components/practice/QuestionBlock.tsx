@@ -87,17 +87,29 @@ export function QuestionBlock({
         {group.items.map((question) => {
           const value = answers[question.id] ?? "";
           const refs = question.paragraph_refs ?? [];
+          const chooseParagraph =
+            question.kind === "open" && question.parent_key === "proverb" && refs.length > 1;
           return (
             <div key={question.id} className="space-y-2">
               {(multi || question.group_label) && question.group_label && (
                 <p className="reading-text font-semibold text-primary">{question.group_label}</p>
               )}
-              {refs.length > 0 && (
-                <ParagraphJump
+              {chooseParagraph ? (
+                <ParagraphChoice
                   numbers={refs}
                   paragraphs={paragraphs}
-                  eachSeparately={refs.length > 3}
+                  value={value}
+                  readOnly={readOnly}
+                  onSelect={(next) => onChange?.(question.id, next)}
                 />
+              ) : (
+                refs.length > 0 && (
+                  <ParagraphJump
+                    numbers={refs}
+                    paragraphs={paragraphs}
+                    eachSeparately={refs.length > 3}
+                  />
+                )
               )}
 
               {question.kind === "multiple_choice" ? (
