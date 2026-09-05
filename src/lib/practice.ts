@@ -41,7 +41,7 @@ export type HelpSection = { title: string; body: string };
 
 export type Task = {
   id: string;
-  kind: "required" | "choice";
+  kind: "required" | "choice" | "parts_of_speech";
   class_slug: string | null;
   title: string;
   article_title: string | null;

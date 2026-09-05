@@ -19,6 +19,7 @@ import {
 import { ClearDeviceButton } from "@/components/practice/ClearDeviceButton";
 import { ProgressSteps } from "@/components/practice/ProgressSteps";
 import { TaskView } from "@/components/practice/TaskView";
+import { PartsOfSpeechTask } from "@/components/practice/PartsOfSpeechTask";
 import { FeedbackForm } from "@/components/practice/FeedbackForm";
 
 export const Route = createFileRoute("/practice")({
@@ -138,14 +139,15 @@ function PracticePage() {
   const feedbackDone = Boolean(feedbackQuery.data);
   const speechEnabled = Boolean(studentQuery.data?.speech_enabled);
 
-  /** לכיתה שיש לה משימה אחת בלבד: רשימה עם משימה אחת ואז משוב. */
-  const singleMode = choiceTasks.length === 0 && Boolean(requiredTask);
-  const listTasks = singleMode ? [requiredTask!] : choiceTasks;
+  /** לכיתה בלי משימות בחירה: רשימת המשימות של הכיתה לפי הסדר ואז משוב. */
+  const singleMode = choiceTasks.length === 0 && tasks.length > 0;
+  const listTasks = singleMode ? tasks.filter((t) => t.kind !== "choice") : choiceTasks;
+  const singleAllDone = singleMode && listTasks.every((t) => completedIds.has(t.id));
 
   const step = singleMode
     ? feedbackDone
       ? 2
-      : requiredDone
+      : singleAllDone
         ? 1
         : 0
     : feedbackDone
@@ -209,7 +211,7 @@ function PracticePage() {
   }
 
   // Feedback questionnaire
-  if (requiredDone) {
+  if (singleMode ? singleAllDone : requiredDone) {
     return shell(
       <FeedbackForm
         studentId={studentId}
@@ -242,15 +244,36 @@ function PracticePage() {
         <Button variant="ghost" size="sm" onClick={() => setOpenTaskId(null)}>
           <ChevronRight className="size-4" /> חזרה לרשימת המשימות
         </Button>
-        <TaskView
-          task={openTask}
-          studentId={studentId}
-          speechEnabled={speechEnabled}
-          initialAnswers={answersMap}
-          readOnly={completedIds.has(openTask.id)}
-          finishLabel={singleMode ? "סיימתי — למשוב" : "סיימתי"}
-          onFinish={() => completeTask.mutate(openTask)}
-        />
+        {openTask.kind === "parts_of_speech" ? (
+          <PartsOfSpeechTask
+            task={openTask}
+            studentId={studentId}
+            speechEnabled={speechEnabled}
+            initialAnswers={answersMap}
+            readOnly={completedIds.has(openTask.id)}
+            articleParagraphs={requiredTask?.paragraphs}
+            finishLabel={
+              listTasks.filter((t) => !completedIds.has(t.id)).length <= 1
+                ? "סיימתי — למשוב"
+                : "סיימתי"
+            }
+            onFinish={() => completeTask.mutate(openTask)}
+          />
+        ) : (
+          <TaskView
+            task={openTask}
+            studentId={studentId}
+            speechEnabled={speechEnabled}
+            initialAnswers={answersMap}
+            readOnly={completedIds.has(openTask.id)}
+            finishLabel={
+              listTasks.filter((t) => !completedIds.has(t.id)).length <= 1
+                ? "סיימתי — למשוב"
+                : "סיימתי"
+            }
+            onFinish={() => completeTask.mutate(openTask)}
+          />
+        )}
       </div>,
     );
   }
@@ -259,7 +282,9 @@ function PracticePage() {
   return shell(
     <div className="space-y-5">
       <div>
-        <h2 className="text-xl font-bold">{singleMode ? "המשימה שלי" : "בחירת משימה"}</h2>
+        <h2 className="text-xl font-bold">
+          {singleMode ? (listTasks.length > 1 ? "המשימות שלי" : "המשימה שלי") : "בחירת משימה"}
+        </h2>
         {!singleMode && (
           <p className="mt-1 text-muted-foreground">
             עליכם להשלים {requiredCount} משימות בחירה. אפשר להציץ בכל משימה לפני שמחליטים — לחצו
@@ -331,13 +356,24 @@ function PracticePage() {
                   <p className="mb-3 text-sm font-medium text-primary">
                     תצוגה מקדימה — קריאה בלבד, אין אפשרות לענות בשלב הזה.
                   </p>
-                  <TaskView
-                    task={task}
-                    studentId={studentId}
-                    speechEnabled={speechEnabled}
-                    initialAnswers={{}}
-                    readOnly
-                  />
+                  {task.kind === "parts_of_speech" ? (
+                    <PartsOfSpeechTask
+                      task={task}
+                      studentId={studentId}
+                      speechEnabled={speechEnabled}
+                      initialAnswers={{}}
+                      articleParagraphs={requiredTask?.paragraphs}
+                      readOnly
+                    />
+                  ) : (
+                    <TaskView
+                      task={task}
+                      studentId={studentId}
+                      speechEnabled={speechEnabled}
+                      initialAnswers={{}}
+                      readOnly
+                    />
+                  )}
                 </div>
               )}
             </div>
@@ -351,7 +387,7 @@ function PracticePage() {
           disabled={!selectedTaskId}
           onClick={() => selectedTaskId && setOpenTaskId(selectedTaskId)}
         >
-          {singleMode ? "פתיחת המשימה ומענה" : "בחר/י וענה/י"}
+          {singleMode ? "פתיחה ומענה" : "בחר/י וענה/י"}
         </Button>
         {!singleMode && (
           <span className="text-sm text-muted-foreground">
