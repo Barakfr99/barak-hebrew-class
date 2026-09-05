@@ -34,6 +34,7 @@ export function QuestionBlock({
   const promptId = `${first.id}:prompt`;
   const multi = group.items.length > 1;
   const showPoints = group.items.some((q) => typeof q.points === "number");
+  const promptWithTerm = group.note ? renderPromptWithTerm(group.prompt, group.note) : null;
   const totalPoints = group.items.reduce((sum, q) => sum + (q.points ?? 0), 0);
 
   return (
