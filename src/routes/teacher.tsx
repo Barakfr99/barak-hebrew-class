@@ -206,10 +206,14 @@ function TeacherDashboard() {
       toast.error(`הציון חייב להיות בין 0 ל-${max}`);
       return;
     }
-    const { error } = await supabase
-      .from("students")
-      .update({ [field]: parsed, updated_at: new Date().toISOString() })
-      .eq("id", studentId);
+    const patch = { updated_at: new Date().toISOString() } as {
+      updated_at: string;
+      grade_required?: number | null;
+      grade_choice_1?: number | null;
+      grade_choice_2?: number | null;
+    };
+    patch[field] = parsed;
+    const { error } = await supabase.from("students").update(patch).eq("id", studentId);
     if (error) {
       toast.error("הציון לא נשמר");
       return;
