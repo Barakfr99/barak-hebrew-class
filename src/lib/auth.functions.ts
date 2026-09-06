@@ -211,3 +211,31 @@ export const teacherResetPassword = createServerFn({ method: "POST" })
 
     return { ok: true as const };
   });
+
+export const teacherDeleteStudent = createServerFn({ method: "POST" })
+  .inputValidator((input: unknown) => resetSchema.parse(input))
+  .handler(async ({ data }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const { data: settings } = await supabaseAdmin
+      .from("practice_settings")
+      .select("teacher_code")
+      .eq("is_active", true)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    const expected = settings?.teacher_code ?? "5598956";
+    if (data.teacherCode.trim() !== expected) {
+      return { ok: false as const, reason: "bad_code" as const };
+    }
+
+    await supabaseAdmin.from("answers").delete().eq("student_id", data.studentId);
+    await supabaseAdmin.from("task_completions").delete().eq("student_id", data.studentId);
+    await supabaseAdmin.from("task_grades").delete().eq("student_id", data.studentId);
+    await supabaseAdmin.from("feedback").delete().eq("student_id", data.studentId);
+    await supabaseAdmin.from("student_credentials").delete().eq("student_id", data.studentId);
+    const { error } = await supabaseAdmin.from("students").delete().eq("id", data.studentId);
+    if (error) throw new Error(error.message);
+
+    return { ok: true as const };
+  });
