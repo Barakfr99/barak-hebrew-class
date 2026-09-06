@@ -316,11 +316,10 @@ function SignupForm({
     onError: () => toast.error("לא הצלחנו לפתוח חשבון. נסו שוב בעוד רגע."),
   });
 
-  const valid =
-    firstName.trim().length > 1 &&
-    lastName.trim().length > 1 &&
-    password.length > 0 &&
-    confirm === password;
+  const firstOk = isHebrewName(firstName);
+  const lastOk = isHebrewName(lastName);
+
+  const valid = firstOk && lastOk && password.length > 0 && confirm === password;
 
   return (
     <form
@@ -332,24 +331,32 @@ function SignupForm({
     >
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
-          <Label htmlFor="firstName">שם פרטי</Label>
+          <Label htmlFor="firstName">שם פרטי (בעברית)</Label>
           <Input
             id="firstName"
             value={firstName}
             onChange={(e) => setFirstName(e.target.value)}
             className="mt-1 bg-background"
+            lang="he"
             required
           />
+          {firstName.trim().length > 0 && !firstOk && (
+            <p className="mt-1 text-sm text-destructive">יש להזין שם פרטי בעברית בלבד.</p>
+          )}
         </div>
         <div>
-          <Label htmlFor="lastName">שם משפחה</Label>
+          <Label htmlFor="lastName">שם משפחה (בעברית)</Label>
           <Input
             id="lastName"
             value={lastName}
             onChange={(e) => setLastName(e.target.value)}
             className="mt-1 bg-background"
+            lang="he"
             required
           />
+          {lastName.trim().length > 0 && !lastOk && (
+            <p className="mt-1 text-sm text-destructive">יש להזין שם משפחה בעברית בלבד.</p>
+          )}
         </div>
       </div>
 
