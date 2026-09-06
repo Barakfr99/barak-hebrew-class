@@ -360,6 +360,11 @@ export function PartsOfSpeechTask({
 
       {!readOnly && (
         <div className="sticky bottom-0 -mx-4 flex flex-wrap items-center gap-3 border-t border-border bg-background/95 px-4 py-4 backdrop-blur">
+          {onBack && (
+            <Button variant="outline" size="lg" onClick={() => onBack()}>
+              <ChevronRight className="size-4" /> {backLabel}
+            </Button>
+          )}
           <Button size="lg" disabled={!allDone || saving} onClick={() => onFinish?.()}>
             {finishLabel}
           </Button>
