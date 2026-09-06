@@ -477,7 +477,7 @@ function TeacherDashboard() {
                     </tr>
                     {isOpen && (
                       <tr className="border-t border-border bg-background/60">
-                        <td colSpan={6} className="px-4 py-5">
+                        <td colSpan={5} className="px-4 py-5">
                           <StudentDetails
                             student={student}
                             tasks={done.map((id) => taskById.get(id)).filter(Boolean) as Task[]}
@@ -497,7 +497,7 @@ function TeacherDashboard() {
               })}
               {filtered.length === 0 && (
                 <tr className="border-t border-border">
-                  <td colSpan={6} className="px-4 py-8 text-center text-muted-foreground">
+                  <td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">
                     אין תלמידים להצגה.
                   </td>
                 </tr>
