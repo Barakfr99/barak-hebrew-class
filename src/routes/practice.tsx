@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
-import { Check, ChevronRight, Eye, PartyPopper } from "lucide-react";
+import { Check, ChevronRight, Eye, Lock, PartyPopper } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -300,7 +300,7 @@ function PracticePage() {
         {!singleMode && (
           <p className="mt-1 text-muted-foreground">
             עליכם להשלים {requiredCount} משימות בחירה. אפשר להציץ בכל משימה לפני שמחליטים — לחצו
-            "תצוגה מקדימה".
+            "הצצה לפני שבוחרים".
           </p>
         )}
       </div>
@@ -351,7 +351,7 @@ function PracticePage() {
                     onClick={() => setPreviewTaskId(isPreviewOpen ? null : task.id)}
                   >
                     <Eye className="size-4" />
-                    {isPreviewOpen ? "סגירת התצוגה" : "תצוגה מקדימה"}
+                    {isPreviewOpen ? "סגירת ההצצה" : "הצצה לפני שבוחרים (קריאה בלבד)"}
                   </Button>
                   {done ? (
                     <Button variant="ghost" size="sm" onClick={() => setOpenTaskId(task.id)}>
@@ -360,27 +360,34 @@ function PracticePage() {
                   ) : (
                     <Button
                       size="sm"
-                      variant={isSelected ? "default" : "secondary"}
-                      onClick={() => setSelectedTaskId(task.id)}
+                      variant={singleMode ? "default" : isSelected ? "default" : "secondary"}
+                      onClick={() =>
+                        singleMode ? setOpenTaskId(task.id) : setSelectedTaskId(task.id)
+                      }
                     >
-                      {isSelected ? "נבחרה" : "בחירה"}
+                      {singleMode ? "פתיחה ומענה" : isSelected ? "נבחרה" : "בחירה"}
                     </Button>
                   )}
                 </div>
               </div>
 
               {isPreviewOpen && (
-                <div className="mt-5 rounded-2xl border border-dashed border-border bg-background p-4">
-                  <p className="mb-3 text-sm font-medium text-primary">
-                    תצוגה מקדימה — קריאה בלבד, אין אפשרות לענות בשלב הזה.
-                  </p>
-                  <TaskView
-                    task={task}
-                    studentId={studentId}
-                    speechEnabled={speechEnabled}
-                    initialAnswers={{}}
-                    readOnly
-                  />
+                <div className="mt-5 rounded-2xl border-2 border-dashed border-warning bg-warning/20 p-4">
+                  <div className="mb-4 flex items-center gap-2 rounded-xl bg-warning px-4 py-3 text-warning-foreground">
+                    <Lock className="size-5 shrink-0" />
+                    <p className="text-base font-semibold md:text-lg">
+                      זו תצוגת הצצה בלבד — אי אפשר למלא או לבחור תשובות כאן.
+                    </p>
+                  </div>
+                  <div className="pointer-events-none opacity-80">
+                    <TaskView
+                      task={task}
+                      studentId={studentId}
+                      speechEnabled={speechEnabled}
+                      initialAnswers={{}}
+                      readOnly
+                    />
+                  </div>
                 </div>
               )}
             </div>
@@ -388,20 +395,20 @@ function PracticePage() {
         })}
       </div>
 
-      <div className="sticky bottom-0 -mx-4 flex flex-wrap items-center gap-3 border-t border-border bg-background/95 px-4 py-4 backdrop-blur">
-        <Button
-          size="lg"
-          disabled={!selectedTaskId}
-          onClick={() => selectedTaskId && setOpenTaskId(selectedTaskId)}
-        >
-          {singleMode ? "פתיחה ומענה" : "בחר/י וענה/י"}
-        </Button>
-        {!singleMode && (
+      {!singleMode && (
+        <div className="sticky bottom-0 -mx-4 flex flex-wrap items-center gap-3 border-t border-border bg-background/95 px-4 py-4 backdrop-blur">
+          <Button
+            size="lg"
+            disabled={!selectedTaskId}
+            onClick={() => selectedTaskId && setOpenTaskId(selectedTaskId)}
+          >
+            בחר/י וענה/י
+          </Button>
           <span className="text-sm text-muted-foreground">
             הושלמו {completedChoice.length} מתוך {requiredCount} משימות בחירה.
           </span>
-        )}
-      </div>
+        </div>
+      )}
     </div>,
   );
 }
