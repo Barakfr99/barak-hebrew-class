@@ -130,6 +130,14 @@ function ClassPage() {
   );
 }
 
+/** שמות תלמידים בעברית בלבד (מותרים רווח, גרש ומקף). */
+const HEBREW_NAME = /^[\u0590-\u05FF]+(?:[ '"׳״-][\u0590-\u05FF]+)*$/;
+
+function isHebrewName(value: string): boolean {
+  const trimmed = value.trim();
+  return trimmed.length > 1 && trimmed.length <= 40 && HEBREW_NAME.test(trimmed);
+}
+
 type StudentRow = {
   id: string;
   first_name: string;
