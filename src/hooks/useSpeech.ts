@@ -168,6 +168,8 @@ export function useSpeech() {
       cancelledRef.current = false;
       setState((s) => ({ ...s, isPlayingSequence: true }));
       for (let i = 0; i < units.length; i++) {
+        const current = units[i];
+        if (!current) break;
         if (cancelledRef.current) break;
         // Fetch the next sentence's audio while the current one plays, so the
         // gap between sentences is playback-only, not network time.
