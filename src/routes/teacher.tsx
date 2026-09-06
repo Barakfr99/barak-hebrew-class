@@ -1,7 +1,15 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Fragment, useEffect, useMemo, useState } from "react";
-import { ChevronDown, GraduationCap, KeyRound, PlayCircle, RotateCcw, Search } from "lucide-react";
+import {
+  ChevronDown,
+  GraduationCap,
+  KeyRound,
+  PlayCircle,
+  RotateCcw,
+  Search,
+  Trash2,
+} from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -41,7 +49,7 @@ import {
 } from "@/lib/parts-of-speech";
 import { cn } from "@/lib/utils";
 import { useServerFn } from "@tanstack/react-start";
-import { teacherResetPassword } from "@/lib/auth.functions";
+import { teacherDeleteStudent, teacherResetPassword } from "@/lib/auth.functions";
 
 
 const TEACHER_KEY = "reading-practice.teacher-ok";
@@ -472,6 +480,8 @@ function TeacherDashboard() {
                             {isOpen ? "סגירה" : "פירוט"}
                           </Button>
                           <ResetPasswordButton student={student} compact />
+                          <DeleteStudentButton student={student} />
+
                         </div>
                       </td>
                     </tr>
@@ -779,5 +789,45 @@ function GradeField({
         className="mt-1 bg-card"
       />
     </div>
+  );
+}
+
+function DeleteStudentButton({ student }: { student: Student }) {
+  const queryClient = useQueryClient();
+  const deleteStudent = useServerFn(teacherDeleteStudent);
+  const [pending, setPending] = useState(false);
+
+  return (
+    <Button
+      variant="ghost"
+      size="sm"
+      disabled={pending}
+      className="text-destructive hover:text-destructive"
+      onClick={async () => {
+        if (
+          !window.confirm(
+            `למחוק את ${fullName(student)}? כל התשובות והציונים יימחקו ולא ניתן לשחזר.`,
+          )
+        )
+          return;
+        setPending(true);
+        try {
+          const teacherCode = window.sessionStorage.getItem(TEACHER_CODE_KEY) ?? "";
+          const result = await deleteStudent({ data: { studentId: student.id, teacherCode } });
+          if (result.ok) {
+            toast.success("התלמיד/ה נמחק/ה");
+            await queryClient.invalidateQueries();
+          } else {
+            toast.error("קוד המורה לא תקין. היכנסו שוב ללוח.");
+          }
+        } catch {
+          toast.error("המחיקה לא הצליחה. נסו שוב.");
+        } finally {
+          setPending(false);
+        }
+      }}
+    >
+      <Trash2 className="size-4" /> מחיקה
+    </Button>
   );
 }
