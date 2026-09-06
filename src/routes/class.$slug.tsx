@@ -169,9 +169,13 @@ function LoginForm({
         return;
       }
       if (result.reason === "bad_password") toast.error("הסיסמה לא נכונה. נסו שוב.");
-      else if (result.reason === "must_reset")
-        toast.error("המורה אפס/ה את הסיסמה — בחרו סיסמה חדשה.");
-      else toast.error("לא הצלחנו להיכנס. נסו שוב.");
+      else if (result.reason === "must_reset") {
+        setForceReset(studentId);
+        setPassword1("");
+        setConfirm("");
+        onNeedsReset();
+        toast.info("צריך לבחור סיסמה חדשה. הקלידו אותה כאן ואשרו.");
+      } else toast.error("לא הצלחנו להיכנס. נסו שוב.");
     },
     onError: () => toast.error("לא הצלחנו להיכנס. נסו שוב בעוד רגע."),
   });
