@@ -272,6 +272,29 @@ export async function ensureTeacherTestStudent(cls: {
   return created.id;
 }
 
+/**
+ * פתיחה מחדש של המשימה לתלמיד/ה להגשה חוזרת ותיקון:
+ * התשובות והציונים נשמרים, אבל סימוני הסיום והמשוב מתאפסים כדי שיוכל/תוכל לתקן ולהגיש שוב.
+ */
+export async function reopenStudentTasks(studentId: string) {
+  const results = await Promise.all([
+    supabase.from("task_completions").delete().eq("student_id", studentId),
+    supabase.from("feedback").delete().eq("student_id", studentId),
+  ]);
+  const failed = results.find((r) => r.error);
+  if (failed?.error) throw failed.error;
+
+  const { error } = await supabase
+    .from("students")
+    .update({
+      stage: "choice",
+      finished_at: null,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", studentId);
+  if (error) throw error;
+}
+
 /** מנקה את התשובות וההתקדמות של תלמיד/ת הבדיקה, כדי להתחיל בדיקה מחדש. */
 export async function resetTeacherTestStudent(studentId: string) {
   const results = await Promise.all([

@@ -32,6 +32,7 @@ import {
   fullName,
   groupQuestions,
   isTeacherTestStudent,
+  reopenStudentTasks,
   resetTeacherTestStudent,
   saveTaskGrade,
   tasksForClass,
@@ -479,6 +480,10 @@ function TeacherDashboard() {
                             />
                             {isOpen ? "סגירה" : "פירוט"}
                           </Button>
+                          <ReopenTaskButton
+                            student={student}
+                            canReopen={done.length > 0 || Boolean(student.finished_at)}
+                          />
                           <ResetPasswordButton student={student} compact />
                           <DeleteStudentButton student={student} />
 
@@ -789,6 +794,42 @@ function GradeField({
         className="mt-1 bg-card"
       />
     </div>
+  );
+}
+
+/** פתיחה מחדש של המשימה לתלמיד/ה — התשובות נשמרות, וניתן לתקן ולהגיש שוב. */
+function ReopenTaskButton({ student, canReopen }: { student: Student; canReopen: boolean }) {
+  const queryClient = useQueryClient();
+  const [pending, setPending] = useState(false);
+
+  if (!canReopen) return null;
+
+  return (
+    <Button
+      variant="outline"
+      size="sm"
+      disabled={pending}
+      onClick={async () => {
+        if (
+          !window.confirm(
+            `לפתוח מחדש את המשימה של ${fullName(student)} להגשה חוזרת? התשובות והציונים נשמרים, והמשוב יימולא שוב בסיום.`,
+          )
+        )
+          return;
+        setPending(true);
+        try {
+          await reopenStudentTasks(student.id);
+          toast.success("המשימה נפתחה מחדש להגשה חוזרת ותיקון");
+          await queryClient.invalidateQueries();
+        } catch {
+          toast.error("לא הצלחתי לפתוח את המשימה מחדש. נסו שוב.");
+        } finally {
+          setPending(false);
+        }
+      }}
+    >
+      <RotateCcw className="size-4" /> פתיחה מחדש
+    </Button>
   );
 }
 
