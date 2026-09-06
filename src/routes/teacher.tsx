@@ -739,9 +739,11 @@ function ResetPasswordButton({ student, compact }: { student: Student; compact?:
       >
         <KeyRound className="size-4" /> איפוס סיסמה
       </Button>
-      <span className="text-sm text-muted-foreground">
-        אחרי איפוס, התלמיד/ה בוחר/ת סיסמה חדשה בדף ההתחברות של הכיתה.
-      </span>
+      {!compact && (
+        <span className="text-sm text-muted-foreground">
+          אחרי איפוס, התלמיד/ה בוחר/ת סיסמה חדשה בדף ההתחברות של הכיתה.
+        </span>
+      )}
     </div>
   );
 }
