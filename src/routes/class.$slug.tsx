@@ -106,7 +106,11 @@ function ClassPage() {
           </TabsList>
 
           <TabsContent value="login" className="mt-5">
-            <LoginForm students={students} onDone={enter} />
+            <LoginForm
+              students={students}
+              onDone={enter}
+              onNeedsReset={() => void studentsQuery.refetch()}
+            />
           </TabsContent>
 
           <TabsContent value="signup" className="mt-5">
@@ -126,6 +130,14 @@ function ClassPage() {
   );
 }
 
+/** שמות תלמידים בעברית בלבד (מותרים רווח, גרש ומקף). */
+const HEBREW_NAME = /^[\u0590-\u05FF]+(?:[ '"׳״-][\u0590-\u05FF]+)*$/;
+
+function isHebrewName(value: string): boolean {
+  const trimmed = value.trim();
+  return trimmed.length > 1 && trimmed.length <= 40 && HEBREW_NAME.test(trimmed);
+}
+
 type StudentRow = {
   id: string;
   first_name: string;
@@ -136,18 +148,21 @@ type StudentRow = {
 function LoginForm({
   students,
   onDone,
+  onNeedsReset,
 }: {
   students: StudentRow[];
   onDone: (id: string) => void;
+  onNeedsReset: () => void;
 }) {
   const login = useServerFn(loginStudent);
   const setPassword = useServerFn(setNewPassword);
   const [studentId, setStudentId] = useState("");
   const [password, setPassword1] = useState("");
   const [confirm, setConfirm] = useState("");
+  const [forceReset, setForceReset] = useState<string | null>(null);
 
   const selected = students.find((s) => s.id === studentId);
-  const needsNewPassword = Boolean(selected?.must_reset_password);
+  const needsNewPassword = Boolean(selected?.must_reset_password) || forceReset === studentId;
 
   const submit = useMutation({
     mutationFn: async () => {
@@ -162,9 +177,13 @@ function LoginForm({
         return;
       }
       if (result.reason === "bad_password") toast.error("הסיסמה לא נכונה. נסו שוב.");
-      else if (result.reason === "must_reset")
-        toast.error("המורה אפס/ה את הסיסמה — בחרו סיסמה חדשה.");
-      else toast.error("לא הצלחנו להיכנס. נסו שוב.");
+      else if (result.reason === "must_reset") {
+        setForceReset(studentId);
+        setPassword1("");
+        setConfirm("");
+        onNeedsReset();
+        toast.info("צריך לבחור סיסמה חדשה. הקלידו אותה כאן ואשרו.");
+      } else toast.error("לא הצלחנו להיכנס. נסו שוב.");
     },
     onError: () => toast.error("לא הצלחנו להיכנס. נסו שוב בעוד רגע."),
   });
@@ -305,11 +324,10 @@ function SignupForm({
     onError: () => toast.error("לא הצלחנו לפתוח חשבון. נסו שוב בעוד רגע."),
   });
 
-  const valid =
-    firstName.trim().length > 1 &&
-    lastName.trim().length > 1 &&
-    password.length > 0 &&
-    confirm === password;
+  const firstOk = isHebrewName(firstName);
+  const lastOk = isHebrewName(lastName);
+
+  const valid = firstOk && lastOk && password.length > 0 && confirm === password;
 
   return (
     <form
@@ -321,24 +339,32 @@ function SignupForm({
     >
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
-          <Label htmlFor="firstName">שם פרטי</Label>
+          <Label htmlFor="firstName">שם פרטי (בעברית)</Label>
           <Input
             id="firstName"
             value={firstName}
             onChange={(e) => setFirstName(e.target.value)}
             className="mt-1 bg-background"
+            lang="he"
             required
           />
+          {firstName.trim().length > 0 && !firstOk && (
+            <p className="mt-1 text-sm text-destructive">יש להזין שם פרטי בעברית בלבד.</p>
+          )}
         </div>
         <div>
-          <Label htmlFor="lastName">שם משפחה</Label>
+          <Label htmlFor="lastName">שם משפחה (בעברית)</Label>
           <Input
             id="lastName"
             value={lastName}
             onChange={(e) => setLastName(e.target.value)}
             className="mt-1 bg-background"
+            lang="he"
             required
           />
+          {lastName.trim().length > 0 && !lastOk && (
+            <p className="mt-1 text-sm text-destructive">יש להזין שם משפחה בעברית בלבד.</p>
+          )}
         </div>
       </div>
 

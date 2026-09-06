@@ -465,16 +465,19 @@ function TeacherDashboard() {
                       </td>
                       <td className="px-4 py-3 font-semibold">{total} / 100</td>
                       <td className="px-4 py-3">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setExpanded(isOpen ? null : student.id)}
-                        >
-                          <ChevronDown
-                            className={cn("size-4 transition-transform", isOpen && "rotate-180")}
-                          />
-                          {isOpen ? "סגירה" : "פירוט"}
-                        </Button>
+                        <div className="flex flex-wrap items-center gap-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setExpanded(isOpen ? null : student.id)}
+                          >
+                            <ChevronDown
+                              className={cn("size-4 transition-transform", isOpen && "rotate-180")}
+                            />
+                            {isOpen ? "סגירה" : "פירוט"}
+                          </Button>
+                          <ResetPasswordButton student={student} compact />
+                        </div>
                       </td>
                     </tr>
                     {isOpen && (
@@ -693,12 +696,15 @@ function PosTaskAnswers({
   );
 }
 
-function ResetPasswordButton({ student }: { student: Student }) {
+function ResetPasswordButton({ student, compact }: { student: Student; compact?: boolean }) {
   const queryClient = useQueryClient();
   const resetPassword = useServerFn(teacherResetPassword);
   const [pending, setPending] = useState(false);
 
   if (student.must_reset_password) {
+    if (compact) {
+      return <span className="text-xs text-muted-foreground">ממתין לסיסמה חדשה</span>;
+    }
     return (
       <p className="text-sm text-muted-foreground">
         הסיסמה אופסה — בכניסה הבאה התלמיד/ה יבחר/תבחר סיסמה חדשה.
@@ -733,9 +739,11 @@ function ResetPasswordButton({ student }: { student: Student }) {
       >
         <KeyRound className="size-4" /> איפוס סיסמה
       </Button>
-      <span className="text-sm text-muted-foreground">
-        אחרי איפוס, התלמיד/ה בוחר/ת סיסמה חדשה בדף ההתחברות של הכיתה.
-      </span>
+      {!compact && (
+        <span className="text-sm text-muted-foreground">
+          אחרי איפוס, התלמיד/ה בוחר/ת סיסמה חדשה בדף ההתחברות של הכיתה.
+        </span>
+      )}
     </div>
   );
 }

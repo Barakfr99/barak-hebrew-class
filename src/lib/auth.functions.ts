@@ -1,7 +1,15 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
-const nameSchema = z.string().trim().min(2).max(40);
+/** שמות תלמידים חייבים להיות בעברית (מותרים גם רווח, גרש ומקף). */
+const HEBREW_NAME = /^[\u0590-\u05FF]+(?:[ '"׳״-][\u0590-\u05FF]+)*$/;
+
+const nameSchema = z
+  .string()
+  .trim()
+  .min(2)
+  .max(40)
+  .regex(HEBREW_NAME, "יש להזין את השם בעברית");
 
 const listSchema = z.object({ classSlug: z.string().min(1).max(20) });
 
@@ -91,7 +99,14 @@ export const loginStudent = createServerFn({ method: "POST" })
       .select("password_hash")
       .eq("student_id", data.studentId)
       .maybeSingle();
-    if (!cred) return { ok: false as const, reason: "must_reset" as const };
+    if (!cred) {
+      // אין סיסמה שמורה — מסמנים שצריך לבחור סיסמה חדשה.
+      await supabaseAdmin
+        .from("students")
+        .update({ must_reset_password: true, updated_at: new Date().toISOString() })
+        .eq("id", data.studentId);
+      return { ok: false as const, reason: "must_reset" as const };
+    }
 
     const valid = await verifyPassword(data.password, cred.password_hash);
     if (!valid) return { ok: false as const, reason: "bad_password" as const };
