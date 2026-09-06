@@ -232,6 +232,8 @@ function PracticePage() {
         initialAnswers={answersMap}
         articleParagraphs={listTasks[0]?.paragraphs ?? requiredTask?.paragraphs}
         finishLabel="סיימתי — למשוב"
+        backLabel="חזרה לשאלות המאמר"
+        onBack={() => setOpenTaskId(listTasks[0]?.id ?? null)}
         onFinish={() => completeTask.mutate(posTask)}
       />,
     );
