@@ -372,8 +372,8 @@ function PracticePage() {
               </div>
 
               {isPreviewOpen && (
-                <div className="mt-5 rounded-2xl border-2 border-dashed border-orange-300 bg-amber-50 p-4 dark:bg-amber-950/40">
-                  <div className="mb-4 flex items-center gap-2 rounded-xl bg-orange-100 px-4 py-3 text-orange-900 dark:bg-orange-900/40 dark:text-orange-100">
+                <div className="mt-5 rounded-2xl border-2 border-dashed border-warning bg-warning/20 p-4">
+                  <div className="mb-4 flex items-center gap-2 rounded-xl bg-warning px-4 py-3 text-warning-foreground">
                     <Lock className="size-5 shrink-0" />
                     <p className="text-base font-semibold md:text-lg">
                       זו תצוגת הצצה בלבד — אי אפשר למלא או לבחור תשובות כאן.
