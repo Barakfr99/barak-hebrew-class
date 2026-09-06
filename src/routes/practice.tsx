@@ -300,7 +300,7 @@ function PracticePage() {
         {!singleMode && (
           <p className="mt-1 text-muted-foreground">
             עליכם להשלים {requiredCount} משימות בחירה. אפשר להציץ בכל משימה לפני שמחליטים — לחצו
-            "תצוגה מקדימה".
+            "הצצה לפני שבוחרים".
           </p>
         )}
       </div>
