@@ -791,3 +791,43 @@ function GradeField({
     </div>
   );
 }
+
+function DeleteStudentButton({ student }: { student: Student }) {
+  const queryClient = useQueryClient();
+  const deleteStudent = useServerFn(teacherDeleteStudent);
+  const [pending, setPending] = useState(false);
+
+  return (
+    <Button
+      variant="ghost"
+      size="sm"
+      disabled={pending}
+      className="text-destructive hover:text-destructive"
+      onClick={async () => {
+        if (
+          !window.confirm(
+            `למחוק את ${fullName(student)}? כל התשובות והציונים יימחקו ולא ניתן לשחזר.`,
+          )
+        )
+          return;
+        setPending(true);
+        try {
+          const teacherCode = window.sessionStorage.getItem(TEACHER_CODE_KEY) ?? "";
+          const result = await deleteStudent({ data: { studentId: student.id, teacherCode } });
+          if (result.ok) {
+            toast.success("התלמיד/ה נמחק/ה");
+            await queryClient.invalidateQueries();
+          } else {
+            toast.error("קוד המורה לא תקין. היכנסו שוב ללוח.");
+          }
+        } catch {
+          toast.error("המחיקה לא הצליחה. נסו שוב.");
+        } finally {
+          setPending(false);
+        }
+      }}
+    >
+      <Trash2 className="size-4" /> מחיקה
+    </Button>
+  );
+}
