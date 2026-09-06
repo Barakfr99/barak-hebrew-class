@@ -480,6 +480,10 @@ function TeacherDashboard() {
                             />
                             {isOpen ? "סגירה" : "פירוט"}
                           </Button>
+                          <ReopenTaskButton
+                            student={student}
+                            canReopen={done.length > 0 || Boolean(student.finished_at)}
+                          />
                           <ResetPasswordButton student={student} compact />
                           <DeleteStudentButton student={student} />
 
