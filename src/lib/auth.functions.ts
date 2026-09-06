@@ -41,6 +41,7 @@ export const registerStudent = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { hashPassword } = await import("./password.server");
+    const passwordHash = await hashPassword(data.password);
 
     const { data: existing } = await supabaseAdmin
       .from("students")
@@ -50,6 +51,30 @@ export const registerStudent = createServerFn({ method: "POST" })
       .ilike("last_name", data.lastName)
       .maybeSingle();
     if (existing) {
+      const { data: credentials } = await supabaseAdmin
+        .from("student_credentials")
+        .select("student_id")
+        .eq("student_id", existing.id)
+        .maybeSingle();
+      if (!credentials) {
+        const { error: credentialError } = await supabaseAdmin
+          .from("student_credentials")
+          .insert({ student_id: existing.id, password_hash: passwordHash });
+        if (credentialError) throw new Error(credentialError.message);
+
+        const { error: updateError } = await supabaseAdmin
+          .from("students")
+          .update({
+            class_name: data.className,
+            mode: data.mode,
+            speech_enabled: data.speechEnabled,
+            must_reset_password: false,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", existing.id);
+        if (updateError) throw new Error(updateError.message);
+        return { ok: true as const, studentId: existing.id as string };
+      }
       return { ok: false as const, reason: "exists" as const };
     }
 
@@ -69,8 +94,11 @@ export const registerStudent = createServerFn({ method: "POST" })
 
     const { error: credError } = await supabaseAdmin
       .from("student_credentials")
-      .insert({ student_id: created.id, password_hash: await hashPassword(data.password) });
-    if (credError) throw new Error(credError.message);
+      .insert({ student_id: created.id, password_hash: passwordHash });
+    if (credError) {
+      await supabaseAdmin.from("students").delete().eq("id", created.id);
+      throw new Error(credError.message);
+    }
 
     return { ok: true as const, studentId: created.id as string };
   });
