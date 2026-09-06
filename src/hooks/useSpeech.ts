@@ -167,13 +167,22 @@ export function useSpeech() {
       stop();
       cancelledRef.current = false;
       setState((s) => ({ ...s, isPlayingSequence: true }));
-      for (const unit of units) {
+      for (let i = 0; i < units.length; i++) {
+        const current = units[i];
+        if (!current) break;
         if (cancelledRef.current) break;
-        await speakOne(unit);
+        // Fetch the next sentence's audio while the current one plays, so the
+        // gap between sentences is playback-only, not network time.
+        const next = units[i + 1];
+        const nextText = next?.text.trim();
+        if (nextText && !cacheRef.current.has(nextText)) {
+          void fetchAudioUrl(nextText).catch(() => {});
+        }
+        await speakOne(current);
       }
       setState((s) => ({ ...s, speakingId: null, loadingId: null, isPlayingSequence: false }));
     },
-    [speakOne, stop],
+    [fetchAudioUrl, speakOne, stop],
   );
 
   return { ...state, speak, speakSequence, stop, setRate };
