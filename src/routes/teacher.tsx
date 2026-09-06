@@ -422,7 +422,7 @@ function TeacherDashboard() {
               <tr>
                 <th className="px-4 py-3 font-semibold">שם</th>
                 <th className="px-4 py-3 font-semibold">כיתה</th>
-                <th className="px-4 py-3 font-semibold">מסלול</th>
+                
                 <th className="px-4 py-3 font-semibold">התקדמות</th>
                 <th className="px-4 py-3 font-semibold">סה״כ ציון</th>
                 <th className="px-4 py-3" />
@@ -453,11 +453,6 @@ function TeacherDashboard() {
                       <td className="px-4 py-3 font-medium">{fullName(student)}</td>
                       <td className="px-4 py-3 text-muted-foreground">
                         {student.class_name ?? "—"}
-                      </td>
-                      <td className="px-4 py-3">
-                        <Badge variant={student.speech_enabled ? "default" : "secondary"}>
-                          {student.speech_enabled ? "מותאם (הקראה)" : "רגיל"}
-                        </Badge>
                       </td>
                       <td className="px-4 py-3 text-sm text-muted-foreground">
                         {done.length} משימות
