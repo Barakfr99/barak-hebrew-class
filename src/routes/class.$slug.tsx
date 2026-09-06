@@ -140,18 +140,21 @@ type StudentRow = {
 function LoginForm({
   students,
   onDone,
+  onNeedsReset,
 }: {
   students: StudentRow[];
   onDone: (id: string) => void;
+  onNeedsReset: () => void;
 }) {
   const login = useServerFn(loginStudent);
   const setPassword = useServerFn(setNewPassword);
   const [studentId, setStudentId] = useState("");
   const [password, setPassword1] = useState("");
   const [confirm, setConfirm] = useState("");
+  const [forceReset, setForceReset] = useState<string | null>(null);
 
   const selected = students.find((s) => s.id === studentId);
-  const needsNewPassword = Boolean(selected?.must_reset_password);
+  const needsNewPassword = Boolean(selected?.must_reset_password) || forceReset === studentId;
 
   const submit = useMutation({
     mutationFn: async () => {
