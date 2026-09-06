@@ -465,16 +465,19 @@ function TeacherDashboard() {
                       </td>
                       <td className="px-4 py-3 font-semibold">{total} / 100</td>
                       <td className="px-4 py-3">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setExpanded(isOpen ? null : student.id)}
-                        >
-                          <ChevronDown
-                            className={cn("size-4 transition-transform", isOpen && "rotate-180")}
-                          />
-                          {isOpen ? "סגירה" : "פירוט"}
-                        </Button>
+                        <div className="flex flex-wrap items-center gap-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setExpanded(isOpen ? null : student.id)}
+                          >
+                            <ChevronDown
+                              className={cn("size-4 transition-transform", isOpen && "rotate-180")}
+                            />
+                            {isOpen ? "סגירה" : "פירוט"}
+                          </Button>
+                          <ResetPasswordButton student={student} compact />
+                        </div>
                       </td>
                     </tr>
                     {isOpen && (
