@@ -99,7 +99,14 @@ export const loginStudent = createServerFn({ method: "POST" })
       .select("password_hash")
       .eq("student_id", data.studentId)
       .maybeSingle();
-    if (!cred) return { ok: false as const, reason: "must_reset" as const };
+    if (!cred) {
+      // אין סיסמה שמורה — מסמנים שצריך לבחור סיסמה חדשה.
+      await supabaseAdmin
+        .from("students")
+        .update({ must_reset_password: true, updated_at: new Date().toISOString() })
+        .eq("id", data.studentId);
+      return { ok: false as const, reason: "must_reset" as const };
+    }
 
     const valid = await verifyPassword(data.password, cred.password_hash);
     if (!valid) return { ok: false as const, reason: "bad_password" as const };
