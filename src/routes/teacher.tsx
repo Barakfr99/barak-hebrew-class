@@ -1,7 +1,15 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Fragment, useEffect, useMemo, useState } from "react";
-import { ChevronDown, GraduationCap, KeyRound, PlayCircle, RotateCcw, Search } from "lucide-react";
+import {
+  ChevronDown,
+  GraduationCap,
+  KeyRound,
+  PlayCircle,
+  RotateCcw,
+  Search,
+  Trash2,
+} from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -41,7 +49,7 @@ import {
 } from "@/lib/parts-of-speech";
 import { cn } from "@/lib/utils";
 import { useServerFn } from "@tanstack/react-start";
-import { teacherResetPassword } from "@/lib/auth.functions";
+import { teacherDeleteStudent, teacherResetPassword } from "@/lib/auth.functions";
 
 
 const TEACHER_KEY = "reading-practice.teacher-ok";
@@ -472,6 +480,8 @@ function TeacherDashboard() {
                             {isOpen ? "סגירה" : "פירוט"}
                           </Button>
                           <ResetPasswordButton student={student} compact />
+                          <DeleteStudentButton student={student} />
+
                         </div>
                       </td>
                     </tr>
