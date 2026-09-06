@@ -32,6 +32,7 @@ import {
   fullName,
   groupQuestions,
   isTeacherTestStudent,
+  reopenStudentTasks,
   resetTeacherTestStudent,
   saveTaskGrade,
   tasksForClass,
