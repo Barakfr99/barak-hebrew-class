@@ -178,7 +178,7 @@ export function useSpeech() {
         if (nextText && !cacheRef.current.has(nextText)) {
           void fetchAudioUrl(nextText).catch(() => {});
         }
-        await speakOne(units[i]);
+        await speakOne(current);
       }
       setState((s) => ({ ...s, speakingId: null, loadingId: null, isPlayingSequence: false }));
     },
