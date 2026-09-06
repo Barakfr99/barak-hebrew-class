@@ -696,12 +696,15 @@ function PosTaskAnswers({
   );
 }
 
-function ResetPasswordButton({ student }: { student: Student }) {
+function ResetPasswordButton({ student, compact }: { student: Student; compact?: boolean }) {
   const queryClient = useQueryClient();
   const resetPassword = useServerFn(teacherResetPassword);
   const [pending, setPending] = useState(false);
 
   if (student.must_reset_password) {
+    if (compact) {
+      return <span className="text-xs text-muted-foreground">ממתין לסיסמה חדשה</span>;
+    }
     return (
       <p className="text-sm text-muted-foreground">
         הסיסמה אופסה — בכניסה הבאה התלמיד/ה יבחר/תבחר סיסמה חדשה.
