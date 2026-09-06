@@ -55,7 +55,9 @@ export function PartsOfSpeechTask({
   initialAnswers,
   articleParagraphs,
   onFinish,
+  onBack,
   finishLabel = "סיימתי — למשוב",
+  backLabel = "חזרה לשאלות המאמר",
 }: {
   task: Task;
   studentId: string;
@@ -64,7 +66,9 @@ export function PartsOfSpeechTask({
   initialAnswers: Record<string, string>;
   articleParagraphs?: string[] | undefined;
   onFinish?: () => void;
+  onBack?: () => void;
   finishLabel?: string;
+  backLabel?: string;
 }) {
   const speech = useSpeech();
   const [values, setValues] = useState<Record<string, string>>(initialAnswers);
