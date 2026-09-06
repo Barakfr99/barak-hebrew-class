@@ -434,7 +434,30 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      student_clear_password: {
+        Args: { p_student_id: string; p_teacher_code: string }
+        Returns: Json
+      }
+      student_login: {
+        Args: { p_password: string; p_student_id: string }
+        Returns: Json
+      }
+      student_register: {
+        Args: {
+          p_class_name: string
+          p_class_slug: string
+          p_first_name: string
+          p_last_name: string
+          p_mode?: string
+          p_password: string
+          p_speech_enabled?: boolean
+        }
+        Returns: Json
+      }
+      student_set_password: {
+        Args: { p_password: string; p_student_id: string }
+        Returns: Json
+      }
     }
     Enums: {
       [_ in never]: never
