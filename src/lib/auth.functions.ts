@@ -11,19 +11,43 @@ const nameSchema = z
   .max(40)
   .regex(HEBREW_NAME, "יש להזין את השם בעברית");
 
+/** לקוח צד-שרת עם המפתח הציבורי — כל פעולות הסיסמאות רצות בפונקציות מסד מאובטחות. */
+async function publicClient() {
+  const { createClient } = await import("@supabase/supabase-js");
+  const url = process.env["SUPABASE_URL"] ?? process.env["VITE_SUPABASE_URL"]!;
+  const key =
+    process.env["SUPABASE_PUBLISHABLE_KEY"] ??
+    process.env["VITE_SUPABASE_PUBLISHABLE_KEY"] ??
+    process.env["SUPABASE_ANON_KEY"]!;
+  return createClient(url, key, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+}
+
+type RpcResult = {
+  ok: boolean;
+  reason?: string;
+  student_id?: string;
+};
+
 const listSchema = z.object({ classSlug: z.string().min(1).max(20) });
 
 export const listClassStudents = createServerFn({ method: "GET" })
   .inputValidator((input: unknown) => listSchema.parse(input))
   .handler(async ({ data }) => {
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: rows, error } = await supabaseAdmin
+    const supabase = await publicClient();
+    const { data: rows, error } = await supabase
       .from("students")
       .select("id, first_name, last_name, must_reset_password")
       .eq("class_slug", data.classSlug)
       .order("first_name", { ascending: true });
     if (error) throw new Error(error.message);
-    return rows ?? [];
+    return (rows ?? []) as {
+      id: string;
+      first_name: string;
+      last_name: string;
+      must_reset_password: boolean;
+    }[];
   });
 
 const registerSchema = z.object({
@@ -39,68 +63,20 @@ const registerSchema = z.object({
 export const registerStudent = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => registerSchema.parse(input))
   .handler(async ({ data }) => {
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { hashPassword } = await import("./password.server");
-    const passwordHash = await hashPassword(data.password);
-
-    const { data: existing } = await supabaseAdmin
-      .from("students")
-      .select("id")
-      .eq("class_slug", data.classSlug)
-      .ilike("first_name", data.firstName)
-      .ilike("last_name", data.lastName)
-      .maybeSingle();
-    if (existing) {
-      const { data: credentials } = await supabaseAdmin
-        .from("student_credentials")
-        .select("student_id")
-        .eq("student_id", existing.id)
-        .maybeSingle();
-      if (!credentials) {
-        const { error: credentialError } = await supabaseAdmin
-          .from("student_credentials")
-          .insert({ student_id: existing.id, password_hash: passwordHash });
-        if (credentialError) throw new Error(credentialError.message);
-
-        const { error: updateError } = await supabaseAdmin
-          .from("students")
-          .update({
-            class_name: data.className,
-            mode: data.mode,
-            speech_enabled: data.speechEnabled,
-            must_reset_password: false,
-            updated_at: new Date().toISOString(),
-          })
-          .eq("id", existing.id);
-        if (updateError) throw new Error(updateError.message);
-        return { ok: true as const, studentId: existing.id as string };
-      }
-      return { ok: false as const, reason: "exists" as const };
-    }
-
-    const { data: created, error } = await supabaseAdmin
-      .from("students")
-      .insert({
-        first_name: data.firstName,
-        last_name: data.lastName,
-        class_name: data.className,
-        class_slug: data.classSlug,
-        mode: data.mode,
-        speech_enabled: data.speechEnabled,
-      })
-      .select("id")
-      .single();
-    if (error || !created) throw new Error(error?.message ?? "insert failed");
-
-    const { error: credError } = await supabaseAdmin
-      .from("student_credentials")
-      .insert({ student_id: created.id, password_hash: passwordHash });
-    if (credError) {
-      await supabaseAdmin.from("students").delete().eq("id", created.id);
-      throw new Error(credError.message);
-    }
-
-    return { ok: true as const, studentId: created.id as string };
+    const supabase = await publicClient();
+    const { data: result, error } = await supabase.rpc("student_register", {
+      p_class_slug: data.classSlug,
+      p_class_name: data.className,
+      p_first_name: data.firstName,
+      p_last_name: data.lastName,
+      p_password: data.password,
+      p_speech_enabled: data.speechEnabled,
+      p_mode: data.mode,
+    });
+    if (error) throw new Error(error.message);
+    const res = result as RpcResult;
+    if (!res?.ok) return { ok: false as const, reason: (res?.reason ?? "exists") as "exists" };
+    return { ok: true as const, studentId: res.student_id as string };
   });
 
 const loginSchema = z.object({
@@ -111,34 +87,20 @@ const loginSchema = z.object({
 export const loginStudent = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => loginSchema.parse(input))
   .handler(async ({ data }) => {
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { verifyPassword } = await import("./password.server");
-
-    const { data: student } = await supabaseAdmin
-      .from("students")
-      .select("id, must_reset_password")
-      .eq("id", data.studentId)
-      .maybeSingle();
-    if (!student) return { ok: false as const, reason: "not_found" as const };
-    if (student.must_reset_password) return { ok: false as const, reason: "must_reset" as const };
-
-    const { data: cred } = await supabaseAdmin
-      .from("student_credentials")
-      .select("password_hash")
-      .eq("student_id", data.studentId)
-      .maybeSingle();
-    if (!cred) {
-      // אין סיסמה שמורה — מסמנים שצריך לבחור סיסמה חדשה.
-      await supabaseAdmin
-        .from("students")
-        .update({ must_reset_password: true, updated_at: new Date().toISOString() })
-        .eq("id", data.studentId);
-      return { ok: false as const, reason: "must_reset" as const };
+    const supabase = await publicClient();
+    const { data: result, error } = await supabase.rpc("student_login", {
+      p_student_id: data.studentId,
+      p_password: data.password,
+    });
+    if (error) throw new Error(error.message);
+    const res = result as RpcResult;
+    if (!res?.ok) {
+      return {
+        ok: false as const,
+        reason: (res?.reason ?? "not_found") as "not_found" | "must_reset" | "bad_password",
+      };
     }
-
-    const valid = await verifyPassword(data.password, cred.password_hash);
-    if (!valid) return { ok: false as const, reason: "bad_password" as const };
-    return { ok: true as const, studentId: student.id as string };
+    return { ok: true as const, studentId: res.student_id as string };
   });
 
 const newPasswordSchema = z.object({
@@ -150,34 +112,20 @@ const newPasswordSchema = z.object({
 export const setNewPassword = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => newPasswordSchema.parse(input))
   .handler(async ({ data }) => {
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { hashPassword } = await import("./password.server");
-
-    const { data: student } = await supabaseAdmin
-      .from("students")
-      .select("id, must_reset_password")
-      .eq("id", data.studentId)
-      .maybeSingle();
-    if (!student) return { ok: false as const, reason: "not_found" as const };
-    if (!student.must_reset_password) return { ok: false as const, reason: "not_allowed" as const };
-
-    const { error } = await supabaseAdmin.from("student_credentials").upsert(
-      {
-        student_id: data.studentId,
-        password_hash: await hashPassword(data.password),
-        updated_at: new Date().toISOString(),
-      },
-      { onConflict: "student_id" },
-    );
+    const supabase = await publicClient();
+    const { data: result, error } = await supabase.rpc("student_set_password", {
+      p_student_id: data.studentId,
+      p_password: data.password,
+    });
     if (error) throw new Error(error.message);
-
-    const { error: flagError } = await supabaseAdmin
-      .from("students")
-      .update({ must_reset_password: false, updated_at: new Date().toISOString() })
-      .eq("id", data.studentId);
-    if (flagError) throw new Error(flagError.message);
-
-    return { ok: true as const, studentId: student.id as string };
+    const res = result as RpcResult;
+    if (!res?.ok) {
+      return {
+        ok: false as const,
+        reason: (res?.reason ?? "not_allowed") as "not_found" | "not_allowed",
+      };
+    }
+    return { ok: true as const, studentId: res.student_id as string };
   });
 
 const resetSchema = z.object({
@@ -188,53 +136,34 @@ const resetSchema = z.object({
 export const teacherResetPassword = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => resetSchema.parse(input))
   .handler(async ({ data }) => {
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-
-    const { data: settings } = await supabaseAdmin
-      .from("practice_settings")
-      .select("teacher_code")
-      .eq("is_active", true)
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
-    const expected = settings?.teacher_code ?? "5598956";
-    if (data.teacherCode.trim() !== expected) {
-      return { ok: false as const, reason: "bad_code" as const };
-    }
-
-    await supabaseAdmin.from("student_credentials").delete().eq("student_id", data.studentId);
-    const { error } = await supabaseAdmin
-      .from("students")
-      .update({ must_reset_password: true, updated_at: new Date().toISOString() })
-      .eq("id", data.studentId);
+    const supabase = await publicClient();
+    const { data: result, error } = await supabase.rpc("student_clear_password", {
+      p_student_id: data.studentId,
+      p_teacher_code: data.teacherCode,
+    });
     if (error) throw new Error(error.message);
-
+    const res = result as RpcResult;
+    if (!res?.ok) return { ok: false as const, reason: "bad_code" as const };
     return { ok: true as const };
   });
 
 export const teacherDeleteStudent = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => resetSchema.parse(input))
   .handler(async ({ data }) => {
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const supabase = await publicClient();
+    // מנקה את הסיסמה דרך פונקציית המסד — היא גם מאמתת את קוד המורה.
+    const { data: cleared, error: clearError } = await supabase.rpc("student_clear_password", {
+      p_student_id: data.studentId,
+      p_teacher_code: data.teacherCode,
+    });
+    if (clearError) throw new Error(clearError.message);
+    if (!(cleared as RpcResult)?.ok) return { ok: false as const, reason: "bad_code" as const };
 
-    const { data: settings } = await supabaseAdmin
-      .from("practice_settings")
-      .select("teacher_code")
-      .eq("is_active", true)
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
-    const expected = settings?.teacher_code ?? "5598956";
-    if (data.teacherCode.trim() !== expected) {
-      return { ok: false as const, reason: "bad_code" as const };
-    }
-
-    await supabaseAdmin.from("answers").delete().eq("student_id", data.studentId);
-    await supabaseAdmin.from("task_completions").delete().eq("student_id", data.studentId);
-    await supabaseAdmin.from("task_grades").delete().eq("student_id", data.studentId);
-    await supabaseAdmin.from("feedback").delete().eq("student_id", data.studentId);
-    await supabaseAdmin.from("student_credentials").delete().eq("student_id", data.studentId);
-    const { error } = await supabaseAdmin.from("students").delete().eq("id", data.studentId);
+    await supabase.from("answers").delete().eq("student_id", data.studentId);
+    await supabase.from("task_completions").delete().eq("student_id", data.studentId);
+    await supabase.from("task_grades").delete().eq("student_id", data.studentId);
+    await supabase.from("feedback").delete().eq("student_id", data.studentId);
+    const { error } = await supabase.from("students").delete().eq("id", data.studentId);
     if (error) throw new Error(error.message);
 
     return { ok: true as const };
