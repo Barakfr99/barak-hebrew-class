@@ -106,7 +106,11 @@ function ClassPage() {
           </TabsList>
 
           <TabsContent value="login" className="mt-5">
-            <LoginForm students={students} onDone={enter} />
+            <LoginForm
+              students={students}
+              onDone={enter}
+              onNeedsReset={() => void studentsQuery.refetch()}
+            />
           </TabsContent>
 
           <TabsContent value="signup" className="mt-5">
