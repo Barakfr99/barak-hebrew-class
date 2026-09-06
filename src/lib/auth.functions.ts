@@ -1,7 +1,15 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
-const nameSchema = z.string().trim().min(2).max(40);
+/** שמות תלמידים חייבים להיות בעברית (מותרים גם רווח, גרש ומקף). */
+const HEBREW_NAME = /^[\u0590-\u05FF]+(?:[ '"׳״-][\u0590-\u05FF]+)*$/;
+
+const nameSchema = z
+  .string()
+  .trim()
+  .min(2)
+  .max(40)
+  .regex(HEBREW_NAME, "יש להזין את השם בעברית");
 
 const listSchema = z.object({ classSlug: z.string().min(1).max(20) });
 
