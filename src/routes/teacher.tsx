@@ -51,6 +51,7 @@ import { StudentDetails } from "@/components/teacher/StudentDetails";
 import { TaskGradingSettings } from "@/components/teacher/TaskGradingSettings";
 import { FeedbackDashboard } from "@/components/teacher/FeedbackDashboard";
 import { NB10Panel } from "@/components/teacher/NB10Panel";
+import { SPACE_ROLLUP_KEY, useSpaceTaskRollup } from "@/lib/space-tasks";
 
 import { cn } from "@/lib/utils";
 import { useServerFn } from "@tanstack/react-start";
@@ -233,9 +234,20 @@ function TeacherDashboard() {
       .on("postgres_changes", { event: "*", schema: "public", table: "feedback" }, () =>
         queryClient.invalidateQueries({ queryKey: ["teacher-feedback"] }),
       )
-      .on("postgres_changes", { event: "*", schema: "public", table: "task_grades" }, () =>
-        queryClient.invalidateQueries({ queryKey: ["teacher-task-grades"] }),
-      )
+      .on("postgres_changes", { event: "*", schema: "public", table: "task_grades" }, () => {
+        queryClient.invalidateQueries({ queryKey: ["teacher-task-grades"] });
+        queryClient.invalidateQueries({ queryKey: [SPACE_ROLLUP_KEY] });
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "nb10_submissions" }, () => {
+        queryClient.invalidateQueries({ queryKey: [SPACE_ROLLUP_KEY] });
+        queryClient.invalidateQueries({ queryKey: ["nb10-submissions"] });
+        queryClient.invalidateQueries({ queryKey: ["nb10-student-submission"] });
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "nb10_notes" }, () => {
+        queryClient.invalidateQueries({ queryKey: [SPACE_ROLLUP_KEY] });
+        queryClient.invalidateQueries({ queryKey: ["nb10-student-note"] });
+      })
+
       .subscribe();
     return () => {
       void supabase.removeChannel(channel);
