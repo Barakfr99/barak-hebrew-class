@@ -264,8 +264,25 @@ function TeacherDashboard() {
     return map;
   }, [completions]);
 
+  /** משימות שהוגשו וטרם קיבלו ציון — מחכות לבדיקת המורה. */
+  const pendingByStudent = useMemo(() => {
+    const map = new Map<string, number>();
+    const classTaskIds = new Set(classTasks.map((t) => t.id));
+    completions.forEach((c) => {
+      if (!classTaskIds.has(c.task_id)) return;
+      const graded = taskGrades.some(
+        (g) => g.student_id === c.student_id && g.task_id === c.task_id && typeof g.grade === "number",
+      );
+      if (graded) return;
+      map.set(c.student_id, (map.get(c.student_id) ?? 0) + 1);
+    });
+    return map;
+  }, [completions, classTasks, taskGrades]);
+
   const finishedCount = students.filter((s) => s.finished_at).length;
   const feedbackCount = feedback.filter((f) => studentIds.has(f.student_id)).length;
+  const pendingTotal = students.reduce((sum, s) => sum + (pendingByStudent.get(s.id) ?? 0), 0);
+
 
   const filtered = students.filter((s) => {
     const term = search.trim();
