@@ -205,7 +205,7 @@ function TaskDetail({
         <p className="text-sm text-muted-foreground">
           {completedTaskIds.has(task.id) ? "הוגשה" : "בתהליך"} ·{" "}
           {task.grading_mode === "submission"
-            ? "ניקוד הגשה (0 או 100)"
+            ? "ניקוד הגשה (0 / 50 / 75 / 100)"
             : "ניקוד לפי משקל השאלות"}
           {parts.length > 1 ? ` · ${parts.length} חלקים` : ""}
         </p>
