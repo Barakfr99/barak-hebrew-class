@@ -407,6 +407,12 @@ export function NewBeginnings10Wizard({
               <p className="mt-2 text-muted-foreground">
                 כל התשובות שלך נשמרו והמורה רואה אותן. אפשר לעבור אחורה ולקרוא את מה שכתבת.
               </p>
+              {generalNote.trim() && (
+                <div className="mt-5 rounded-2xl border border-primary/30 bg-accent/40 p-4 text-start">
+                  <p className="text-xs font-semibold text-primary">הערת המורה על המשימה</p>
+                  <p className="mt-1 whitespace-pre-wrap text-sm">{generalNote}</p>
+                </div>
+              )}
               {onExit && (
                 <Button className="mt-5" size="lg" onClick={onExit}>
                   חזרה לרשימת המשימות
@@ -429,6 +435,7 @@ export function NewBeginnings10Wizard({
               answers={answers}
               onChange={change}
               readOnly={readOnly}
+              notes={notes}
             />
           ))
         )}
