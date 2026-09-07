@@ -6,6 +6,14 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Check, Eye } from "lucide-react";
 import { groupQuestions, taskParts, type Student, type Task } from "@/lib/practice";
 import { weightedGrade } from "@/lib/task-parts";
 import {
@@ -47,225 +55,338 @@ export function StudentDetails({
   completedTaskIds: Set<string>;
   onChanged: () => Promise<void> | void;
 }) {
+  const [openTaskId, setOpenTaskId] = useState<string | null>(null);
   const answerFor = (questionId: string) =>
     answers.find((a) => a.question_id === questionId)?.answer_text ?? "";
   const noteFor = (taskId: string, questionId: string | null) =>
     notes.find((n) => n.task_id === taskId && (n.question_id ?? null) === questionId);
 
+  const completedCount = tasks.filter((t) => completedTaskIds.has(t.id)).length;
+
   return (
-    <div className="space-y-8">
-      {tasks.length === 0 && (
-        <p className="text-sm text-muted-foreground">אין משימות משויכות לכיתה הזו.</p>
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <p className="text-sm text-muted-foreground">
+          {tasks.length === 0
+            ? "אין משימות משויכות לכיתה הזו."
+            : `הושלמו ${completedCount} מתוך ${tasks.length} משימות`}
+        </p>
+      </div>
+
+      {tasks.length > 0 && (
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {tasks.map((task) => {
+            const done = completedTaskIds.has(task.id);
+            const grade = taskGrades.find((g) => g.task_id === task.id)?.grade ?? null;
+            return (
+              <TaskSummaryCard
+                key={task.id}
+                task={task}
+                done={done}
+                grade={grade}
+                isOpen={openTaskId === task.id}
+                onOpenChange={(open) => setOpenTaskId(open ? task.id : null)}
+              >
+                <TaskDetail
+                  student={student}
+                  task={task}
+                  answers={answers}
+                  notes={notes}
+                  taskGrades={taskGrades}
+                  feedback={feedback}
+                  taskSpeech={taskSpeech}
+                  completedTaskIds={completedTaskIds}
+                  onChanged={onChanged}
+                />
+              </TaskSummaryCard>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function TaskSummaryCard({
+  task,
+  done,
+  grade,
+  isOpen,
+  onOpenChange,
+  children,
+}: {
+  task: Task;
+  done: boolean;
+  grade: number | null;
+  isOpen: boolean;
+  onOpenChange: (open: boolean) => void;
+  children: React.ReactNode;
+}) {
+  const parts = taskParts(task);
+  return (
+    <Dialog open={isOpen} onOpenChange={onOpenChange}>
+      <DialogTrigger asChild>
+        <button
+          type="button"
+          className="rounded-2xl border border-border bg-card p-4 text-start transition-colors hover:bg-accent/40 focus:outline-none focus:ring-2 focus:ring-ring"
+        >
+          <div className="flex items-start justify-between gap-2">
+            <h3 className="font-semibold text-primary">{task.title}</h3>
+            {done && (
+              <Badge className="bg-success text-success-foreground">
+                <Check className="size-3" /> הוגשה
+              </Badge>
+            )}
+          </div>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {done ? "הוגשה" : "בתהליך"}
+            {parts.length > 1 ? ` · ${parts.length} חלקים` : ""}
+          </p>
+          <div className="mt-3 flex items-center justify-between">
+            <span className="text-sm font-medium">
+              {grade !== null ? `ציון: ${grade}` : "אין ציון"}
+            </span>
+            <span className="flex items-center gap-1 text-sm text-primary">
+              <Eye className="size-4" /> בדיקה
+            </span>
+          </div>
+        </button>
+      </DialogTrigger>
+      <DialogContent className="max-h-[85vh] max-w-4xl overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>{task.title}</DialogTitle>
+        </DialogHeader>
+        <div className="mt-2">{children}</div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function TaskDetail({
+  student,
+  task,
+  answers,
+  notes,
+  taskGrades,
+  feedback,
+  taskSpeech,
+  completedTaskIds,
+  onChanged,
+}: {
+  student: Student;
+  task: Task;
+  answers: AnswerRow[];
+  notes: TeacherNote[];
+  taskGrades: TaskGrade[];
+  feedback: FeedbackRow[];
+  taskSpeech: TaskSpeech[];
+  completedTaskIds: Set<string>;
+  onChanged: () => Promise<void> | void;
+}) {
+  const answerFor = (questionId: string) =>
+    answers.find((a) => a.question_id === questionId)?.answer_text ?? "";
+  const noteFor = (taskId: string, questionId: string | null) =>
+    notes.find((n) => n.task_id === taskId && (n.question_id ?? null) === questionId);
+
+  const grade = taskGrades.find((g) => g.task_id === task.id)?.grade ?? null;
+  const scoreByQuestion: Record<string, number | null> = {};
+  task.questions.forEach((q) => {
+    scoreByQuestion[q.id] = noteFor(task.id, q.id)?.score ?? null;
+  });
+  const computed = weightedGrade(task.questions, scoreByQuestion);
+  const speechRow = taskSpeech.find((r) => r.task_id === task.id);
+  const speechAllowed = speechRow ? speechRow.allowed : false;
+  const taskFeedback = feedback.find((f) => f.task_id === task.id);
+  const parts = taskParts(task);
+
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <p className="text-sm text-muted-foreground">
+          {completedTaskIds.has(task.id) ? "הוגשה" : "בתהליך"} ·{" "}
+          {task.grading_mode === "submission"
+            ? "ניקוד הגשה (0 או 100)"
+            : "ניקוד לפי משקל השאלות"}
+          {parts.length > 1 ? ` · ${parts.length} חלקים` : ""}
+        </p>
+        {student.speech_enabled && (
+          <label className="flex items-center gap-2 text-sm">
+            <Switch
+              checked={speechAllowed}
+              onCheckedChange={async (checked) => {
+                try {
+                  await setTaskSpeech(student.id, task.id, checked);
+                  await onChanged();
+                } catch {
+                  toast.error("לא הצלחתי לעדכן את ההרשאה");
+                }
+              }}
+            />
+            הקראה במשימה הזו
+          </label>
+        )}
+      </div>
+
+      {task.grading_mode === "submission" ? (
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-sm">ציון המשימה:</span>
+          <Button
+            size="sm"
+            variant={grade === 100 ? "default" : "outline"}
+            onClick={async () => {
+              await saveTaskGrade({ studentId: student.id, taskId: task.id, grade: 100 });
+              await onChanged();
+            }}
+          >
+            הגיש/ה — 100
+          </Button>
+          <Button
+            size="sm"
+            variant={grade === 0 ? "default" : "outline"}
+            onClick={async () => {
+              await saveTaskGrade({ studentId: student.id, taskId: task.id, grade: 0 });
+              await onChanged();
+            }}
+          >
+            לא הגיש/ה — 0
+          </Button>
+        </div>
+      ) : (
+        <div className="flex flex-wrap items-end gap-3">
+          <div className="w-40">
+            <Label className="text-sm">ציון המשימה (0–100)</Label>
+            <GradeInput
+              value={grade}
+              onCommit={async (v) => {
+                await saveTaskGrade({ studentId: student.id, taskId: task.id, grade: v });
+                await onChanged();
+              }}
+            />
+          </div>
+          <div className="text-sm text-muted-foreground">
+            ציון מחושב לפי הניקוד לשאלות: <b>{computed ?? "—"}</b>
+          </div>
+          {computed !== null && computed !== grade && (
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={async () => {
+                await saveTaskGrade({
+                  studentId: student.id,
+                  taskId: task.id,
+                  grade: computed,
+                });
+                await onChanged();
+                toast.success("הציון המחושב נשמר");
+              }}
+            >
+              שמירת הציון המחושב
+            </Button>
+          )}
+        </div>
       )}
 
-      {tasks.map((task) => {
-        const grade = taskGrades.find((g) => g.task_id === task.id)?.grade ?? null;
-        const scoreByQuestion: Record<string, number | null> = {};
-        task.questions.forEach((q) => {
-          scoreByQuestion[q.id] = noteFor(task.id, q.id)?.score ?? null;
-        });
-        const computed = weightedGrade(task.questions, scoreByQuestion);
-        const speechRow = taskSpeech.find((r) => r.task_id === task.id);
-        const speechAllowed = speechRow ? speechRow.allowed : false;
-        const taskFeedback = feedback.find((f) => f.task_id === task.id);
-        const parts = taskParts(task);
+      <div>
+        <Label className="text-sm">הערה כללית לתלמיד/ה על המשימה</Label>
+        <NoteBox
+          value={noteFor(task.id, null)?.note ?? ""}
+          onCommit={async (text) => {
+            await saveTeacherNote({
+              studentId: student.id,
+              taskId: task.id,
+              questionId: null,
+              note: text,
+            });
+            await onChanged();
+          }}
+        />
+      </div>
 
+      {parts.map((part, partIndex) => {
+        const partQuestions = task.questions.filter((q) =>
+          q.part_id ? q.part_id === part.id : partIndex === 0,
+        );
+        if (partQuestions.length === 0) return null;
+        const isPos = part.kind === "parts_of_speech";
         return (
-          <div key={task.id} className="rounded-2xl border border-border bg-card p-4">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div>
-                <h3 className="text-lg font-semibold text-primary">{task.title}</h3>
-                <p className="text-sm text-muted-foreground">
-                  {completedTaskIds.has(task.id) ? "הוגשה" : "בתהליך"} ·{" "}
-                  {task.grading_mode === "submission"
-                    ? "ניקוד הגשה (0 או 100)"
-                    : "ניקוד לפי משקל השאלות"}
-                  {parts.length > 1 ? ` · ${parts.length} חלקים` : ""}
-                </p>
-              </div>
-              {student.speech_enabled && (
-                <label className="flex items-center gap-2 text-sm">
-                  <Switch
-                    checked={speechAllowed}
-                    onCheckedChange={async (checked) => {
-                      try {
-                        await setTaskSpeech(student.id, task.id, checked);
-                        await onChanged();
-                      } catch {
-                        toast.error("לא הצלחתי לעדכן את ההרשאה");
-                      }
-                    }}
-                  />
-                  הקראה במשימה הזו
-                </label>
-              )}
-            </div>
-
-            {task.grading_mode === "submission" ? (
-              <div className="mt-4 flex flex-wrap items-center gap-2">
-                <span className="text-sm">ציון המשימה:</span>
-                <Button
-                  size="sm"
-                  variant={grade === 100 ? "default" : "outline"}
-                  onClick={async () => {
-                    await saveTaskGrade({ studentId: student.id, taskId: task.id, grade: 100 });
-                    await onChanged();
-                  }}
-                >
-                  הגיש/ה — 100
-                </Button>
-                <Button
-                  size="sm"
-                  variant={grade === 0 ? "default" : "outline"}
-                  onClick={async () => {
-                    await saveTaskGrade({ studentId: student.id, taskId: task.id, grade: 0 });
-                    await onChanged();
-                  }}
-                >
-                  לא הגיש/ה — 0
-                </Button>
-              </div>
-            ) : (
-              <div className="mt-4 flex flex-wrap items-end gap-3">
-                <div className="w-40">
-                  <Label className="text-sm">ציון המשימה (0–100)</Label>
-                  <GradeInput
-                    value={grade}
-                    onCommit={async (v) => {
-                      await saveTaskGrade({ studentId: student.id, taskId: task.id, grade: v });
-                      await onChanged();
-                    }}
-                  />
-                </div>
-                <div className="text-sm text-muted-foreground">
-                  ציון מחושב לפי הניקוד לשאלות: <b>{computed ?? "—"}</b>
-                </div>
-                {computed !== null && computed !== grade && (
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    onClick={async () => {
-                      await saveTaskGrade({
-                        studentId: student.id,
-                        taskId: task.id,
-                        grade: computed,
-                      });
-                      await onChanged();
-                      toast.success("הציון המחושב נשמר");
-                    }}
-                  >
-                    שמירת הציון המחושב
-                  </Button>
+          <div key={part.id} className="mt-5">
+            {parts.length > 1 && (
+              <p className="mb-2 font-semibold">
+                {part.title}{" "}
+                {part.selection_mode === "choose_n" && (
+                  <Badge variant="secondary">בחירה של {part.choose_count ?? 1}</Badge>
                 )}
-              </div>
+              </p>
             )}
 
-            <div className="mt-4">
-              <Label className="text-sm">הערה כללית לתלמיד/ה על המשימה</Label>
-              <NoteBox
-                value={noteFor(task.id, null)?.note ?? ""}
-                onCommit={async (text) => {
-                  await saveTeacherNote({
-                    studentId: student.id,
-                    taskId: task.id,
-                    questionId: null,
-                    note: text,
-                  });
-                  await onChanged();
-                }}
+            {isPos ? (
+              <PosAnswers
+                questions={partQuestions}
+                answerFor={answerFor}
+                renderNote={(questionId) => (
+                  <QuestionScoreAndNote
+                    note={noteFor(task.id, questionId)}
+                    weight={partQuestions.find((q) => q.id === questionId)?.weight ?? null}
+                    onCommit={async (patch) => {
+                      await saveTeacherNote({
+                        studentId: student.id,
+                        taskId: task.id,
+                        questionId,
+                        ...patch,
+                      });
+                      await onChanged();
+                    }}
+                  />
+                )}
               />
-            </div>
-
-            {parts.map((part, partIndex) => {
-              const partQuestions = task.questions.filter((q) =>
-                q.part_id ? q.part_id === part.id : partIndex === 0,
-              );
-              if (partQuestions.length === 0) return null;
-              const isPos = part.kind === "parts_of_speech";
-              return (
-                <div key={part.id} className="mt-5">
-                  {parts.length > 1 && (
-                    <p className="mb-2 font-semibold">
-                      {part.title}{" "}
-                      {part.selection_mode === "choose_n" && (
-                        <Badge variant="secondary">בחירה של {part.choose_count ?? 1}</Badge>
-                      )}
-                    </p>
-                  )}
-
-                  {isPos ? (
-                    <PosAnswers
-                      questions={partQuestions}
-                      answerFor={answerFor}
-                      renderNote={(questionId) => (
-                        <QuestionScoreAndNote
-                          note={noteFor(task.id, questionId)}
-                          weight={partQuestions.find((q) => q.id === questionId)?.weight ?? null}
-                          onCommit={async (patch) => {
-                            await saveTeacherNote({
-                              studentId: student.id,
-                              taskId: task.id,
-                              questionId,
-                              ...patch,
-                            });
-                            await onChanged();
-                          }}
-                        />
-                      )}
-                    />
-                  ) : (
-                    <ul className="space-y-2">
-                      {groupQuestions(partQuestions).map((group) => (
-                        <li key={group.key} className="rounded-xl border border-border bg-background p-3">
-                          <p className="text-sm text-muted-foreground">{group.prompt}</p>
-                          <div className="mt-1 space-y-3">
-                            {group.items.map((q) => (
-                              <div key={q.id}>
-                                {q.group_label && (
-                                  <p className="text-sm font-semibold text-primary">
-                                    {q.group_label}
-                                  </p>
-                                )}
-                                <p className="reading-text">{answerFor(q.id) || "— לא נענתה"}</p>
-                                <QuestionScoreAndNote
-                                  note={noteFor(task.id, q.id)}
-                                  weight={q.weight}
-                                  onCommit={async (patch) => {
-                                    await saveTeacherNote({
-                                      studentId: student.id,
-                                      taskId: task.id,
-                                      questionId: q.id,
-                                      ...patch,
-                                    });
-                                    await onChanged();
-                                  }}
-                                />
-                              </div>
-                            ))}
-                          </div>
-                        </li>
+            ) : (
+              <ul className="space-y-2">
+                {groupQuestions(partQuestions).map((group) => (
+                  <li key={group.key} className="rounded-xl border border-border bg-background p-3">
+                    <p className="text-sm text-muted-foreground">{group.prompt}</p>
+                    <div className="mt-1 space-y-3">
+                      {group.items.map((q) => (
+                        <div key={q.id}>
+                          {q.group_label && (
+                            <p className="text-sm font-semibold text-primary">{q.group_label}</p>
+                          )}
+                          <p className="reading-text">{answerFor(q.id) || "— לא נענתה"}</p>
+                          <QuestionScoreAndNote
+                            note={noteFor(task.id, q.id)}
+                            weight={q.weight}
+                            onCommit={async (patch) => {
+                              await saveTeacherNote({
+                                studentId: student.id,
+                                taskId: task.id,
+                                questionId: q.id,
+                                ...patch,
+                              });
+                              await onChanged();
+                            }}
+                          />
+                        </div>
                       ))}
-                    </ul>
-                  )}
-                </div>
-              );
-            })}
-
-            {taskFeedback && (
-              <div className="mt-5 rounded-xl border border-border bg-background p-3 text-sm">
-                <p className="font-semibold text-primary">המשוב על המשימה</p>
-                <ul className="mt-1 space-y-1">
-                  <li>בהירות המושגים: {taskFeedback.clarity_scale ?? "—"}/5</li>
-                  <li>תחושת הבנה: {taskFeedback.learning_scale ?? "—"}/5</li>
-                  <li>בהשוואה לשיעור רגיל: {taskFeedback.compare_lesson ?? "—"}</li>
-                  <li>שימוש בדף העזרה: {taskFeedback.help_page_usage ?? "—"}</li>
-                  <li>עדיין לא ברור: {taskFeedback.still_unclear || "—"}</li>
-                </ul>
-              </div>
+                    </div>
+                  </li>
+                ))}
+              </ul>
             )}
           </div>
         );
       })}
+
+      {taskFeedback && (
+        <div className="mt-5 rounded-xl border border-border bg-background p-3 text-sm">
+          <p className="font-semibold text-primary">המשוב על המשימה</p>
+          <ul className="mt-1 space-y-1">
+            <li>בהירות המושגים: {taskFeedback.clarity_scale ?? "—"}/5</li>
+            <li>תחושת הבנה: {taskFeedback.learning_scale ?? "—"}/5</li>
+            <li>בהשוואה לשיעור רגיל: {taskFeedback.compare_lesson ?? "—"}</li>
+            <li>שימוש בדף העזרה: {taskFeedback.help_page_usage ?? "—"}</li>
+            <li>עדיין לא ברור: {taskFeedback.still_unclear || "—"}</li>
+          </ul>
+        </div>
+      )}
     </div>
   );
 }
