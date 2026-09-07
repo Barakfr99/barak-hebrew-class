@@ -26,6 +26,7 @@ import { TaskView } from "@/components/practice/TaskView";
 import { PartsOfSpeechTask } from "@/components/practice/PartsOfSpeechTask";
 import { FeedbackForm } from "@/components/practice/FeedbackForm";
 import { NB10TaskCard } from "@/components/tasks/new-beginnings-10/TaskCard";
+import { MITaskCard } from "@/components/tasks/main-idea-10-1/TaskCard";
 
 
 export const Route = createFileRoute("/practice")({
@@ -386,6 +387,7 @@ function PracticePage() {
 
       <div className="space-y-3">
         <NB10TaskCard classSlug={student?.class_slug} studentId={studentId} />
+        <MITaskCard classSlug={student?.class_slug} studentId={studentId} />
 
         {listTasks.map((task) => {
           const done = completedIds.has(task.id);

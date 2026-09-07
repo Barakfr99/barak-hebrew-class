@@ -15,6 +15,7 @@ import { Route as TeacherRouteImport } from './routes/teacher'
 import { Route as ApiNb10AssistantRouteImport } from './routes/api/nb10-assistant'
 import { Route as ApiTtsRouteImport } from './routes/api/tts'
 import { Route as ClassSlugRouteImport } from './routes/class.$slug'
+import { Route as TaskMainIdeaRouteImport } from './routes/task.main-idea'
 import { Route as TaskNewBeginnings10RouteImport } from './routes/task.new-beginnings-10'
 
 const IndexRoute = IndexRouteImport.update({
@@ -47,6 +48,11 @@ const ClassSlugRoute = ClassSlugRouteImport.update({
   path: '/class/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
+const TaskMainIdeaRoute = TaskMainIdeaRouteImport.update({
+  id: '/task/main-idea',
+  path: '/task/main-idea',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const TaskNewBeginnings10Route = TaskNewBeginnings10RouteImport.update({
   id: '/task/new-beginnings-10',
   path: '/task/new-beginnings-10',
@@ -60,6 +66,7 @@ export interface FileRoutesByFullPath {
   '/api/nb10-assistant': typeof ApiNb10AssistantRoute
   '/api/tts': typeof ApiTtsRoute
   '/class/$slug': typeof ClassSlugRoute
+  '/task/main-idea': typeof TaskMainIdeaRoute
   '/task/new-beginnings-10': typeof TaskNewBeginnings10Route
 }
 export interface FileRoutesByTo {
@@ -69,6 +76,7 @@ export interface FileRoutesByTo {
   '/api/nb10-assistant': typeof ApiNb10AssistantRoute
   '/api/tts': typeof ApiTtsRoute
   '/class/$slug': typeof ClassSlugRoute
+  '/task/main-idea': typeof TaskMainIdeaRoute
   '/task/new-beginnings-10': typeof TaskNewBeginnings10Route
 }
 export interface FileRoutesById {
@@ -79,6 +87,7 @@ export interface FileRoutesById {
   '/api/nb10-assistant': typeof ApiNb10AssistantRoute
   '/api/tts': typeof ApiTtsRoute
   '/class/$slug': typeof ClassSlugRoute
+  '/task/main-idea': typeof TaskMainIdeaRoute
   '/task/new-beginnings-10': typeof TaskNewBeginnings10Route
 }
 export interface FileRouteTypes {
@@ -90,6 +99,7 @@ export interface FileRouteTypes {
     | '/api/nb10-assistant'
     | '/api/tts'
     | '/class/$slug'
+    | '/task/main-idea'
     | '/task/new-beginnings-10'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -99,6 +109,7 @@ export interface FileRouteTypes {
     | '/api/nb10-assistant'
     | '/api/tts'
     | '/class/$slug'
+    | '/task/main-idea'
     | '/task/new-beginnings-10'
   id:
     | '__root__'
@@ -108,6 +119,7 @@ export interface FileRouteTypes {
     | '/api/nb10-assistant'
     | '/api/tts'
     | '/class/$slug'
+    | '/task/main-idea'
     | '/task/new-beginnings-10'
   fileRoutesById: FileRoutesById
 }
@@ -118,6 +130,7 @@ export interface RootRouteChildren {
   ApiNb10AssistantRoute: typeof ApiNb10AssistantRoute
   ApiTtsRoute: typeof ApiTtsRoute
   ClassSlugRoute: typeof ClassSlugRoute
+  TaskMainIdeaRoute: typeof TaskMainIdeaRoute
   TaskNewBeginnings10Route: typeof TaskNewBeginnings10Route
 }
 
@@ -165,6 +178,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ClassSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/task/main-idea': {
+      id: '/task/main-idea'
+      path: '/task/main-idea'
+      fullPath: '/task/main-idea'
+      preLoaderRoute: typeof TaskMainIdeaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/task/new-beginnings-10': {
       id: '/task/new-beginnings-10'
       path: '/task/new-beginnings-10'
@@ -182,6 +202,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiNb10AssistantRoute: ApiNb10AssistantRoute,
   ApiTtsRoute: ApiTtsRoute,
   ClassSlugRoute: ClassSlugRoute,
+  TaskMainIdeaRoute: TaskMainIdeaRoute,
   TaskNewBeginnings10Route: TaskNewBeginnings10Route,
 }
 export const routeTree = rootRouteImport
