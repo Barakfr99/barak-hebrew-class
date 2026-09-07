@@ -72,13 +72,24 @@ function PromptWithTerm({ prompt, note }: { prompt: string; note: NB10Note }) {
   );
 }
 
-/** הערת המורה לתשובה — מוצגת רק אם המורה כתב/ה בה משהו. */
-function TeacherNote({ note }: { note: string }) {
-  if (!note || !note.trim()) return null;
+/** הערת המורה וניקוד לתשובה — מוצגים רק אם המורה מילא/ה אותם. */
+export type StudentAnswerNote = { note: string; score: number | null };
+
+function TeacherNote({ note }: { note: StudentAnswerNote | undefined }) {
+  const text = note?.note?.trim() ?? "";
+  const score = note?.score ?? null;
+  if (!text && score == null) return null;
   return (
     <div className="mt-2 rounded-xl border border-primary/30 bg-accent/40 p-3">
-      <p className="text-xs font-semibold text-primary">הערת המורה</p>
-      <p className="mt-1 whitespace-pre-wrap text-sm">{note}</p>
+      <div className="flex items-center justify-between gap-3">
+        <p className="text-xs font-semibold text-primary">הערת המורה</p>
+        {score != null && (
+          <span className="rounded-full bg-primary px-3 py-1 text-xs font-bold text-primary-foreground">
+            ניקוד: {score}
+          </span>
+        )}
+      </div>
+      {text && <p className="mt-1 whitespace-pre-wrap text-sm">{text}</p>}
     </div>
   );
 }
@@ -94,7 +105,7 @@ function QuestionCard({
   answers: Record<string, string>;
   onChange: (id: string, value: string) => void;
   readOnly: boolean;
-  notes: Record<string, string>;
+  notes: Record<string, StudentAnswerNote>;
 }) {
   if (question.kind === "guided") {
     return (
@@ -116,7 +127,7 @@ function QuestionCard({
                   onChange={(e) => onChange(id, e.target.value)}
                   className="mt-2"
                 />
-                <TeacherNote note={notes[id] ?? ""} />
+                <TeacherNote note={notes[id]} />
               </div>
             );
           })}
@@ -147,7 +158,7 @@ function QuestionCard({
             </label>
           ))}
         </RadioGroup>
-        <TeacherNote note={notes[question.id] ?? ""} />
+        <TeacherNote note={notes[question.id]} />
       </div>
     );
   }
@@ -171,7 +182,7 @@ function QuestionCard({
         onChange={(e) => onChange(question.id, e.target.value)}
         className="mt-4"
       />
-      <TeacherNote note={notes[question.id] ?? ""} />
+      <TeacherNote note={notes[question.id]} />
     </div>
   );
 }
@@ -232,14 +243,14 @@ export function NewBeginnings10Wizard({
     queryFn: async () => {
       const { data, error } = await supabase
         .from("nb10_notes")
-        .select("question_id, note")
+        .select("question_id, note, score")
         .eq("task_id", task.id)
         .eq("student_id", studentId);
       if (error) throw error;
-      const map: Record<string, string> = {};
+      const map: Record<string, StudentAnswerNote> = {};
       let general = "";
       (data ?? []).forEach((row) => {
-        if (row.question_id) map[row.question_id] = row.note ?? "";
+        if (row.question_id) map[row.question_id] = { note: row.note ?? "", score: row.score ?? null };
         else general = row.note ?? "";
       });
       return { map, general };
