@@ -277,6 +277,7 @@ function TaskCard({
             setBusy(true);
             try {
               await deleteTask(task.id);
+              onDeleted?.();
               await onChanged();
               toast.success("המשימה נמחקה");
             } catch {
