@@ -293,6 +293,7 @@ function TeacherDashboard() {
     if (filter === "in_progress") return !s.finished_at;
     if (filter === "speech") return s.speech_enabled;
     if (filter === "no_choice") return done.length === 0;
+    if (filter === "pending") return (pendingByStudent.get(s.id) ?? 0) > 0;
     return true;
   });
 
