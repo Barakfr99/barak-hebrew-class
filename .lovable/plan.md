@@ -54,8 +54,9 @@
 - `questions`: `part_id text`, `weight numeric` (משקל באחוזים).
 - טבלה חדשה `teacher_notes` (student_id, task_id, question_id nullable, note text) — הערה כללית = `question_id is null`.
 - `feedback`: `task_id uuid null` + הסרת ה-unique הגלובלי לטובת `(student_id, task_id)`, כדי לאפשר ניתוח משוב פר-משימה.
-- `students`: הסרת השימוש בשדות `grade_required` / `grade_choice_1` / `grade_choice_2` בקוד (ציונים דרך `task_grades`), והפסקת שימוש ב-`speech_enabled` בתצוגה.
-- הרשאות `GRANT` + מדיניות גישה לטבלה החדשה בהתאם לתבנית הקיימת בפרויקט.
+- `students`: הסרת השימוש בשדות `grade_required` / `grade_choice_1` / `grade_choice_2` בקוד (ציונים דרך `task_grades`). `speech_enabled` נשאר ומשמש כמתג ההרשאה הכללי שהמורה קובע/ת.
+- טבלה חדשה `student_task_speech` (student_id, task_id, allowed boolean) — ההרשאה למשימה בודדת; ברירת מחדל: פתוח לתלמיד/ה שההרשאה הכללית שלו/ה פתוחה.
+- הרשאות `GRANT` + מדיניות גישה לטבלאות החדשות בהתאם לתבנית הקיימת בפרויקט.
 
 **קוד:**
 - `src/lib/practice.ts`: טיפוסי `TaskPart`, `GradingMode`, מיון `created_at desc`, פונקציות `fetchTeacherNotes`/`saveTeacherNote`, חישוב ציון משוקלל, `moveStudentClass`, `teacherCreateStudent` (דרך `src/lib/auth.functions.ts` כדי לשמור על הזרימה ללא סיסמה).
