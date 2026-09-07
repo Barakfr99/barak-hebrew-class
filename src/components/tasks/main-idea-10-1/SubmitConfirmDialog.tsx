@@ -86,11 +86,28 @@ export function SubmitConfirmDialog({
           ))}
         </ul>
 
+        {(page1Count < MI_REQUIRED_PAGE1 || page3Count < MI_REQUIRED_PAGE3) && (
+          <p className="flex items-start gap-2 rounded-xl border-2 border-destructive bg-destructive/10 p-3 text-sm font-semibold">
+            <AlertTriangle className="mt-0.5 size-4 shrink-0 text-destructive" />
+            <span>
+              לא עמדת במינימום הנדרש:
+              {page1Count < MI_REQUIRED_PAGE1
+                ? ` בעמוד 1 נדרש ${MI_REQUIRED_PAGE1} פסקאות ומולאו ${page1Count}.`
+                : ""}
+              {page3Count < MI_REQUIRED_PAGE3
+                ? ` בעמוד 3 נדרש ${MI_REQUIRED_PAGE3} ניסוחים ונוסחו ${page3Count}.`
+                : ""}
+              {" "}אפשר להגיש בכל זאת, אבל זה ישפיע על הציון.
+            </span>
+          </p>
+        )}
+
         {extra > 0 && (
           <p className="rounded-xl bg-accent/60 p-3 text-sm">
             ענית על {extra} פסקאות יותר מהנדרש — זה יסומן למורה כמאמץ נוסף וייתכן בונוס בציון.
           </p>
         )}
+
 
         <p className="flex items-start gap-2 rounded-xl bg-destructive/10 p-3 text-sm">
           <AlertTriangle className="mt-0.5 size-4 shrink-0 text-destructive" />
