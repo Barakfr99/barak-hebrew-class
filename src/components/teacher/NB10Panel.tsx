@@ -282,6 +282,8 @@ export function StudentReview({ taskId, student }: { taskId: string; student: St
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["nb10-notes", taskId] });
       await queryClient.invalidateQueries({ queryKey: ["nb10-review-note", taskId, student.id] });
+      await queryClient.invalidateQueries({ queryKey: ["nb10-student-note"] });
+      await queryClient.invalidateQueries({ queryKey: ["space-task-rollup"] });
       toast.success("ההערה נשמרה.");
     },
     onError: () => toast.error("לא הצלחנו לשמור את ההערה."),
