@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Textarea } from "@/components/ui/textarea";
 
-/** עוזר שיטה — צ'אט מלווה למשימה "התחלות חדשות (מותאם)". לא נותן תשובות לתוכן. */
+/** עוזר שיטה — צ'אט מלווה למשימה "התחלות חדשות". לא נותן תשובות לתוכן. */
 export function MethodAssistant() {
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState("");

@@ -5,7 +5,7 @@ import { NB10_ASSISTANT_SYSTEM_PROMPT } from "@/components/tasks/new-beginnings-
 
 const RUN_ID_HEADER = "X-Lovable-AIG-Run-ID";
 
-/** עוזר השיטה של המשימה "התחלות חדשות (מותאם)". */
+/** עוזר השיטה של המשימה "התחלות חדשות". */
 export const Route = createFileRoute("/api/nb10-assistant")({
   server: {
     handlers: {

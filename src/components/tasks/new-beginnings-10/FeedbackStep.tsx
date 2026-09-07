@@ -51,7 +51,7 @@ function Scale({
   );
 }
 
-/** משוב מסכם למשימה "התחלות חדשות (מותאם)" — שש שאלות. */
+/** משוב מסכם למשימה "התחלות חדשות" — שש שאלות. */
 export function NB10FeedbackStep({
   readOnly,
   initial,
