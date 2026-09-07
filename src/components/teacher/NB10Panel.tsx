@@ -89,7 +89,11 @@ export function NB10Panel({
   });
 
   const updateTask = useMutation({
-    mutationFn: async (patch: Record<string, unknown>) => {
+    mutationFn: async (patch: {
+      is_active?: boolean;
+      opens_at?: string | null;
+      closes_at?: string | null;
+    }) => {
       const { error } = await supabase.from("nb10_tasks").update(patch).eq("id", task!.id);
       if (error) throw error;
     },
