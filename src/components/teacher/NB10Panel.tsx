@@ -262,6 +262,14 @@ export function NB10Panel({
                     {submitted ? (
                       <Badge className="bg-success text-success-foreground">
                         <Check className="size-3" /> הוגשה
+                        {submitTime
+                          ? ` · ${new Date(submitTime).toLocaleString("he-IL", {
+                              day: "2-digit",
+                              month: "2-digit",
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}`
+                          : ""}
                       </Badge>
                     ) : (
                       <Badge variant="secondary">בתהליך</Badge>
