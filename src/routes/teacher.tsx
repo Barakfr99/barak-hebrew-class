@@ -366,12 +366,14 @@ function TeacherDashboard() {
         </TabsList>
 
         <TabsContent value="students">
-      <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
         <StatCard label="תלמידים בכיתה" value={students.length} />
         <StatCard label="סיימו את התרגול" value={finishedCount} />
+        <StatCard label="מחכות לבדיקה" value={pendingTotal} />
         <StatCard label="מילאו משוב" value={feedbackCount} />
         <StatCard label="עם הרשאת הקראה" value={students.filter((s) => s.speech_enabled).length} />
       </div>
+
 
       <section className="mt-8">
         <div className="flex flex-wrap items-end gap-3">
