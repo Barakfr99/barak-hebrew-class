@@ -230,26 +230,23 @@ function TaskDetail({
       {task.grading_mode === "submission" ? (
         <div className="flex flex-wrap items-center gap-2">
           <span className="text-sm">ציון המשימה:</span>
-          <Button
-            size="sm"
-            variant={grade === 100 ? "default" : "outline"}
-            onClick={async () => {
-              await saveTaskGrade({ studentId: student.id, taskId: task.id, grade: 100 });
-              await onChanged();
-            }}
-          >
-            הגיש/ה — 100
-          </Button>
-          <Button
-            size="sm"
-            variant={grade === 0 ? "default" : "outline"}
-            onClick={async () => {
-              await saveTaskGrade({ studentId: student.id, taskId: task.id, grade: 0 });
-              await onChanged();
-            }}
-          >
-            לא הגיש/ה — 0
-          </Button>
+          {SUBMISSION_GRADES.map((option) => (
+            <Button
+              key={option.value}
+              size="sm"
+              variant={grade === option.value ? "default" : "outline"}
+              onClick={async () => {
+                await saveTaskGrade({
+                  studentId: student.id,
+                  taskId: task.id,
+                  grade: option.value,
+                });
+                await onChanged();
+              }}
+            >
+              {option.label}
+            </Button>
+          ))}
         </div>
       ) : (
         <div className="flex flex-wrap items-end gap-3">
