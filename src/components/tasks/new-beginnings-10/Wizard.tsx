@@ -73,7 +73,7 @@ function PromptWithTerm({ prompt, note }: { prompt: string; note: NB10Note }) {
 }
 
 /** הערת המורה לתשובה — מוצגת רק אם המורה כתב/ה בה משהו. */
-function TeacherNote({ note }: { note?: string | undefined }) {
+function TeacherNote({ note }: { note: string }) {
   if (!note || !note.trim()) return null;
   return (
     <div className="mt-2 rounded-xl border border-primary/30 bg-accent/40 p-3">
@@ -116,7 +116,7 @@ function QuestionCard({
                   onChange={(e) => onChange(id, e.target.value)}
                   className="mt-2"
                 />
-                <TeacherNote note={notes[id]} />
+                <TeacherNote note={notes[id] ?? ""} />
               </div>
             );
           })}
@@ -147,7 +147,7 @@ function QuestionCard({
             </label>
           ))}
         </RadioGroup>
-        <TeacherNote note={notes[question.id]} />
+        <TeacherNote note={notes[question.id] ?? ""} />
       </div>
     );
   }
@@ -171,7 +171,7 @@ function QuestionCard({
         onChange={(e) => onChange(question.id, e.target.value)}
         className="mt-4"
       />
-      <TeacherNote note={notes[question.id]} />
+      <TeacherNote note={notes[question.id] ?? ""} />
     </div>
   );
 }
