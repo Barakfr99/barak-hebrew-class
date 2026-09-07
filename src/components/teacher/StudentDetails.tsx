@@ -34,6 +34,13 @@ import {
 
 type AnswerRow = { task_id: string; question_id: string; answer_text: string };
 
+const SUBMISSION_GRADES = [
+  { value: 100, label: "מלא — 100" },
+  { value: 75, label: "חלקי — 75" },
+  { value: 50, label: "מינימלי — 50" },
+  { value: 0, label: "לא הגיש/ה — 0" },
+] as const;
+
 export function StudentDetails({
   student,
   tasks,

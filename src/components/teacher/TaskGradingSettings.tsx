@@ -93,7 +93,7 @@ export function TaskGradingSettings({
                 <p className="font-semibold">{task.title}</p>
                 <p className="text-sm text-muted-foreground">
                   {task.questions.length} שאלות · {parts.length} חלקים ·{" "}
-                  {task.grading_mode === "submission" ? "הגיש/לא הגיש" : "ניקוד לכל שאלה"}
+                  {task.grading_mode === "submission" ? "ניקוד הגשה" : "ניקוד לכל שאלה"}
                 </p>
               </div>
               <span
@@ -207,7 +207,7 @@ function TaskCard({
             </SelectTrigger>
             <SelectContent dir="rtl">
               <SelectItem value="weighted">ניקוד לכל שאלה (אחוזים)</SelectItem>
-              <SelectItem value="submission">הגיש/לא הגיש — 0 או 100</SelectItem>
+              <SelectItem value="submission">ניקוד הגשה — 0 / 50 / 75 / 100</SelectItem>
             </SelectContent>
           </Select>
         </div>
