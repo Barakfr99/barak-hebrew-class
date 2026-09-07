@@ -440,6 +440,7 @@ export type Database = {
         Row: {
           article_title: string | null
           class_slug: string | null
+          closes_at: string | null
           created_at: string
           description: string
           footnote: string | null
@@ -449,6 +450,7 @@ export type Database = {
           is_active: boolean
           kind: string
           max_points: number
+          opens_at: string | null
           paragraphs: Json
           sort_order: number
           source_note: string | null
@@ -458,6 +460,7 @@ export type Database = {
         Insert: {
           article_title?: string | null
           class_slug?: string | null
+          closes_at?: string | null
           created_at?: string
           description?: string
           footnote?: string | null
@@ -467,6 +470,7 @@ export type Database = {
           is_active?: boolean
           kind: string
           max_points?: number
+          opens_at?: string | null
           paragraphs?: Json
           sort_order?: number
           source_note?: string | null
@@ -476,6 +480,7 @@ export type Database = {
         Update: {
           article_title?: string | null
           class_slug?: string | null
+          closes_at?: string | null
           created_at?: string
           description?: string
           footnote?: string | null
@@ -485,6 +490,7 @@ export type Database = {
           is_active?: boolean
           kind?: string
           max_points?: number
+          opens_at?: string | null
           paragraphs?: Json
           sort_order?: number
           source_note?: string | null
