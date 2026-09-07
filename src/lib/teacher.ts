@@ -188,13 +188,16 @@ export async function deleteTask(taskId: string) {
     .delete()
     .eq("task_id", taskId);
   if (speechError) throw speechError;
-  for (const col of ["choice_slot_1_task_id", "choice_slot_2_task_id"] as const) {
-    const { error } = await supabase
-      .from("students")
-      .update({ [col]: null })
-      .eq(col, taskId);
-    if (error) throw error;
-  }
+  const { error: slot1Error } = await supabase
+    .from("students")
+    .update({ choice_slot_1_task_id: null })
+    .eq("choice_slot_1_task_id", taskId);
+  if (slot1Error) throw slot1Error;
+  const { error: slot2Error } = await supabase
+    .from("students")
+    .update({ choice_slot_2_task_id: null })
+    .eq("choice_slot_2_task_id", taskId);
+  if (slot2Error) throw slot2Error;
   const { error: questionsError } = await supabase.from("questions").delete().eq("task_id", taskId);
   if (questionsError) throw questionsError;
   const { error } = await supabase.from("tasks").delete().eq("id", taskId);
