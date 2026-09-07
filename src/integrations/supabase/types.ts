@@ -117,6 +117,222 @@ export type Database = {
           },
         ]
       }
+      nb10_answers: {
+        Row: {
+          answer_text: string
+          created_at: string
+          id: string
+          question_id: string
+          student_id: string
+          task_id: string
+          updated_at: string
+        }
+        Insert: {
+          answer_text?: string
+          created_at?: string
+          id?: string
+          question_id: string
+          student_id: string
+          task_id: string
+          updated_at?: string
+        }
+        Update: {
+          answer_text?: string
+          created_at?: string
+          id?: string
+          question_id?: string
+          student_id?: string
+          task_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "nb10_answers_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "nb10_answers_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "nb10_tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      nb10_feedback: {
+        Row: {
+          assistant_scale: number | null
+          clarity_scale: number | null
+          compare_lesson: string | null
+          created_at: string
+          help_page_usage: string | null
+          id: string
+          learning_scale: number | null
+          still_unclear: string | null
+          student_id: string
+          task_id: string
+          updated_at: string
+        }
+        Insert: {
+          assistant_scale?: number | null
+          clarity_scale?: number | null
+          compare_lesson?: string | null
+          created_at?: string
+          help_page_usage?: string | null
+          id?: string
+          learning_scale?: number | null
+          still_unclear?: string | null
+          student_id: string
+          task_id: string
+          updated_at?: string
+        }
+        Update: {
+          assistant_scale?: number | null
+          clarity_scale?: number | null
+          compare_lesson?: string | null
+          created_at?: string
+          help_page_usage?: string | null
+          id?: string
+          learning_scale?: number | null
+          still_unclear?: string | null
+          student_id?: string
+          task_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "nb10_feedback_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "nb10_feedback_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "nb10_tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      nb10_notes: {
+        Row: {
+          created_at: string
+          id: string
+          note: string
+          question_id: string | null
+          score: number | null
+          student_id: string
+          task_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          note?: string
+          question_id?: string | null
+          score?: number | null
+          student_id: string
+          task_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          note?: string
+          question_id?: string | null
+          score?: number | null
+          student_id?: string
+          task_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "nb10_notes_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "nb10_notes_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "nb10_tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      nb10_submissions: {
+        Row: {
+          id: string
+          student_id: string
+          submitted_at: string
+          task_id: string
+        }
+        Insert: {
+          id?: string
+          student_id: string
+          submitted_at?: string
+          task_id: string
+        }
+        Update: {
+          id?: string
+          student_id?: string
+          submitted_at?: string
+          task_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "nb10_submissions_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "nb10_submissions_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "nb10_tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      nb10_tasks: {
+        Row: {
+          class_slug: string
+          closes_at: string | null
+          created_at: string
+          id: string
+          is_active: boolean
+          opens_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          class_slug: string
+          closes_at?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          opens_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          class_slug?: string
+          closes_at?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          opens_at?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       practice_settings: {
         Row: {
           created_at: string

@@ -50,6 +50,8 @@ import {
 import { StudentDetails } from "@/components/teacher/StudentDetails";
 import { TaskGradingSettings } from "@/components/teacher/TaskGradingSettings";
 import { FeedbackDashboard } from "@/components/teacher/FeedbackDashboard";
+import { NB10Panel } from "@/components/teacher/NB10Panel";
+
 import { cn } from "@/lib/utils";
 import { useServerFn } from "@tanstack/react-start";
 import { teacherDeleteStudent, teacherResetPassword } from "@/lib/auth.functions";
@@ -364,6 +366,8 @@ function TeacherDashboard() {
           <TabsTrigger value="students">כיתות ותלמידים</TabsTrigger>
           <TabsTrigger value="tasks">ניהול המשימות</TabsTrigger>
           <TabsTrigger value="feedback">ניתוח משובים</TabsTrigger>
+          <TabsTrigger value="nb10">התחלות חדשות (מותאם)</TabsTrigger>
+
         </TabsList>
 
         <TabsContent value="students">
@@ -543,6 +547,11 @@ function TeacherDashboard() {
         <TabsContent value="feedback" className="mt-6">
           <FeedbackDashboard feedback={feedback} tasks={classTasks} studentIds={studentIds} />
         </TabsContent>
+
+        <TabsContent value="nb10" className="mt-6">
+          <NB10Panel classSlug={selectedClass?.slug} students={students} />
+        </TabsContent>
+
       </Tabs>
     </main>
   );
