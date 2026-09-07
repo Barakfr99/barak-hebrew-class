@@ -354,7 +354,7 @@ export function StudentReview({ taskId, student }: { taskId: string; student: St
   );
 }
 
-/** הערת מורה לתשובה בודדת — נשמרת ומוצגת לתלמיד/ה רק אם נכתב בה משהו. */
+/** הערה + ניקוד לתשובה בודדת — מוצגים לתלמיד/ה רק אם מולאו. */
 function QuestionNote({
   taskId,
   studentId,
@@ -365,14 +365,13 @@ function QuestionNote({
   questionId: string;
 }) {
   const queryClient = useQueryClient();
-  const [value, setValue] = useState<string | null>(null);
 
   const noteQuery = useQuery({
     queryKey: ["nb10-answer-note", taskId, studentId, questionId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("nb10_notes")
-        .select("note")
+        .select("note, score")
         .eq("task_id", taskId)
         .eq("student_id", studentId)
         .eq("question_id", questionId)
@@ -382,53 +381,38 @@ function QuestionNote({
     },
   });
 
-  const current = value ?? noteQuery.data?.note ?? "";
-
-  const save = useMutation({
-    mutationFn: async () => {
-      const { error } = await supabase.from("nb10_notes").upsert(
-        {
-          task_id: taskId,
-          student_id: studentId,
-          question_id: questionId,
-          note: current,
-          updated_at: new Date().toISOString(),
-        },
-        { onConflict: "student_id,task_id,question_id" },
-      );
-      if (error) throw error;
-    },
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({
-        queryKey: ["nb10-answer-note", taskId, studentId, questionId],
-      });
-      await queryClient.invalidateQueries({ queryKey: ["nb10-student-notes", taskId, studentId] });
-      toast.success("ההערה לתשובה נשמרה.");
-    },
-    onError: () => toast.error("לא הצלחנו לשמור את ההערה."),
-  });
+  const save = async (next: AnswerNoteValue) => {
+    const { error } = await supabase.from("nb10_notes").upsert(
+      {
+        task_id: taskId,
+        student_id: studentId,
+        question_id: questionId,
+        note: next.note,
+        score: next.score,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "student_id,task_id,question_id" },
+    );
+    if (error) {
+      toast.error("לא הצלחנו לשמור את ההערה.");
+      throw error;
+    }
+    await queryClient.invalidateQueries({
+      queryKey: ["nb10-answer-note", taskId, studentId, questionId],
+    });
+    await queryClient.invalidateQueries({ queryKey: ["nb10-answer-notes", taskId, studentId] });
+    await queryClient.invalidateQueries({ queryKey: ["nb10-student-notes", taskId, studentId] });
+  };
 
   return (
-    <div className="mt-3 rounded-xl bg-secondary/50 p-3">
-      <Label htmlFor={`note-${questionId}`} className="text-xs">
-        הערה לתשובה (התלמיד/ה יראה אותה רק אם תמלאו כאן משהו)
-      </Label>
-      <Textarea
-        id={`note-${questionId}`}
-        rows={2}
-        className="mt-1 bg-background"
-        value={current}
-        onChange={(e) => setValue(e.target.value)}
-      />
-      <Button
-        size="sm"
-        variant="outline"
-        className="mt-2"
-        onClick={() => save.mutate()}
-        disabled={save.isPending}
-      >
-        שמירת ההערה
-      </Button>
-    </div>
+    <AnswerNoteBox
+      id={questionId}
+      value={{
+        note: noteQuery.data?.note ?? "",
+        score: noteQuery.data?.score ?? null,
+      }}
+      onSave={save}
+    />
   );
 }
+
