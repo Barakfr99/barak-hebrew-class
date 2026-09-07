@@ -22,9 +22,15 @@ const HELP_OPTIONS = [
 
 export function FeedbackForm({
   studentId,
+  taskId,
+  taskTitle,
+  markFinished = true,
   onDone,
 }: {
   studentId: string;
+  taskId?: string | null;
+  taskTitle?: string | null;
+  markFinished?: boolean;
   onDone: () => Promise<void> | void;
 }) {
   const [clarity, setClarity] = useState<number | null>(null);
@@ -42,19 +48,22 @@ export function FeedbackForm({
       const { error } = await supabase.from("feedback").upsert(
         {
           student_id: studentId,
+          task_id: taskId ?? null,
           clarity_scale: clarity,
           learning_scale: learning,
           compare_lesson: compare,
           help_page_usage: helpUsage,
           still_unclear: unclear.trim(),
         },
-        { onConflict: "student_id" },
+        { onConflict: "student_id,task_id" },
       );
       if (error) throw error;
-      await supabase
-        .from("students")
-        .update({ stage: "done", finished_at: new Date().toISOString() })
-        .eq("id", studentId);
+      if (markFinished) {
+        await supabase
+          .from("students")
+          .update({ stage: "done", finished_at: new Date().toISOString() })
+          .eq("id", studentId);
+      }
       await onDone();
     } catch {
       toast.error("המשוב לא נשמר. נסו שוב.");
@@ -67,6 +76,7 @@ export function FeedbackForm({
     <div className="space-y-6">
       <div>
         <h2 className="text-2xl font-bold">משוב קצר — חמש שאלות בלבד</h2>
+        {taskTitle && <p className="text-sm text-muted-foreground">על המשימה: {taskTitle}</p>}
         <p className="mt-1 text-muted-foreground">זה השלב האחרון, וזה לוקח פחות מדקה.</p>
       </div>
 

@@ -6,6 +6,7 @@ import {
   GraduationCap,
   KeyRound,
   PlayCircle,
+  Plus,
   RotateCcw,
   Search,
   Trash2,
@@ -14,7 +15,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
 import {
   Select,
   SelectContent,
@@ -23,38 +24,38 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
-import { CLASSES } from "@/lib/classes";
+import { CLASSES, findClass } from "@/lib/classes";
 import {
   ensureTeacherTestStudent,
   fetchSettings,
   fetchTaskGrades,
   fetchTasks,
   fullName,
-  groupQuestions,
   isTeacherTestStudent,
   reopenStudentTasks,
   resetTeacherTestStudent,
-  saveTaskGrade,
   tasksForClass,
   writeDeviceStudentId,
   type Student,
-  type Task,
-  type TaskGrade,
 } from "@/lib/practice";
 import {
-  POS_EXERCISES,
-  describePosAnswer,
-  exerciseByKey,
-  parseJson,
-  type SelectionAnswer,
-} from "@/lib/parts-of-speech";
+  createStudentManually,
+  fetchFeedbackRows,
+  fetchTaskSpeech,
+  fetchTeacherNotes,
+  moveStudentClass,
+  setStudentSpeech,
+} from "@/lib/teacher";
+import { StudentDetails } from "@/components/teacher/StudentDetails";
+import { TaskGradingSettings } from "@/components/teacher/TaskGradingSettings";
+import { FeedbackDashboard } from "@/components/teacher/FeedbackDashboard";
 import { cn } from "@/lib/utils";
 import { useServerFn } from "@tanstack/react-start";
 import { teacherDeleteStudent, teacherResetPassword } from "@/lib/auth.functions";
 
-
 const TEACHER_KEY = "reading-practice.teacher-ok";
 const TEACHER_CODE_KEY = "reading-practice.teacher-code";
+const TEACHER_CLASS_KEY = "reading-practice.teacher-class";
 
 export const Route = createFileRoute("/teacher")({
   ssr: false,
@@ -63,10 +64,10 @@ export const Route = createFileRoute("/teacher")({
       { title: "לוח מורה — תרגול הבנת הנקרא" },
       {
         name: "description",
-        content: "מעקב בזמן אמת אחר התלמידים בתרגול: משימות שנבחרו, תשובות, משוב וציונים.",
+        content: "ניהול מרחב לימוד: תלמידים, תשובות, הערות, ציונים לכל משימה וניתוח משוב.",
       },
       { property: "og:title", content: "לוח מורה — תרגול הבנת הנקרא" },
-      { property: "og:description", content: "מעקב בזמן אמת אחר תשובות התלמידים והזנת ציונים." },
+      { property: "og:description", content: "ניהול תלמידים, ציונים לכל משימה וניתוח משוב." },
     ],
   }),
   component: TeacherPage,
@@ -127,15 +128,28 @@ function TeacherDashboard() {
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("all");
   const [expanded, setExpanded] = useState<string | null>(null);
-  const [testClass, setTestClass] = useState(CLASSES[0]?.slug ?? "");
+  const [classSlug, setClassSlug] = useState(CLASSES[0]?.slug ?? "");
   const [testBusy, setTestBusy] = useState(false);
+  const [adding, setAdding] = useState(false);
+
+  useEffect(() => {
+    const saved = window.localStorage.getItem(TEACHER_CLASS_KEY);
+    if (saved && findClass(saved)) setClassSlug(saved);
+  }, []);
+
+  const selectedClass = findClass(classSlug);
+
+  const changeClass = (slug: string) => {
+    setClassSlug(slug);
+    setExpanded(null);
+    window.localStorage.setItem(TEACHER_CLASS_KEY, slug);
+  };
 
   const openAsTestStudent = async () => {
-    const cls = CLASSES.find((c) => c.slug === testClass);
-    if (!cls) return;
+    if (!selectedClass) return;
     setTestBusy(true);
     try {
-      const id = await ensureTeacherTestStudent(cls);
+      const id = await ensureTeacherTestStudent(selectedClass);
       writeDeviceStudentId(id);
       navigate({ to: "/practice" });
     } catch {
@@ -146,11 +160,10 @@ function TeacherDashboard() {
   };
 
   const resetTestStudent = async () => {
-    const cls = CLASSES.find((c) => c.slug === testClass);
-    if (!cls) return;
+    if (!selectedClass) return;
     setTestBusy(true);
     try {
-      const id = await ensureTeacherTestStudent(cls);
+      const id = await ensureTeacherTestStudent(selectedClass);
       await resetTeacherTestStudent(id);
       toast.success("תשובות הבדיקה נמחקו");
     } catch {
@@ -159,7 +172,6 @@ function TeacherDashboard() {
       setTestBusy(false);
     }
   };
-
 
   const tasksQuery = useQuery({ queryKey: ["tasks"], queryFn: fetchTasks });
   const studentsQuery = useQuery({
@@ -194,16 +206,15 @@ function TeacherDashboard() {
     },
   });
   const gradesQuery = useQuery({ queryKey: ["teacher-task-grades"], queryFn: fetchTaskGrades });
-  const feedbackQuery = useQuery({
-    queryKey: ["teacher-feedback"],
-    queryFn: async () => {
-      const { data, error } = await supabase.from("feedback").select("*");
-      if (error) throw error;
-      return data ?? [];
-    },
-  });
+  const notesQuery = useQuery({ queryKey: ["teacher-notes"], queryFn: fetchTeacherNotes });
+  const speechQuery = useQuery({ queryKey: ["teacher-task-speech"], queryFn: fetchTaskSpeech });
+  const feedbackQuery = useQuery({ queryKey: ["teacher-feedback"], queryFn: fetchFeedbackRows });
 
-  // Live updates for the whole board.
+  const refreshAll = async () => {
+    await queryClient.invalidateQueries();
+  };
+
+  // עדכון חי של הלוח.
   useEffect(() => {
     const channel = supabase
       .channel("teacher-board")
@@ -228,15 +239,21 @@ function TeacherDashboard() {
     };
   }, [queryClient]);
 
-  const tasks = tasksQuery.data ?? [];
-  const taskById = useMemo(() => new Map(tasks.map((t) => [t.id, t])), [tasks]);
-  const choiceTasks = tasks.filter((t) => t.kind === "choice");
-  const requiredTask = tasks.find((t) => t.kind === "required");
-  const students = (studentsQuery.data ?? []).filter((s) => !isTeacherTestStudent(s));
+  const allTasks = tasksQuery.data ?? [];
+  const classTasks = useMemo(
+    () => tasksForClass(allTasks, classSlug).filter((t) => t.class_slug === classSlug),
+    [allTasks, classSlug],
+  );
+  const students = (studentsQuery.data ?? []).filter(
+    (s) => !isTeacherTestStudent(s) && s.class_slug === classSlug,
+  );
+  const studentIds = new Set(students.map((s) => s.id));
   const completions = completionsQuery.data ?? [];
   const answers = answersQuery.data ?? [];
   const feedback = feedbackQuery.data ?? [];
   const taskGrades = gradesQuery.data ?? [];
+  const notes = notesQuery.data ?? [];
+  const taskSpeech = speechQuery.data ?? [];
 
   const completionsByStudent = useMemo(() => {
     const map = new Map<string, string[]>();
@@ -247,65 +264,19 @@ function TeacherDashboard() {
   }, [completions]);
 
   const finishedCount = students.filter((s) => s.finished_at).length;
-  const feedbackCount = feedback.length;
+  const feedbackCount = feedback.filter((f) => studentIds.has(f.student_id)).length;
 
   const filtered = students.filter((s) => {
     const term = search.trim();
-    const matches =
-      !term ||
-      fullName(s).includes(term) ||
-      (s.class_name ?? "").includes(term);
+    const matches = !term || fullName(s).includes(term);
     if (!matches) return false;
     const done = completionsByStudent.get(s.id) ?? [];
     if (filter === "finished") return Boolean(s.finished_at);
     if (filter === "in_progress") return !s.finished_at;
-    if (filter === "adaptive") return s.speech_enabled;
-    if (filter === "regular") return !s.speech_enabled;
+    if (filter === "speech") return s.speech_enabled;
     if (filter === "no_choice") return done.length === 0;
     return true;
   });
-
-  const updateGrade = async (
-    studentId: string,
-    field: "grade_required" | "grade_choice_1" | "grade_choice_2",
-    value: string,
-    max: number,
-  ) => {
-    const parsed = value.trim() === "" ? null : Number(value);
-    if (parsed !== null && (Number.isNaN(parsed) || parsed < 0 || parsed > max)) {
-      toast.error(`הציון חייב להיות בין 0 ל-${max}`);
-      return;
-    }
-    const patch = { updated_at: new Date().toISOString() } as {
-      updated_at: string;
-      grade_required?: number | null;
-      grade_choice_1?: number | null;
-      grade_choice_2?: number | null;
-    };
-    patch[field] = parsed;
-    const { error } = await supabase.from("students").update(patch).eq("id", studentId);
-    if (error) {
-      toast.error("הציון לא נשמר");
-      return;
-    }
-    toast.success("הציון נשמר");
-    await queryClient.invalidateQueries({ queryKey: ["teacher-students"] });
-  };
-
-  const updateTaskGrade = async (studentId: string, taskId: string, value: string) => {
-    const parsed = value.trim() === "" ? null : Number(value);
-    if (parsed !== null && (Number.isNaN(parsed) || parsed < 0 || parsed > 100)) {
-      toast.error("הציון חייב להיות בין 0 ל-100");
-      return;
-    }
-    try {
-      await saveTaskGrade({ studentId, taskId, grade: parsed });
-      toast.success("הציון נשמר");
-      await queryClient.invalidateQueries({ queryKey: ["teacher-task-grades"] });
-    } catch {
-      toast.error("הציון לא נשמר");
-    }
-  };
 
   return (
     <main className="mx-auto w-full max-w-6xl px-4 py-8">
@@ -318,8 +289,8 @@ function TeacherDashboard() {
           <Button
             variant="outline"
             onClick={() => {
-              window.sessionStorage.removeItem("reading-practice.teacher-ok");
-              window.sessionStorage.removeItem("reading-practice.teacher-code");
+              window.sessionStorage.removeItem(TEACHER_KEY);
+              window.sessionStorage.removeItem(TEACHER_CODE_KEY);
               window.location.reload();
             }}
           >
@@ -329,28 +300,13 @@ function TeacherDashboard() {
             <Link to="/">לדף הפתיחה</Link>
           </Button>
         </div>
-
       </div>
 
-      <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard label="תלמידים שנכנסו" value={students.length} />
-        <StatCard label="סיימו את התרגול" value={finishedCount} />
-        <StatCard label="מילאו משוב" value={feedbackCount} />
-        <StatCard
-          label="עם הקראה קולית"
-          value={students.filter((s) => s.speech_enabled).length}
-        />
-      </div>
-
-      <section className="mt-8 rounded-2xl border border-border bg-card p-4">
-        <h2 className="text-xl font-bold">בדיקת המשימות כתלמיד/ה</h2>
-        <p className="mt-1 text-sm text-muted-foreground">
-          נכנסים ישר למשימות של הכיתה, בלי שם וסיסמה. התשובות נשמרות בנפרד ואינן מופיעות בטבלה.
-        </p>
-        <div className="mt-4 flex flex-wrap items-end gap-3">
-          <div className="w-56">
-            <Label>כיתה</Label>
-            <Select value={testClass} onValueChange={setTestClass}>
+      <section className="mt-6 rounded-2xl border border-border bg-card p-4">
+        <div className="flex flex-wrap items-end gap-3">
+          <div className="w-64">
+            <Label>מרחב הלימוד</Label>
+            <Select value={classSlug} onValueChange={changeClass}>
               <SelectTrigger className="mt-1 bg-background">
                 <SelectValue />
               </SelectTrigger>
@@ -365,36 +321,35 @@ function TeacherDashboard() {
           </div>
           <Button onClick={openAsTestStudent} disabled={testBusy}>
             <PlayCircle className="me-2 size-4" />
-            פתיחת המשימות
+            בדיקת המרחב כתלמיד/ה
           </Button>
           <Button variant="outline" onClick={resetTestStudent} disabled={testBusy}>
             <RotateCcw className="me-2 size-4" />
             מחיקת תשובות הבדיקה
           </Button>
+          {selectedClass && (
+            <Button asChild variant="ghost">
+              <Link to="/class/$slug" params={{ slug: selectedClass.slug }}>
+                לדף הכיתה
+              </Link>
+            </Button>
+          )}
         </div>
+        <p className="mt-2 text-sm text-muted-foreground">
+          כל המידע בלוח מוצג עבור {selectedClass?.name ?? "הכיתה"} בלבד.
+        </p>
       </section>
 
-
-
-      <section className="mt-8">
-        <h2 className="text-xl font-bold">בחירות המשימות</h2>
-        <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {choiceTasks.map((task) => {
-            const chosen = completions.filter((c) => c.task_id === task.id).length;
-            return (
-              <div key={task.id} className="rounded-2xl border border-border bg-card p-4">
-                <p className="font-semibold">{task.title}</p>
-                <p className="mt-1 text-3xl font-bold text-primary">{chosen}</p>
-                <p className="text-sm text-muted-foreground">תלמידים השלימו את המשימה</p>
-              </div>
-            );
-          })}
-        </div>
-      </section>
+      <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <StatCard label="תלמידים בכיתה" value={students.length} />
+        <StatCard label="סיימו את התרגול" value={finishedCount} />
+        <StatCard label="מילאו משוב" value={feedbackCount} />
+        <StatCard label="עם הרשאת הקראה" value={students.filter((s) => s.speech_enabled).length} />
+      </div>
 
       <section className="mt-8">
         <div className="flex flex-wrap items-end gap-3">
-          <div className="flex-1 min-w-56">
+          <div className="min-w-56 flex-1">
             <Label htmlFor="search">חיפוש תלמיד/ה</Label>
             <div className="relative mt-1">
               <Search className="pointer-events-none absolute start-3 top-2.5 size-4 text-muted-foreground" />
@@ -402,7 +357,7 @@ function TeacherDashboard() {
                 id="search"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="שם או כיתה"
+                placeholder="שם התלמיד/ה"
                 className="bg-card ps-9"
               />
             </div>
@@ -417,57 +372,71 @@ function TeacherDashboard() {
                 <SelectItem value="all">כולם</SelectItem>
                 <SelectItem value="in_progress">בתהליך</SelectItem>
                 <SelectItem value="finished">סיימו</SelectItem>
-                <SelectItem value="adaptive">עם הקראה</SelectItem>
-                <SelectItem value="regular">בלי הקראה</SelectItem>
+                <SelectItem value="speech">עם הרשאת הקראה</SelectItem>
                 <SelectItem value="no_choice">עוד לא השלימו משימה</SelectItem>
               </SelectContent>
             </Select>
           </div>
+          <Button variant="outline" onClick={() => setAdding((v) => !v)}>
+            <Plus className="size-4" /> הוספת תלמיד/ה
+          </Button>
         </div>
+
+        {adding && selectedClass && (
+          <AddStudentForm
+            classSlug={selectedClass.slug}
+            onClose={() => setAdding(false)}
+            onAdded={refreshAll}
+          />
+        )}
 
         <div className="mt-4 overflow-hidden rounded-2xl border border-border bg-card">
           <table className="w-full text-start">
             <thead className="bg-secondary/60 text-sm">
               <tr>
                 <th className="px-4 py-3 font-semibold">שם</th>
-                <th className="px-4 py-3 font-semibold">כיתה</th>
-                
                 <th className="px-4 py-3 font-semibold">התקדמות</th>
-                <th className="px-4 py-3 font-semibold">סה״כ ציון</th>
+                <th className="px-4 py-3 font-semibold">ציונים</th>
+                <th className="px-4 py-3 font-semibold">הקראה</th>
+                <th className="px-4 py-3 font-semibold">כיתה</th>
                 <th className="px-4 py-3" />
               </tr>
             </thead>
             <tbody>
               {filtered.map((student) => {
                 const done = completionsByStudent.get(student.id) ?? [];
-                const studentClassTasks = tasksForClass(tasks, student.class_slug).filter(
-                  (t) => t.class_slug === student.class_slug,
-                );
-                const total = studentClassTasks.length
-                  ? studentClassTasks.reduce(
-                      (sum, t) =>
-                        sum +
-                        (taskGrades.find(
-                          (g) => g.student_id === student.id && g.task_id === t.id,
-                        )?.grade ?? 0),
-                      0,
-                    )
-                  : (student.grade_required ?? 0) +
-                    (student.grade_choice_1 ?? 0) +
-                    (student.grade_choice_2 ?? 0);
                 const isOpen = expanded === student.id;
+                const gradesText =
+                  classTasks
+                    .map((t) => taskGrades.find((g) => g.student_id === student.id && g.task_id === t.id)?.grade)
+                    .filter((g): g is number => typeof g === "number")
+                    .join(" · ") || "—";
                 return (
                   <Fragment key={student.id}>
                     <tr className="border-t border-border">
                       <td className="px-4 py-3 font-medium">{fullName(student)}</td>
-                      <td className="px-4 py-3 text-muted-foreground">
-                        {student.class_name ?? "—"}
-                      </td>
                       <td className="px-4 py-3 text-sm text-muted-foreground">
-                        {done.length} משימות
-                        {student.finished_at ? " · סיים/ה" : ""}
+                        {done.length} משימות{student.finished_at ? " · סיים/ה" : ""}
                       </td>
-                      <td className="px-4 py-3 font-semibold">{total} / 100</td>
+                      <td className="px-4 py-3 font-semibold">{gradesText}</td>
+                      <td className="px-4 py-3">
+                        <Switch
+                          checked={student.speech_enabled}
+                          onCheckedChange={async (checked) => {
+                            try {
+                              await setStudentSpeech(student.id, checked);
+                              await queryClient.invalidateQueries({
+                                queryKey: ["teacher-students"],
+                              });
+                            } catch {
+                              toast.error("לא הצלחתי לעדכן את ההרשאה");
+                            }
+                          }}
+                        />
+                      </td>
+                      <td className="px-4 py-3">
+                        <MoveClassSelect student={student} onMoved={refreshAll} />
+                      </td>
                       <td className="px-4 py-3">
                         <div className="flex flex-wrap items-center gap-1">
                           <Button
@@ -486,23 +455,25 @@ function TeacherDashboard() {
                           />
                           <ResetPasswordButton student={student} compact />
                           <DeleteStudentButton student={student} />
-
                         </div>
                       </td>
                     </tr>
                     {isOpen && (
                       <tr className="border-t border-border bg-background/60">
-                        <td colSpan={5} className="px-4 py-5">
+                        <td colSpan={6} className="px-4 py-5">
+                          <div className="mb-4">
+                            <ResetPasswordButton student={student} />
+                          </div>
                           <StudentDetails
                             student={student}
-                            tasks={done.map((id) => taskById.get(id)).filter(Boolean) as Task[]}
-                            requiredTask={requiredTask}
+                            tasks={classTasks}
                             answers={answers.filter((a) => a.student_id === student.id)}
-                            feedback={feedback.find((f) => f.student_id === student.id)}
-                            onGradeBlur={updateGrade}
-                            allTasks={tasks}
+                            notes={notes.filter((n) => n.student_id === student.id)}
                             taskGrades={taskGrades.filter((g) => g.student_id === student.id)}
-                            onTaskGradeBlur={updateTaskGrade}
+                            feedback={feedback.filter((f) => f.student_id === student.id)}
+                            taskSpeech={taskSpeech.filter((r) => r.student_id === student.id)}
+                            completedTaskIds={new Set(done)}
+                            onChanged={refreshAll}
                           />
                         </td>
                       </tr>
@@ -512,8 +483,8 @@ function TeacherDashboard() {
               })}
               {filtered.length === 0 && (
                 <tr className="border-t border-border">
-                  <td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">
-                    אין תלמידים להצגה.
+                  <td colSpan={6} className="px-4 py-8 text-center text-muted-foreground">
+                    אין תלמידים להצגה בכיתה הזו.
                   </td>
                 </tr>
               )}
@@ -521,6 +492,10 @@ function TeacherDashboard() {
           </table>
         </div>
       </section>
+
+      <TaskGradingSettings tasks={classTasks} onChanged={refreshAll} />
+
+      <FeedbackDashboard feedback={feedback} tasks={classTasks} studentIds={studentIds} />
     </main>
   );
 }
@@ -534,175 +509,116 @@ function StatCard({ label, value }: { label: string; value: number }) {
   );
 }
 
-function StudentDetails({
-  student,
-  tasks,
-  requiredTask,
-  answers,
-  feedback,
-  onGradeBlur,
-  allTasks,
-  taskGrades,
-  onTaskGradeBlur,
+/** הוספת תלמיד/ה ידנית — בכניסה הראשונה יבחר/תבחר סיסמה. */
+function AddStudentForm({
+  classSlug,
+  onClose,
+  onAdded,
 }: {
-  student: Student;
-  tasks: Task[];
-  requiredTask: Task | undefined;
-  answers: { task_id: string; question_id: string; answer_text: string }[];
-  feedback: Record<string, unknown> | undefined;
-  onGradeBlur: (
-    studentId: string,
-    field: "grade_required" | "grade_choice_1" | "grade_choice_2",
-    value: string,
-    max: number,
-  ) => Promise<void>;
-  allTasks: Task[];
-  taskGrades: TaskGrade[];
-  onTaskGradeBlur: (studentId: string, taskId: string, value: string) => Promise<void>;
+  classSlug: string;
+  onClose: () => void;
+  onAdded: () => Promise<void> | void;
 }) {
-  const choiceTasks = tasks.filter((t) => t.kind === "choice");
-  const answerFor = (questionId: string) =>
-    answers.find((a) => a.question_id === questionId)?.answer_text ?? "";
-
-  // משימות המשויכות לכיתה של התלמיד/ה מקבלות שדה ציון כולל אחד (0–100).
-  const classTasks = tasksForClass(allTasks, student.class_slug).filter(
-    (t) => t.class_slug === student.class_slug,
-  );
-  const overallMode = classTasks.length > 0;
+  const [first, setFirst] = useState("");
+  const [last, setLast] = useState("");
+  const [pending, setPending] = useState(false);
+  const cls = findClass(classSlug);
 
   return (
-    <div className="space-y-6">
-      <ResetPasswordButton student={student} />
-
-      {overallMode ? (
-        <div className="grid gap-3 sm:grid-cols-2">
-          {classTasks.map((task) => (
-            <GradeField
-              key={task.id}
-              label={`ציון כולל — ${task.title}`}
-              max={100}
-              value={taskGrades.find((g) => g.task_id === task.id)?.grade ?? null}
-              onCommit={(v) => onTaskGradeBlur(student.id, task.id, v)}
-            />
-          ))}
-        </div>
-      ) : (
-      <div className="grid gap-3 sm:grid-cols-3">
-        <GradeField
-          label={`משימת חובה${requiredTask ? ` — ${requiredTask.title}` : ""}`}
-          max={60}
-          value={student.grade_required}
-          disabled={!requiredTask}
-          onCommit={(v) => onGradeBlur(student.id, "grade_required", v, 60)}
-        />
-        <GradeField
-          label={`בחירה 1${choiceTasks[0] ? ` — ${choiceTasks[0].title}` : ""}`}
-          max={20}
-          value={student.grade_choice_1}
-          disabled={!choiceTasks[0]}
-          onCommit={(v) => onGradeBlur(student.id, "grade_choice_1", v, 20)}
-        />
-        <GradeField
-          label={`בחירה 2${choiceTasks[1] ? ` — ${choiceTasks[1].title}` : ""}`}
-          max={20}
-          value={student.grade_choice_2}
-          disabled={!choiceTasks[1]}
-          onCommit={(v) => onGradeBlur(student.id, "grade_choice_2", v, 20)}
+    <form
+      className="mt-4 flex flex-wrap items-end gap-3 rounded-2xl border border-border bg-card p-4"
+      onSubmit={async (e) => {
+        e.preventDefault();
+        if (!cls) return;
+        if (first.trim().length < 2 || last.trim().length < 2) {
+          toast.error("יש להזין שם פרטי ושם משפחה");
+          return;
+        }
+        setPending(true);
+        try {
+          await createStudentManually({ firstName: first, lastName: last, cls });
+          toast.success("התלמיד/ה נוסף/ה. בכניסה הראשונה יבחר/תבחר סיסמה.");
+          setFirst("");
+          setLast("");
+          await onAdded();
+          onClose();
+        } catch {
+          toast.error("ההוספה לא הצליחה");
+        } finally {
+          setPending(false);
+        }
+      }}
+    >
+      <div className="w-40">
+        <Label htmlFor="newFirst">שם פרטי</Label>
+        <Input
+          id="newFirst"
+          value={first}
+          onChange={(e) => setFirst(e.target.value)}
+          className="mt-1 bg-background"
         />
       </div>
-      )}
-
-      {[...(requiredTask ? [requiredTask] : []), ...choiceTasks, ...classTasks]
-        .filter((task, i, arr) => arr.findIndex((t) => t.id === task.id) === i)
-        .map((task) => {
-          const answered = task.questions.filter((q) => answerFor(q.id));
-          if (answered.length === 0) return null;
-          if (task.kind === "parts_of_speech") {
-            return <PosTaskAnswers key={task.id} task={task} answerFor={answerFor} />;
-          }
-          return (
-            <div key={task.id}>
-              <h3 className="font-semibold text-primary">{task.title}</h3>
-              <ul className="mt-2 space-y-2">
-                {groupQuestions(task.questions).map((group) => (
-                  <li key={group.key} className="rounded-xl border border-border bg-card p-3">
-                    <p className="text-sm text-muted-foreground">{group.prompt}</p>
-                    <div className="mt-1 space-y-2">
-                      {group.items.map((q) => (
-                        <div key={q.id}>
-                          {q.group_label && (
-                            <p className="text-sm font-semibold text-primary">{q.group_label}</p>
-                          )}
-                          <p className="reading-text">{answerFor(q.id) || "— לא נענתה"}</p>
-                        </div>
-                      ))}
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          );
-        })}
-
-      {feedback && (
-        <div className="rounded-xl border border-border bg-card p-4">
-          <h3 className="font-semibold text-primary">המשוב שלו/ה</h3>
-          <ul className="mt-2 space-y-1 text-sm">
-            <li>בהירות המושגים: {String(feedback["clarity_scale"] ?? "—")}/5</li>
-            <li>תחושת הבנה: {String(feedback["learning_scale"] ?? "—")}/5</li>
-            <li>בהשוואה לשיעור רגיל: {String(feedback["compare_lesson"] ?? "—")}</li>
-            <li>שימוש בדף העזרה: {String(feedback["help_page_usage"] ?? "—")}</li>
-            <li>עדיין לא ברור: {String(feedback["still_unclear"] || "—")}</li>
-          </ul>
-        </div>
-      )}
-    </div>
+      <div className="w-40">
+        <Label htmlFor="newLast">שם משפחה</Label>
+        <Input
+          id="newLast"
+          value={last}
+          onChange={(e) => setLast(e.target.value)}
+          className="mt-1 bg-background"
+        />
+      </div>
+      <div className="text-sm text-muted-foreground">כיתה: {cls?.name}</div>
+      <Button type="submit" disabled={pending}>
+        הוספה
+      </Button>
+      <Button type="button" variant="ghost" onClick={onClose}>
+        ביטול
+      </Button>
+    </form>
   );
 }
 
-/** סעיף "זיהוי חלקי דיבר" בהרחבת התלמיד/ה: אילו תרגילים נבחרו, התשובות והתשובות התקפות. */
-function PosTaskAnswers({
-  task,
-  answerFor,
+/** העברת תלמיד/ה לכיתה אחרת — כל התשובות והציונים נשמרים. */
+function MoveClassSelect({
+  student,
+  onMoved,
 }: {
-  task: Task;
-  answerFor: (questionId: string) => string;
+  student: Student;
+  onMoved: () => Promise<void> | void;
 }) {
-  const idByLabel: Record<string, string> = {};
-  task.questions.forEach((q) => {
-    if (q.group_label) idByLabel[q.group_label] = q.id;
-  });
-  const selection = parseJson<SelectionAnswer>(answerFor(idByLabel["selection"] ?? "") , {
-    chosen: [],
-    done: [],
-  });
+  const [pending, setPending] = useState(false);
 
   return (
-    <div>
-      <h3 className="font-semibold text-primary">{task.title}</h3>
-      <p className="mt-1 text-sm text-muted-foreground">
-        הושלמו {selection.done.length} תרגילים
-        {selection.done.length > 0
-          ? `: ${selection.done
-              .map((key) => exerciseByKey(key)?.title ?? key)
-              .join(" · ")}`
-          : ""}
-      </p>
-      <ul className="mt-2 space-y-2">
-        {POS_EXERCISES.filter((ex) => answerFor(idByLabel[ex.key] ?? "")).map((ex) => (
-          <li key={ex.key} className="rounded-xl border border-border bg-card p-3">
-            <p className="text-sm font-semibold text-primary">{ex.title}</p>
-            <ul className="mt-1 space-y-1">
-              {describePosAnswer(ex.key, answerFor(idByLabel[ex.key] ?? "")).map((line, i) => (
-                <li key={i} className="reading-text text-sm">
-                  {line}
-                </li>
-              ))}
-            </ul>
-          </li>
+    <Select
+      value={student.class_slug ?? ""}
+      disabled={pending}
+      onValueChange={async (slug) => {
+        const cls = findClass(slug);
+        if (!cls || slug === student.class_slug) return;
+        if (!window.confirm(`להעביר את ${fullName(student)} ל${cls.name}?`)) return;
+        setPending(true);
+        try {
+          await moveStudentClass(student.id, cls);
+          toast.success(`${fullName(student)} הועבר/ה ל${cls.name}`);
+          await onMoved();
+        } catch {
+          toast.error("ההעברה לא הצליחה");
+        } finally {
+          setPending(false);
+        }
+      }}
+    >
+      <SelectTrigger className="w-36 bg-background">
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent dir="rtl">
+        {CLASSES.map((c) => (
+          <SelectItem key={c.slug} value={c.slug}>
+            {c.name}
+          </SelectItem>
         ))}
-      </ul>
-    </div>
+      </SelectContent>
+    </Select>
   );
 }
 
@@ -754,45 +670,6 @@ function ResetPasswordButton({ student, compact }: { student: Student; compact?:
           אחרי איפוס, התלמיד/ה בוחר/ת סיסמה חדשה בדף ההתחברות של הכיתה.
         </span>
       )}
-    </div>
-  );
-}
-
-function GradeField({
-  label,
-  max,
-  value,
-  disabled,
-  onCommit,
-}: {
-  label: string;
-  max: number;
-  value: number | null;
-  disabled?: boolean;
-  onCommit: (value: string) => Promise<void>;
-}) {
-  const [draft, setDraft] = useState(value === null ? "" : String(value));
-  useEffect(() => {
-    setDraft(value === null ? "" : String(value));
-  }, [value]);
-
-  return (
-    <div>
-      <Label className="text-sm">
-        {label} (0–{max})
-      </Label>
-      <Input
-        type="number"
-        min={0}
-        max={max}
-        value={draft}
-        disabled={disabled}
-        onChange={(e) => setDraft(e.target.value)}
-        onBlur={() => {
-          if (draft !== (value === null ? "" : String(value))) void onCommit(draft);
-        }}
-        className="mt-1 bg-card"
-      />
     </div>
   );
 }

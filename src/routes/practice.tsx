@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
-import { Check, ChevronRight, Eye, Lock, PartyPopper } from "lucide-react";
+import { Check, Eye, Lock, PartyPopper } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -12,11 +12,15 @@ import {
   fetchSettings,
   fetchStudent,
   fetchTasks,
+  partAsTask,
   readDeviceStudentId,
+  taskParts,
   tasksForClass,
   type Task,
 } from "@/lib/practice";
+import { isPartComplete } from "@/lib/task-parts";
 import { ClearDeviceButton } from "@/components/practice/ClearDeviceButton";
+import { PageNav } from "@/components/layout/PageNav";
 import { ProgressSteps } from "@/components/practice/ProgressSteps";
 import { TaskView } from "@/components/practice/TaskView";
 import { PartsOfSpeechTask } from "@/components/practice/PartsOfSpeechTask";
@@ -29,10 +33,10 @@ export const Route = createFileRoute("/practice")({
       { title: "התרגול שלי — הבנת הנקרא" },
       {
         name: "description",
-        content: "מסך התרגול: בחירת משימות, מענה על השאלות, משימת חובה ומשוב קצר בסיום.",
+        content: "מסך התרגול: בחירת משימות, מענה על השאלות לפי חלקים ומשוב קצר בסיום כל משימה.",
       },
       { property: "og:title", content: "התרגול שלי — הבנת הנקרא" },
-      { property: "og:description", content: "בחירת משימות, מענה על שאלות ומשוב קצר בסיום." },
+      { property: "og:description", content: "מענה על משימות לפי חלקים ומשוב קצר בסיום." },
     ],
   }),
   component: PracticePage,
@@ -43,6 +47,7 @@ function PracticePage() {
   const queryClient = useQueryClient();
   const [studentId, setStudentId] = useState<string | null>(null);
   const [openTaskId, setOpenTaskId] = useState<string | null>(null);
+  const [partIndex, setPartIndex] = useState(0);
   const [previewTaskId, setPreviewTaskId] = useState<string | null>(null);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
 
@@ -77,11 +82,22 @@ function PracticePage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("feedback")
-        .select("id")
-        .eq("student_id", studentId!)
-        .maybeSingle();
+        .select("id, task_id")
+        .eq("student_id", studentId!);
       if (error) throw error;
-      return data;
+      return data ?? [];
+    },
+    enabled: Boolean(studentId),
+  });
+  const speechQuery = useQuery({
+    queryKey: ["task-speech", studentId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("student_task_speech")
+        .select("task_id, allowed")
+        .eq("student_id", studentId!);
+      if (error) throw error;
+      return data ?? [];
     },
     enabled: Boolean(studentId),
   });
@@ -111,6 +127,7 @@ function PracticePage() {
     },
     onSuccess: async () => {
       setOpenTaskId(null);
+      setPartIndex(0);
       setSelectedTaskId(null);
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["completions", studentId] }),
@@ -129,40 +146,38 @@ function PracticePage() {
     return map;
   }, [answersQuery.data]);
 
-  const tasks = tasksForClass(tasksQuery.data ?? [], studentQuery.data?.class_slug ?? null);
+  const student = studentQuery.data;
+  const tasks = tasksForClass(tasksQuery.data ?? [], student?.class_slug ?? null);
   const choiceTasks = tasks.filter((t) => t.kind === "choice");
   const requiredTask = tasks.find((t) => t.kind === "required");
   const completedIds = new Set((completionsQuery.data ?? []).map((c) => c.task_id));
   const completedChoice = choiceTasks.filter((t) => completedIds.has(t.id));
   const requiredCount = settingsQuery.data?.required_choice_count ?? 2;
-  const requiredDone = requiredTask ? completedIds.has(requiredTask.id) : false;
-  const feedbackDone = Boolean(feedbackQuery.data);
-  const speechEnabled = Boolean(studentQuery.data?.speech_enabled);
 
-  /** עמוד חלקי הדיבר הוא עמוד נוסף בתוך המשימה, ולכן אינו מופיע ברשימת המשימות. */
-  const posTask = tasks.find((t) => t.kind === "parts_of_speech");
-  const posDone = posTask ? completedIds.has(posTask.id) : true;
+  const feedbackByTask = new Map<string | null, string>();
+  (feedbackQuery.data ?? []).forEach((f) => feedbackByTask.set(f.task_id ?? null, f.id));
 
-  /** לכיתה בלי משימות בחירה: רשימת המשימות של הכיתה לפי הסדר ואז משוב. */
+  /** ההקראה זמינה רק אם ההרשאה הכללית פתוחה וגם ההרשאה למשימה הזו לא נחסמה. */
+  const speechFor = (taskId: string) => {
+    if (!student?.speech_enabled) return false;
+    const row = (speechQuery.data ?? []).find((r) => r.task_id === taskId);
+    return row ? row.allowed : true;
+  };
+
   const singleMode = choiceTasks.length === 0 && tasks.length > 0;
-  const listTasks = (singleMode ? tasks.filter((t) => t.kind !== "choice") : choiceTasks).filter(
-    (t) => t.kind !== "parts_of_speech",
-  );
-  const singleAllDone = singleMode && listTasks.every((t) => completedIds.has(t.id)) && posDone;
+  const listTasks = singleMode ? tasks : choiceTasks;
+  const openTask = listTasks.find((t) => t.id === openTaskId) ?? null;
 
-  const step = singleMode
-    ? feedbackDone
-      ? 2
-      : singleAllDone
-        ? 1
-        : 0
-    : feedbackDone
-      ? 4
-      : requiredDone
-        ? 3
-        : completedChoice.length >= requiredCount
-          ? 2
-          : completedChoice.length;
+  /** המשימה הבאה שממתינה למשוב (משוב נפרד לכל משימה שהושלמה). */
+  const taskAwaitingFeedback = listTasks
+    .concat(requiredTask && !singleMode ? [requiredTask] : [])
+    .find((t) => completedIds.has(t.id) && !feedbackByTask.has(t.id));
+
+  const requiredDone = requiredTask ? completedIds.has(requiredTask.id) : false;
+  const allTasksDone = singleMode
+    ? listTasks.every((t) => completedIds.has(t.id))
+    : completedChoice.length >= requiredCount && requiredDone;
+  const allDone = allTasksDone && !taskAwaitingFeedback;
 
   const loading =
     !studentId ||
@@ -176,13 +191,13 @@ function PracticePage() {
     return <main className="p-10 text-muted-foreground">רגע, טוענים את התרגול...</main>;
   }
 
-  const shell = (children: React.ReactNode) => (
+  const shell = (children: React.ReactNode, nav?: React.ReactNode) => (
     <main className="mx-auto w-full max-w-3xl px-4 py-8">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <p className="text-sm text-muted-foreground">
-            {studentQuery.data?.first_name} {studentQuery.data?.last_name}
-            {studentQuery.data?.class_name ? ` · ${studentQuery.data.class_name}` : ""}
+            {student?.first_name} {student?.last_name}
+            {student?.class_name ? ` · ${student.class_name}` : ""}
           </p>
           <h1 className="text-2xl font-bold">{settingsQuery.data?.practice_name}</h1>
         </div>
@@ -190,24 +205,26 @@ function PracticePage() {
           <ClearDeviceButton />
         </div>
       </div>
-      <div className="mt-5">
+      <div className="mt-3">{nav ?? <PageNav classSlug={student?.class_slug} />}</div>
+      <div className="mt-4">
         <ProgressSteps
-          current={singleMode ? Math.min(step, 1) : Math.min(step, 3)}
-          {...(singleMode ? { steps: ["המשימה", "משוב"] } : {})}
+          current={singleMode ? (allDone ? 1 : 0) : Math.min(completedChoice.length, 3)}
+          {...(singleMode ? { steps: ["המשימות", "משוב"] } : {})}
         />
       </div>
       <div className="mt-8">{children}</div>
     </main>
   );
 
-  // Thank-you screen
-  if (feedbackDone) {
+  // מסך סיום
+  if (allDone) {
     return shell(
       <div className="rounded-3xl border border-border bg-card p-8 text-center">
         <PartyPopper className="mx-auto size-10 text-primary" />
         <h2 className="mt-4 text-2xl font-bold">סיימתם. תודה רבה!</h2>
         <p className="mt-2 text-muted-foreground">
-          כל התשובות שלכם נשמרו והמורה רואה אותן. אפשר לסגור את החלון או להתנתק לטובת התלמיד/ה הבא/ה.
+          כל התשובות שלכם נשמרו והמורה רואה אותן. אפשר לסגור את החלון או להתנתק לטובת התלמיד/ה
+          הבא/ה.
         </p>
         <div className="mt-6 flex justify-center">
           <ClearDeviceButton size="lg" />
@@ -216,34 +233,109 @@ function PracticePage() {
     );
   }
 
-  // עמוד נוסף בתוך המשימה: זיהוי חלקי דיבר (אחרי מענה על שאלות המשימה)
-  if (
-    singleMode &&
-    posTask &&
-    !posDone &&
-    listTasks.every((t) => completedIds.has(t.id)) &&
-    !openTaskId
-  ) {
+  // משימה פתוחה — מענה לפי חלקים
+  if (openTask) {
+    const parts = taskParts(openTask);
+    const index = Math.min(partIndex, parts.length - 1);
+    const part = parts[index]!;
+    const partTask = partAsTask(openTask, part, index);
+    const readOnly = completedIds.has(openTask.id);
+    const lastPart = index === parts.length - 1;
+    const finishLabel = lastPart ? "סיימתי את המשימה" : "סיימתי — לחלק הבא";
+    const goNext = () => {
+      if (lastPart) {
+        completeTask.mutate(openTask);
+        return;
+      }
+      if (!readOnly && !isPartComplete(openTask, part, index, answersMap)) {
+        toast.error(
+          part.selection_mode === "choose_n"
+            ? `כדי להמשיך יש להשלים ${part.choose_count ?? 1} פריטים בחלק הזה.`
+            : "כדי להמשיך יש לענות על כל השאלות בחלק הזה.",
+        );
+        return;
+      }
+      setPartIndex(index + 1);
+    };
+    const goBack = () => {
+      if (index === 0) {
+        setOpenTaskId(null);
+        setPartIndex(0);
+        return;
+      }
+      setPartIndex(index - 1);
+    };
+
     return shell(
-      <PartsOfSpeechTask
-        task={posTask}
-        studentId={studentId}
-        speechEnabled={speechEnabled}
-        initialAnswers={answersMap}
-        articleParagraphs={listTasks[0]?.paragraphs ?? requiredTask?.paragraphs}
-        finishLabel="סיימתי — למשוב"
-        backLabel="חזרה לשאלות המאמר"
-        onBack={() => setOpenTaskId(listTasks[0]?.id ?? null)}
-        onFinish={() => completeTask.mutate(posTask)}
+      <div className="space-y-4">
+        {parts.length > 1 && (
+          <div className="rounded-2xl border border-border bg-card p-4">
+            <p className="text-sm font-semibold">{openTask.title}</p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              {parts.map((p, i) => {
+                const done = isPartComplete(openTask, p, i, answersMap);
+                return (
+                  <Button
+                    key={p.id}
+                    size="sm"
+                    variant={i === index ? "default" : done ? "secondary" : "outline"}
+                    onClick={() => setPartIndex(i)}
+                  >
+                    {done && <Check className="size-3" />} {p.title}
+                  </Button>
+                );
+              })}
+            </div>
+            <p className="mt-2 text-sm text-muted-foreground">
+              חלק {index + 1} מתוך {parts.length}
+              {part.selection_mode === "choose_n"
+                ? ` · בחירה של ${part.choose_count ?? 1} פריטים`
+                : " · כל הפריטים חובה"}
+            </p>
+          </div>
+        )}
+
+        {part.kind === "parts_of_speech" ? (
+          <PartsOfSpeechTask
+            task={partTask}
+            studentId={studentId}
+            speechEnabled={speechFor(openTask.id)}
+            readOnly={readOnly}
+            initialAnswers={answersMap}
+            articleParagraphs={openTask.paragraphs}
+            finishLabel={finishLabel}
+            backLabel={index === 0 ? "חזרה לרשימת המשימות" : "חזרה לחלק הקודם"}
+            onBack={goBack}
+            onFinish={goNext}
+          />
+        ) : (
+          <TaskView
+            task={partTask}
+            studentId={studentId}
+            speechEnabled={speechFor(openTask.id)}
+            readOnly={readOnly}
+            initialAnswers={answersMap}
+            finishLabel={finishLabel}
+            onFinish={goNext}
+          />
+        )}
+      </div>,
+      <PageNav
+        onBack={goBack}
+        backLabel={index === 0 ? "חזרה לרשימת המשימות" : "חזרה לחלק הקודם"}
+        classSlug={student?.class_slug}
       />,
     );
   }
 
-  // Feedback questionnaire
-  if (singleMode ? singleAllDone : requiredDone) {
+  // משוב לכל משימה שהושלמה
+  if (taskAwaitingFeedback) {
     return shell(
       <FeedbackForm
         studentId={studentId}
+        taskId={taskAwaitingFeedback.id}
+        taskTitle={taskAwaitingFeedback.title}
+        markFinished={allTasksDone}
         onDone={async () => {
           await queryClient.invalidateQueries({ queryKey: ["feedback", studentId] });
         }}
@@ -251,48 +343,31 @@ function PracticePage() {
     );
   }
 
-  // Required task
-  if (!singleMode && completedChoice.length >= requiredCount && requiredTask) {
+  // משימת חובה (כיתות עם משימות בחירה)
+  if (!singleMode && completedChoice.length >= requiredCount && requiredTask && !requiredDone) {
+    const parts = taskParts(requiredTask);
+    const index = 0;
+    const part = parts[0]!;
     return shell(
       <TaskView
-        task={requiredTask}
+        task={partAsTask(requiredTask, part, index)}
         studentId={studentId}
-        speechEnabled={speechEnabled}
+        speechEnabled={speechFor(requiredTask.id)}
         initialAnswers={answersMap}
-        finishLabel="סיימתי — למשוב"
-        onFinish={() => completeTask.mutate(requiredTask)}
+        finishLabel={parts.length > 1 ? "סיימתי — לחלק הבא" : "סיימתי את המשימה"}
+        onFinish={() => {
+          if (parts.length > 1) {
+            setOpenTaskId(requiredTask.id);
+            setPartIndex(1);
+            return;
+          }
+          completeTask.mutate(requiredTask);
+        }}
       />,
     );
   }
 
-  // Answering a chosen task
-  const openTask = listTasks.find((t) => t.id === openTaskId);
-  if (openTask) {
-    const lastInList = listTasks.filter((t) => !completedIds.has(t.id)).length <= 1;
-    const finishLabel = !lastInList
-      ? "סיימתי"
-      : singleMode && posTask && !posDone
-        ? "סיימתי — לעמוד הבא"
-        : "סיימתי — למשוב";
-    return shell(
-      <div className="space-y-4">
-        <Button variant="ghost" size="sm" onClick={() => setOpenTaskId(null)}>
-          <ChevronRight className="size-4" /> חזרה לרשימת המשימות
-        </Button>
-        <TaskView
-          task={openTask}
-          studentId={studentId}
-          speechEnabled={speechEnabled}
-          initialAnswers={answersMap}
-          readOnly={completedIds.has(openTask.id)}
-          finishLabel={finishLabel}
-          onFinish={() => completeTask.mutate(openTask)}
-        />
-      </div>,
-    );
-  }
-
-  // Choice list
+  // רשימת המשימות
   return shell(
     <div className="space-y-5">
       <div>
@@ -312,6 +387,10 @@ function PracticePage() {
           const done = completedIds.has(task.id);
           const isPreviewOpen = previewTaskId === task.id;
           const isSelected = selectedTaskId === task.id;
+          const parts = taskParts(task);
+          const donePartsCount = parts.filter((p, i) => isPartComplete(task, p, i, answersMap))
+            .length;
+          const previewPart = parts[0]!;
           return (
             <div
               key={task.id}
@@ -334,15 +413,17 @@ function PracticePage() {
                     )}
                   </div>
                   <p className="mt-1 text-muted-foreground">{task.description}</p>
-                  {singleMode && posTask && (
+                  {parts.length > 1 && (
                     <p className="mt-1 text-sm text-muted-foreground">
-                      המשימה כוללת שני עמודים: שאלות על המאמר, ואחריהן עמוד תרגול "
-                      {posTask.title}".
+                      המשימה כוללת {parts.length} חלקים: {parts.map((p) => p.title).join(" · ")}
+                      {donePartsCount > 0 && !done
+                        ? ` · הושלמו ${donePartsCount} מתוך ${parts.length}`
+                        : ""}
                     </p>
                   )}
                   {task.questions.some((q) => typeof q.points === "number") && (
                     <p className="mt-1 text-sm text-muted-foreground">
-                      {task.questions.length} שאלות · עד {task.max_points} נקודות
+                      {task.questions.length} שאלות · ציון 0–100
                     </p>
                   )}
                 </div>
@@ -356,36 +437,54 @@ function PracticePage() {
                     {isPreviewOpen ? "סגירת ההצצה" : "הצצה לפני שבוחרים (קריאה בלבד)"}
                   </Button>
                   {done ? (
-                    <Button variant="ghost" size="sm" onClick={() => setOpenTaskId(task.id)}>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setOpenTaskId(task.id);
+                        setPartIndex(0);
+                      }}
+                    >
                       לצפייה בתשובות שלי
                     </Button>
                   ) : (
                     <Button
                       size="sm"
                       variant={singleMode ? "default" : isSelected ? "default" : "secondary"}
-                      onClick={() =>
-                        singleMode ? setOpenTaskId(task.id) : setSelectedTaskId(task.id)
-                      }
+                      onClick={() => {
+                        if (singleMode) {
+                          setOpenTaskId(task.id);
+                          setPartIndex(0);
+                        } else {
+                          setSelectedTaskId(task.id);
+                        }
+                      }}
                     >
-                      {singleMode ? "פתיחה ומענה" : isSelected ? "נבחרה" : "בחירה"}
+                      {singleMode
+                        ? donePartsCount > 0
+                          ? "ממשיכים מאיפה שעצרנו"
+                          : "פתיחה ומענה"
+                        : isSelected
+                          ? "נבחרה"
+                          : "בחירה"}
                     </Button>
                   )}
                 </div>
               </div>
 
               {isPreviewOpen && (
-                <div className="mt-5 rounded-2xl border-2 border-dashed border-warning bg-warning/20 p-4">
-                  <div className="mb-4 flex items-center gap-2 rounded-xl bg-warning px-4 py-3 text-warning-foreground">
-                    <Lock className="size-5 shrink-0" />
+                <div className="mt-5 rounded-2xl border-2 border-dashed border-warning/60 bg-warning/5 p-4">
+                  <div className="flex items-center gap-2 rounded-xl bg-warning/20 px-3 py-2 text-warning-foreground">
+                    <Lock className="size-5" />
                     <p className="text-base font-semibold md:text-lg">
                       זו תצוגת הצצה בלבד — אי אפשר למלא או לבחור תשובות כאן.
                     </p>
                   </div>
                   <div className="pointer-events-none opacity-80">
                     <TaskView
-                      task={task}
+                      task={partAsTask(task, previewPart, 0)}
                       studentId={studentId}
-                      speechEnabled={speechEnabled}
+                      speechEnabled={speechFor(task.id)}
                       initialAnswers={{}}
                       readOnly
                     />
@@ -402,7 +501,12 @@ function PracticePage() {
           <Button
             size="lg"
             disabled={!selectedTaskId}
-            onClick={() => selectedTaskId && setOpenTaskId(selectedTaskId)}
+            onClick={() => {
+              if (selectedTaskId) {
+                setOpenTaskId(selectedTaskId);
+                setPartIndex(0);
+              }
+            }}
           >
             בחר/י וענה/י
           </Button>
