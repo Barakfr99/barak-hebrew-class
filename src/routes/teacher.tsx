@@ -51,6 +51,7 @@ import { StudentDetails } from "@/components/teacher/StudentDetails";
 import { TaskGradingSettings } from "@/components/teacher/TaskGradingSettings";
 import { FeedbackDashboard } from "@/components/teacher/FeedbackDashboard";
 import { NB10Panel } from "@/components/teacher/NB10Panel";
+import { SPACE_ROLLUP_KEY, useSpaceTaskRollup } from "@/lib/space-tasks";
 
 import { cn } from "@/lib/utils";
 import { useServerFn } from "@tanstack/react-start";
@@ -233,9 +234,20 @@ function TeacherDashboard() {
       .on("postgres_changes", { event: "*", schema: "public", table: "feedback" }, () =>
         queryClient.invalidateQueries({ queryKey: ["teacher-feedback"] }),
       )
-      .on("postgres_changes", { event: "*", schema: "public", table: "task_grades" }, () =>
-        queryClient.invalidateQueries({ queryKey: ["teacher-task-grades"] }),
-      )
+      .on("postgres_changes", { event: "*", schema: "public", table: "task_grades" }, () => {
+        queryClient.invalidateQueries({ queryKey: ["teacher-task-grades"] });
+        queryClient.invalidateQueries({ queryKey: [SPACE_ROLLUP_KEY] });
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "nb10_submissions" }, () => {
+        queryClient.invalidateQueries({ queryKey: [SPACE_ROLLUP_KEY] });
+        queryClient.invalidateQueries({ queryKey: ["nb10-submissions"] });
+        queryClient.invalidateQueries({ queryKey: ["nb10-student-submission"] });
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "nb10_notes" }, () => {
+        queryClient.invalidateQueries({ queryKey: [SPACE_ROLLUP_KEY] });
+        queryClient.invalidateQueries({ queryKey: ["nb10-student-note"] });
+      })
+
       .subscribe();
     return () => {
       void supabase.removeChannel(channel);
@@ -266,24 +278,14 @@ function TeacherDashboard() {
     return map;
   }, [completions]);
 
-  /** משימות שהוגשו וטרם קיבלו ציון — מחכות לבדיקת המורה. */
-  const pendingByStudent = useMemo(() => {
-    const map = new Map<string, number>();
-    const classTaskIds = new Set(classTasks.map((t) => t.id));
-    completions.forEach((c) => {
-      if (!classTaskIds.has(c.task_id)) return;
-      const graded = taskGrades.some(
-        (g) => g.student_id === c.student_id && g.task_id === c.task_id && typeof g.grade === "number",
-      );
-      if (graded) return;
-      map.set(c.student_id, (map.get(c.student_id) ?? 0) + 1);
-    });
-    return map;
-  }, [completions, classTasks, taskGrades]);
+  /** סיכום כל ענפי המשימות של המרחב — מה הוגש ומה כבר קיבל ציון. */
+  const rollup = useSpaceTaskRollup(classSlug);
+  const pendingByStudent = rollup.pendingByStudent;
 
   const finishedCount = students.filter((s) => s.finished_at).length;
   const feedbackCount = feedback.filter((f) => studentIds.has(f.student_id)).length;
   const pendingTotal = students.reduce((sum, s) => sum + (pendingByStudent.get(s.id) ?? 0), 0);
+
 
 
   const filtered = students.filter((s) => {
@@ -440,14 +442,17 @@ function TeacherDashboard() {
               {filtered.map((student) => {
                 const done = completionsByStudent.get(student.id) ?? [];
                 const isOpen = expanded === student.id;
+                const submittedCount = rollup.submittedByStudent.get(student.id) ?? 0;
                 const gradesText =
-                  classTasks
-                    .map((t) => taskGrades.find((g) => g.student_id === student.id && g.task_id === t.id)?.grade)
-                    .filter((g): g is number => typeof g === "number")
+                  (rollup.gradesByStudent.get(student.id) ?? [])
+                    .map((g) => `${g.title}: ${g.grade}`)
                     .join(" · ") || "—";
                 return (
                   <Fragment key={student.id}>
-                    <tr className="border-t border-border">
+                    <tr
+                      className="cursor-pointer border-t border-border hover:bg-secondary/40"
+                      onClick={() => setExpanded(isOpen ? null : student.id)}
+                    >
                       <td className="px-4 py-3 font-medium">
                         <span className="inline-flex items-center gap-2">
                           {fullName(student)}
@@ -462,10 +467,13 @@ function TeacherDashboard() {
                         </span>
                       </td>
                       <td className="px-4 py-3 text-sm text-muted-foreground">
-                        {done.length} משימות{student.finished_at ? " · סיים/ה" : ""}
+                        {submittedCount > 0
+                          ? `${submittedCount} הוגשו`
+                          : `${done.length} משימות`}
+                        {student.finished_at ? " · סיים/ה" : ""}
                       </td>
-                      <td className="px-4 py-3 font-semibold">{gradesText}</td>
-                      <td className="px-4 py-3">
+                      <td className="px-4 py-3 text-sm font-semibold">{gradesText}</td>
+                      <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
                         <Switch
                           checked={student.speech_enabled}
                           onCheckedChange={async (checked) => {
@@ -480,21 +488,17 @@ function TeacherDashboard() {
                           }}
                         />
                       </td>
-                      <td className="px-4 py-3">
+                      <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
                         <MoveClassSelect student={student} onMoved={refreshAll} />
                       </td>
-                      <td className="px-4 py-3">
+                      <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
                         <div className="flex flex-wrap items-center gap-1">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => setExpanded(isOpen ? null : student.id)}
-                          >
-                            <ChevronDown
-                              className={cn("size-4 transition-transform", isOpen && "rotate-180")}
-                            />
-                            {isOpen ? "סגירה" : "פירוט"}
-                          </Button>
+                          <ChevronDown
+                            className={cn(
+                              "size-4 text-muted-foreground transition-transform",
+                              isOpen && "rotate-180",
+                            )}
+                          />
                           <ReopenTaskButton
                             student={student}
                             canReopen={done.length > 0 || Boolean(student.finished_at)}
@@ -503,6 +507,7 @@ function TeacherDashboard() {
                           <DeleteStudentButton student={student} />
                         </div>
                       </td>
+
                     </tr>
                     {isOpen && (
                       <tr className="border-t border-border bg-background/60">

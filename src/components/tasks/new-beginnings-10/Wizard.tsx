@@ -72,16 +72,29 @@ function PromptWithTerm({ prompt, note }: { prompt: string; note: NB10Note }) {
   );
 }
 
+/** הערת המורה לתשובה — מוצגת רק אם המורה כתב/ה בה משהו. */
+function TeacherNote({ note }: { note: string }) {
+  if (!note || !note.trim()) return null;
+  return (
+    <div className="mt-2 rounded-xl border border-primary/30 bg-accent/40 p-3">
+      <p className="text-xs font-semibold text-primary">הערת המורה</p>
+      <p className="mt-1 whitespace-pre-wrap text-sm">{note}</p>
+    </div>
+  );
+}
+
 function QuestionCard({
   question,
   answers,
   onChange,
   readOnly,
+  notes,
 }: {
   question: NB10Question;
   answers: Record<string, string>;
   onChange: (id: string, value: string) => void;
   readOnly: boolean;
+  notes: Record<string, string>;
 }) {
   if (question.kind === "guided") {
     return (
@@ -103,6 +116,7 @@ function QuestionCard({
                   onChange={(e) => onChange(id, e.target.value)}
                   className="mt-2"
                 />
+                <TeacherNote note={notes[id] ?? ""} />
               </div>
             );
           })}
@@ -133,6 +147,7 @@ function QuestionCard({
             </label>
           ))}
         </RadioGroup>
+        <TeacherNote note={notes[question.id] ?? ""} />
       </div>
     );
   }
@@ -156,6 +171,7 @@ function QuestionCard({
         onChange={(e) => onChange(question.id, e.target.value)}
         className="mt-4"
       />
+      <TeacherNote note={notes[question.id] ?? ""} />
     </div>
   );
 }
@@ -208,6 +224,29 @@ export function NewBeginnings10Wizard({
   }, [answersQuery.data, loaded]);
 
   const readOnly = Boolean(submissionQuery.data);
+
+  /** הערות המורה — נשלפות רק אחרי הגשה, ומוצגות רק כשיש בהן תוכן. */
+  const notesQuery = useQuery({
+    queryKey: ["nb10-student-notes", task.id, studentId],
+    enabled: readOnly,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("nb10_notes")
+        .select("question_id, note")
+        .eq("task_id", task.id)
+        .eq("student_id", studentId);
+      if (error) throw error;
+      const map: Record<string, string> = {};
+      let general = "";
+      (data ?? []).forEach((row) => {
+        if (row.question_id) map[row.question_id] = row.note ?? "";
+        else general = row.note ?? "";
+      });
+      return { map, general };
+    },
+  });
+  const notes = notesQuery.data?.map ?? {};
+  const generalNote = notesQuery.data?.general ?? "";
 
   const persist = useCallback(
     async (questionId: string, value: string) => {
@@ -368,6 +407,12 @@ export function NewBeginnings10Wizard({
               <p className="mt-2 text-muted-foreground">
                 כל התשובות שלך נשמרו והמורה רואה אותן. אפשר לעבור אחורה ולקרוא את מה שכתבת.
               </p>
+              {generalNote.trim() && (
+                <div className="mt-5 rounded-2xl border border-primary/30 bg-accent/40 p-4 text-start">
+                  <p className="text-xs font-semibold text-primary">הערת המורה על המשימה</p>
+                  <p className="mt-1 whitespace-pre-wrap text-sm">{generalNote}</p>
+                </div>
+              )}
               {onExit && (
                 <Button className="mt-5" size="lg" onClick={onExit}>
                   חזרה לרשימת המשימות
@@ -390,6 +435,7 @@ export function NewBeginnings10Wizard({
               answers={answers}
               onChange={change}
               readOnly={readOnly}
+              notes={notes}
             />
           ))
         )}
