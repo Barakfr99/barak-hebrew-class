@@ -73,7 +73,7 @@ function PromptWithTerm({ prompt, note }: { prompt: string; note: NB10Note }) {
 }
 
 /** הערת המורה לתשובה — מוצגת רק אם המורה כתב/ה בה משהו. */
-function TeacherNote({ note }: { note?: string }) {
+function TeacherNote({ note }: { note?: string | undefined }) {
   if (!note || !note.trim()) return null;
   return (
     <div className="mt-2 rounded-xl border border-primary/30 bg-accent/40 p-3">
