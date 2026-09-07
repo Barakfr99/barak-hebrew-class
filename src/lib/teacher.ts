@@ -148,3 +148,48 @@ export async function fetchFeedbackRows(): Promise<FeedbackRow[]> {
   if (error) throw error;
   return (data ?? []) as FeedbackRow[];
 }
+
+/** הפעלה/כיבוי של משימה לתלמידים. */
+export async function setTaskActive(taskId: string, isActive: boolean) {
+  const { error } = await supabase.from("tasks").update({ is_active: isActive }).eq("id", taskId);
+  if (error) throw error;
+}
+
+/** תזמון פתיחה וסגירה של משימה (null = בלי הגבלה). */
+export async function setTaskSchedule(
+  taskId: string,
+  schedule: { opensAt?: string | null; closesAt?: string | null },
+) {
+  const patch: { opens_at?: string | null; closes_at?: string | null } = {};
+  if (schedule.opensAt !== undefined) patch.opens_at = schedule.opensAt;
+  if (schedule.closesAt !== undefined) patch.closes_at = schedule.closesAt;
+  const { error } = await supabase.from("tasks").update(patch).eq("id", taskId);
+  if (error) throw error;
+}
+
+/** איפוס המשימה לכל התלמידים: מחיקת תשובות, הגשות, ציונים, הערות ומשוב. */
+export async function resetTaskForAllStudents(taskId: string) {
+  for (const table of ["answers", "task_completions", "task_grades", "teacher_notes", "feedback"] as const) {
+    const { error } = await supabase.from(table).delete().eq("task_id", taskId);
+    if (error) throw error;
+  }
+  const { error } = await supabase
+    .from("students")
+    .update({ finished_at: null, updated_at: new Date().toISOString() })
+    .not("finished_at", "is", null);
+  if (error) throw error;
+}
+
+/** מחיקת משימה לגמרי, כולל השאלות והנתונים של התלמידים בה. */
+export async function deleteTask(taskId: string) {
+  await resetTaskForAllStudents(taskId);
+  const { error: speechError } = await supabase
+    .from("student_task_speech")
+    .delete()
+    .eq("task_id", taskId);
+  if (speechError) throw speechError;
+  const { error: questionsError } = await supabase.from("questions").delete().eq("task_id", taskId);
+  if (questionsError) throw questionsError;
+  const { error } = await supabase.from("tasks").delete().eq("id", taskId);
+  if (error) throw error;
+}
