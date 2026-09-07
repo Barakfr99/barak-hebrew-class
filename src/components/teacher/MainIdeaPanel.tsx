@@ -40,13 +40,13 @@ function itemLabels(): ItemLabel[] {
       key: miTopicKey(p.n),
       label: `פסקה ${p.n} · נושא`,
       page: 1,
-      expected: p.topic.find((o) => o.correct)?.text,
+      expected: p.topic.find((o) => o.correct)?.text ?? "",
     });
     rows.push({
       key: miMessageKey(p.n),
       label: `פסקה ${p.n} · מסר`,
       page: 1,
-      expected: p.message.find((o) => o.correct)?.text,
+      expected: p.message.find((o) => o.correct)?.text ?? "",
     });
   });
   MI_QUOTES.forEach((q) => {
