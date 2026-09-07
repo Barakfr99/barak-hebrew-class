@@ -512,6 +512,7 @@ function TeacherDashboard() {
                           </div>
                           <StudentDetails
                             student={student}
+                            classSlug={selectedClass?.slug ?? student.class_slug}
                             tasks={classTasks}
                             answers={answers.filter((a) => a.student_id === student.id)}
                             notes={notes.filter((n) => n.student_id === student.id)}

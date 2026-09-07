@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Check, ChevronLeft, ChevronRight, FileText, Lock, PartyPopper } from "lucide-react";
+import { Check, ChevronLeft, ChevronRight, FileText, Lock, PartyPopper, Save } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -15,7 +15,6 @@ import {
   NB10_PAGES,
   NB10_PAGE_COUNT,
   NB10_PARAGRAPHS,
-  pageAnswerIds,
   type NB10Note,
   type NB10Page,
   type NB10Question,
@@ -270,10 +269,6 @@ export function NewBeginnings10Wizard({
 
   const page: NB10Page = NB10_PAGES[pageIndex]!;
   const isFeedbackPage = pageIndex === NB10_PAGE_COUNT - 1;
-  const missing = useMemo(() => {
-    if (readOnly) return [] as string[];
-    return pageAnswerIds(page).filter((id) => (answers[id] ?? "").trim() === "");
-  }, [page, answers, readOnly]);
 
   const goTo = async (next: number) => {
     await flush();
@@ -281,12 +276,15 @@ export function NewBeginnings10Wizard({
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
+  // אין חובת מענה — אפשר להתקדם גם עם שאלות ריקות
   const goNext = async () => {
-    if (missing.length > 0) {
-      toast.error("כדי להמשיך יש לענות על כל השאלות בעמוד הזה.");
-      return;
-    }
     await goTo(pageIndex + 1);
+  };
+
+  /** שמירת טיוטה ידנית בכל שלב. */
+  const saveDraft = async () => {
+    await flush();
+    toast.success("הטיוטה נשמרה. אפשר להמשיך בהמשך מאותה נקודה.");
   };
 
   if (answersQuery.isLoading || submissionQuery.isLoading || feedbackQuery.isLoading) {
@@ -311,6 +309,17 @@ export function NewBeginnings10Wizard({
               </span>
             )}
           </div>
+        </div>
+        <div className="mt-2 flex justify-start">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            disabled={readOnly || saving}
+            onClick={() => void saveDraft()}
+          >
+            <Save className="size-4" /> שמירת טיוטה
+          </Button>
         </div>
         <Progress value={((pageIndex + 1) / NB10_PAGE_COUNT) * 100} className="mt-2 h-2" />
       </div>
