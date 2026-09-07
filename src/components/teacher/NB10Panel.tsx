@@ -73,6 +73,10 @@ export function NB10Panel({
       return data ?? [];
     },
     enabled: Boolean(task?.id),
+    // הגשות חדשות צריכות להופיע למורה בלי רענון של הדף
+    refetchInterval: 10000,
+    refetchOnWindowFocus: true,
+    staleTime: 0,
   });
   const notesQuery = useQuery({
     queryKey: ["nb10-notes", task?.id],
@@ -86,6 +90,8 @@ export function NB10Panel({
       return data ?? [];
     },
     enabled: Boolean(task?.id),
+    refetchOnWindowFocus: true,
+    staleTime: 0,
   });
 
   const updateTask = useMutation({
@@ -150,7 +156,9 @@ export function NB10Panel({
     );
   }
 
-  const submittedIds = new Set((submissionsQuery.data ?? []).map((s) => s.student_id));
+  const submittedAt = new Map(
+    (submissionsQuery.data ?? []).map((s) => [s.student_id, s.submitted_at]),
+  );
   const notesByStudent = new Map(
     (notesQuery.data ?? []).map((n) => [n.student_id, n as { note: string; score: number | null }]),
   );
@@ -221,13 +229,25 @@ export function NB10Panel({
       </section>
 
       <section>
-        <h3 className="text-lg font-bold">בדיקת התלמידים</h3>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h3 className="text-lg font-bold">בדיקת התלמידים</h3>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => void submissionsQuery.refetch()}
+            disabled={submissionsQuery.isFetching}
+          >
+            <RotateCcw className="size-3" />{" "}
+            {submissionsQuery.isFetching ? "מרעננים..." : "רענון הגשות"}
+          </Button>
+        </div>
         <div className="mt-3 space-y-2">
           {students.length === 0 && (
             <p className="text-muted-foreground">אין תלמידים רשומים במרחב הזה.</p>
           )}
           {students.map((student) => {
-            const submitted = submittedIds.has(student.id);
+            const submitTime = submittedAt.get(student.id);
+            const submitted = Boolean(submitTime);
             const note = notesByStudent.get(student.id);
             return (
               <div
@@ -242,6 +262,14 @@ export function NB10Panel({
                     {submitted ? (
                       <Badge className="bg-success text-success-foreground">
                         <Check className="size-3" /> הוגשה
+                        {submitTime
+                          ? ` · ${new Date(submitTime).toLocaleString("he-IL", {
+                              day: "2-digit",
+                              month: "2-digit",
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}`
+                          : ""}
                       </Badge>
                     ) : (
                       <Badge variant="secondary">בתהליך</Badge>
