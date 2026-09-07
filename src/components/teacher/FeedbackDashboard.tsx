@@ -87,7 +87,7 @@ export function FeedbackDashboard({
   };
 
   return (
-    <section className="mt-8">
+    <section>
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h2 className="text-xl font-bold">ניתוח המשוב</h2>
