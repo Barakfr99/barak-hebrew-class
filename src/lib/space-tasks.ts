@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { useQueries, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { NB10_TASK_TITLE } from "@/components/tasks/new-beginnings-10/content";
+import { MI_TASK_TITLE } from "@/components/tasks/main-idea-10-1/content";
 
 /**
  * שכבת דיווח בין ענפי המשימות של מרחב לימוד ללוח המורה.
@@ -97,7 +98,52 @@ const newBeginnings10Branch: SpaceTaskBranch = {
   },
 };
 
-export const SPACE_TASK_BRANCHES: SpaceTaskBranch[] = [coreBranch, newBeginnings10Branch];
+/** ענף המשימה "ניסוח רעיון מרכזי — תרגול" (mi_*). */
+const mainIdeaBranch: SpaceTaskBranch = {
+  id: "main-idea",
+  title: MI_TASK_TITLE,
+  fetchForClass: async (classSlug) => {
+    const { data: tasks, error } = await supabase
+      .from("mi_tasks")
+      .select("id")
+      .eq("class_slug", classSlug);
+    if (error) throw error;
+    const taskIds = (tasks ?? []).map((t) => t.id);
+    if (taskIds.length === 0) return [];
+
+    const [{ data: subs, error: sErr }, { data: notes, error: nErr }] = await Promise.all([
+      supabase
+        .from("mi_submissions")
+        .select("student_id, task_id, submitted_at")
+        .in("task_id", taskIds),
+      supabase
+        .from("mi_notes")
+        .select("student_id, task_id, score")
+        .in("task_id", taskIds)
+        .is("item_key", null),
+    ]);
+    if (sErr) throw sErr;
+    if (nErr) throw nErr;
+
+    return (subs ?? []).map((s) => ({
+      branchId: "main-idea",
+      taskId: s.task_id,
+      title: MI_TASK_TITLE,
+      studentId: s.student_id,
+      submittedAt: s.submitted_at,
+      grade:
+        (notes ?? []).find((n) => n.student_id === s.student_id && n.task_id === s.task_id)?.score ??
+        null,
+    }));
+  },
+};
+
+export const SPACE_TASK_BRANCHES: SpaceTaskBranch[] = [
+  coreBranch,
+  newBeginnings10Branch,
+  mainIdeaBranch,
+];
+
 
 export const SPACE_ROLLUP_KEY = "space-task-rollup";
 
