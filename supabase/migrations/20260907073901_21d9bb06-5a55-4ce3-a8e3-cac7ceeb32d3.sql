@@ -1,0 +1,1 @@
+ALTER TABLE public.teacher_notes ADD COLUMN IF NOT EXISTS score numeric;

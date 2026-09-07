@@ -76,6 +76,7 @@ export type Database = {
           learning_scale: number | null
           still_unclear: string | null
           student_id: string
+          task_id: string | null
         }
         Insert: {
           clarity_scale?: number | null
@@ -86,6 +87,7 @@ export type Database = {
           learning_scale?: number | null
           still_unclear?: string | null
           student_id: string
+          task_id?: string | null
         }
         Update: {
           clarity_scale?: number | null
@@ -96,13 +98,21 @@ export type Database = {
           learning_scale?: number | null
           still_unclear?: string | null
           student_id?: string
+          task_id?: string | null
         }
         Relationships: [
           {
             foreignKeyName: "feedback_student_id_fkey"
             columns: ["student_id"]
-            isOneToOne: true
+            isOneToOne: false
             referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "feedback_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
             referencedColumns: ["id"]
           },
         ]
@@ -148,11 +158,13 @@ export type Database = {
           options: Json
           paragraph_refs: Json
           parent_key: string | null
+          part_id: string | null
           passage: string | null
           points: number | null
           prompt: string
           sort_order: number
           task_id: string
+          weight: number | null
         }
         Insert: {
           created_at?: string
@@ -164,11 +176,13 @@ export type Database = {
           options?: Json
           paragraph_refs?: Json
           parent_key?: string | null
+          part_id?: string | null
           passage?: string | null
           points?: number | null
           prompt: string
           sort_order?: number
           task_id: string
+          weight?: number | null
         }
         Update: {
           created_at?: string
@@ -180,11 +194,13 @@ export type Database = {
           options?: Json
           paragraph_refs?: Json
           parent_key?: string | null
+          part_id?: string | null
           passage?: string | null
           points?: number | null
           prompt?: string
           sort_order?: number
           task_id?: string
+          weight?: number | null
         }
         Relationships: [
           {
@@ -221,6 +237,48 @@ export type Database = {
             columns: ["student_id"]
             isOneToOne: true
             referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      student_task_speech: {
+        Row: {
+          allowed: boolean
+          created_at: string
+          id: string
+          student_id: string
+          task_id: string
+          updated_at: string
+        }
+        Insert: {
+          allowed?: boolean
+          created_at?: string
+          id?: string
+          student_id: string
+          task_id: string
+          updated_at?: string
+        }
+        Update: {
+          allowed?: boolean
+          created_at?: string
+          id?: string
+          student_id?: string
+          task_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_task_speech_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_task_speech_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
             referencedColumns: ["id"]
           },
         ]
@@ -385,6 +443,7 @@ export type Database = {
           created_at: string
           description: string
           footnote: string | null
+          grading_mode: string
           help_sections: Json
           id: string
           is_active: boolean
@@ -393,6 +452,7 @@ export type Database = {
           paragraphs: Json
           sort_order: number
           source_note: string | null
+          task_parts: Json
           title: string
         }
         Insert: {
@@ -401,6 +461,7 @@ export type Database = {
           created_at?: string
           description?: string
           footnote?: string | null
+          grading_mode?: string
           help_sections?: Json
           id?: string
           is_active?: boolean
@@ -409,6 +470,7 @@ export type Database = {
           paragraphs?: Json
           sort_order?: number
           source_note?: string | null
+          task_parts?: Json
           title: string
         }
         Update: {
@@ -417,6 +479,7 @@ export type Database = {
           created_at?: string
           description?: string
           footnote?: string | null
+          grading_mode?: string
           help_sections?: Json
           id?: string
           is_active?: boolean
@@ -425,9 +488,65 @@ export type Database = {
           paragraphs?: Json
           sort_order?: number
           source_note?: string | null
+          task_parts?: Json
           title?: string
         }
         Relationships: []
+      }
+      teacher_notes: {
+        Row: {
+          created_at: string
+          id: string
+          note: string
+          question_id: string | null
+          score: number | null
+          student_id: string
+          task_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          note?: string
+          question_id?: string | null
+          score?: number | null
+          student_id: string
+          task_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          note?: string
+          question_id?: string | null
+          score?: number | null
+          student_id?: string
+          task_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "teacher_notes_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "questions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "teacher_notes_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "teacher_notes_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {

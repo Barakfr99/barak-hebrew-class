@@ -26,6 +26,8 @@ export type Question = {
   group_label: string | null;
   parent_key: string | null;
   input_size: "short" | "long" | "essay";
+  part_id: string | null;
+  weight: number | null;
 };
 
 /** שאלה בודדת או קבוצת שדות (שורות טבלה / סעיפי משנה) המוצגות יחד. */
@@ -38,6 +40,19 @@ export type QuestionGroup = {
 };
 
 export type HelpSection = { title: string; body: string };
+
+/** אופן חישוב ציון המשימה: חלוקת אחוזים בין השאלות, או הגשה (0/100). */
+export type GradingMode = "weighted" | "submission";
+
+/** חלק פנימי בתוך משימה: "הכול חובה" או "בחירה של X מתוך Y". */
+export type TaskPart = {
+  id: string;
+  title: string;
+  description?: string;
+  kind?: "questions" | "parts_of_speech";
+  selection_mode: "all" | "choose_n";
+  choose_count?: number;
+};
 
 export type Task = {
   id: string;
@@ -52,8 +67,42 @@ export type Task = {
   max_points: number;
   sort_order: number;
   help_sections: HelpSection[];
+  task_parts: TaskPart[];
+  grading_mode: GradingMode;
+  created_at: string;
   questions: Question[];
 };
+
+/** רשימת החלקים של משימה. משימה בלי חלקים מוגדרים נחשבת כחלק אחד. */
+export function taskParts(task: Task): TaskPart[] {
+  if (task.task_parts.length > 0) return task.task_parts;
+  return [
+    {
+      id: "a",
+      title: task.title,
+      description: task.description,
+      kind: task.kind === "parts_of_speech" ? "parts_of_speech" : "questions",
+      selection_mode: "all",
+    },
+  ];
+}
+
+/** השאלות של חלק מסוים. חלק ראשון אוסף גם שאלות בלי שיוך. */
+export function questionsForPart(task: Task, part: TaskPart, index: number): Question[] {
+  return task.questions.filter((q) =>
+    q.part_id ? q.part_id === part.id : index === 0,
+  );
+}
+
+/** משימה "וירטואלית" לחלק בודד, לשימוש ברכיבי התרגול הקיימים. */
+export function partAsTask(task: Task, part: TaskPart, index: number): Task {
+  return {
+    ...task,
+    title: part.title,
+    description: part.description ?? "",
+    questions: questionsForPart(task, part, index),
+  };
+}
 
 /** מקבץ שאלות לפי parent_key, כדי להציג טבלאות וסעיפי משנה תחת שאלה אחת. */
 export function groupQuestions(questions: Question[]): QuestionGroup[] {
@@ -156,14 +205,14 @@ export async function fetchTasks(): Promise<Task[]> {
     supabase
       .from("tasks")
       .select(
-        "id, kind, class_slug, title, article_title, source_note, footnote, description, paragraphs, max_points, sort_order, help_sections",
+        "id, kind, class_slug, title, article_title, source_note, footnote, description, paragraphs, max_points, sort_order, help_sections, task_parts, grading_mode, created_at",
       )
       .eq("is_active", true)
-      .order("sort_order", { ascending: true }),
+      .order("created_at", { ascending: false }),
     supabase
       .from("questions")
       .select(
-        "id, task_id, kind, prompt, options, points, sort_order, note, passage, paragraph_refs, group_label, parent_key, input_size",
+        "id, task_id, kind, prompt, options, points, sort_order, note, passage, paragraph_refs, group_label, parent_key, input_size, part_id, weight",
       )
       .order("sort_order", { ascending: true }),
   ]);
@@ -181,6 +230,8 @@ export async function fetchTasks(): Promise<Task[]> {
     ...t,
     paragraphs: Array.isArray(t.paragraphs) ? (t.paragraphs as string[]) : [],
     help_sections: Array.isArray(t.help_sections) ? (t.help_sections as HelpSection[]) : [],
+    task_parts: Array.isArray(t.task_parts) ? (t.task_parts as TaskPart[]) : [],
+    grading_mode: (t.grading_mode ?? "weighted") as GradingMode,
     questions: questions.filter((q) => q.task_id === t.id),
   })) as Task[];
 }
