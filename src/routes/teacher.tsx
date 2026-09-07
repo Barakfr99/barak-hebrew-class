@@ -440,7 +440,19 @@ function TeacherDashboard() {
                 return (
                   <Fragment key={student.id}>
                     <tr className="border-t border-border">
-                      <td className="px-4 py-3 font-medium">{fullName(student)}</td>
+                      <td className="px-4 py-3 font-medium">
+                        <span className="inline-flex items-center gap-2">
+                          {fullName(student)}
+                          {(pendingByStudent.get(student.id) ?? 0) > 0 && (
+                            <span
+                              title={`${pendingByStudent.get(student.id)} משימות מחכות לבדיקה`}
+                              className="inline-flex min-w-5 items-center justify-center rounded-full bg-destructive px-1.5 py-0.5 text-xs font-bold text-destructive-foreground"
+                            >
+                              {pendingByStudent.get(student.id)}
+                            </span>
+                          )}
+                        </span>
+                      </td>
                       <td className="px-4 py-3 text-sm text-muted-foreground">
                         {done.length} משימות{student.finished_at ? " · סיים/ה" : ""}
                       </td>
