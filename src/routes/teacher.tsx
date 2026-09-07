@@ -29,7 +29,7 @@ import {
   ensureTeacherTestStudent,
   fetchSettings,
   fetchTaskGrades,
-  fetchTasks,
+  fetchAllTasks,
   fullName,
   isTeacherTestStudent,
   reopenStudentTasks,
@@ -173,7 +173,7 @@ function TeacherDashboard() {
     }
   };
 
-  const tasksQuery = useQuery({ queryKey: ["tasks"], queryFn: fetchTasks });
+  const tasksQuery = useQuery({ queryKey: ["teacher-tasks"], queryFn: fetchAllTasks });
   const studentsQuery = useQuery({
     queryKey: ["teacher-students"],
     queryFn: async () => {

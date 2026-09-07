@@ -69,9 +69,20 @@ export type Task = {
   help_sections: HelpSection[];
   task_parts: TaskPart[];
   grading_mode: GradingMode;
+  is_active: boolean;
+  opens_at: string | null;
+  closes_at: string | null;
   created_at: string;
   questions: Question[];
 };
+
+/** האם המשימה פתוחה עכשיו לתלמידים: פעילה ובתוך חלון התזמון. */
+export function isTaskOpen(task: Task, now: Date = new Date()): boolean {
+  if (!task.is_active) return false;
+  if (task.opens_at && new Date(task.opens_at) > now) return false;
+  if (task.closes_at && new Date(task.closes_at) < now) return false;
+  return true;
+}
 
 /** רשימת החלקים של משימה. משימה בלי חלקים מוגדרים נחשבת כחלק אחד. */
 export function taskParts(task: Task): TaskPart[] {
@@ -200,15 +211,13 @@ export async function fetchSettings(): Promise<Settings> {
   return data as Settings;
 }
 
-export async function fetchTasks(): Promise<Task[]> {
+const TASK_COLUMNS =
+  "id, kind, class_slug, title, article_title, source_note, footnote, description, paragraphs, max_points, sort_order, help_sections, task_parts, grading_mode, is_active, opens_at, closes_at, created_at";
+
+/** כל המשימות, כולל לא פעילות ומחוץ לחלון התזמון — לשימוש לוח המורה. */
+export async function fetchAllTasks(): Promise<Task[]> {
   const [tasksRes, questionsRes] = await Promise.all([
-    supabase
-      .from("tasks")
-      .select(
-        "id, kind, class_slug, title, article_title, source_note, footnote, description, paragraphs, max_points, sort_order, help_sections, task_parts, grading_mode, created_at",
-      )
-      .eq("is_active", true)
-      .order("created_at", { ascending: false }),
+    supabase.from("tasks").select(TASK_COLUMNS).order("created_at", { ascending: false }),
     supabase
       .from("questions")
       .select(
@@ -232,8 +241,17 @@ export async function fetchTasks(): Promise<Task[]> {
     help_sections: Array.isArray(t.help_sections) ? (t.help_sections as HelpSection[]) : [],
     task_parts: Array.isArray(t.task_parts) ? (t.task_parts as TaskPart[]) : [],
     grading_mode: (t.grading_mode ?? "weighted") as GradingMode,
+    is_active: t.is_active ?? true,
+    opens_at: t.opens_at ?? null,
+    closes_at: t.closes_at ?? null,
     questions: questions.filter((q) => q.task_id === t.id),
   })) as Task[];
+}
+
+/** המשימות הפתוחות לתלמידים בלבד. */
+export async function fetchTasks(): Promise<Task[]> {
+  const all = await fetchAllTasks();
+  return all.filter((t) => isTaskOpen(t));
 }
 
 export async function fetchStudent(id: string): Promise<Student | null> {
