@@ -66,7 +66,7 @@ export function StudentDetails({
         });
         const computed = weightedGrade(task.questions, scoreByQuestion);
         const speechRow = taskSpeech.find((r) => r.task_id === task.id);
-        const speechAllowed = speechRow ? speechRow.allowed : true;
+        const speechAllowed = speechRow ? speechRow.allowed : false;
         const taskFeedback = feedback.find((f) => f.task_id === task.id);
         const parts = taskParts(task);
 

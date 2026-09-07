@@ -310,8 +310,8 @@ function SignupForm({
           firstName: firstName.trim(),
           lastName: lastName.trim(),
           password,
-          mode: speechMode === "off" ? "regular" : "adaptive",
-          speechEnabled: speechMode !== "off",
+          mode: "regular",
+          speechEnabled: false,
         },
       }),
     onSuccess: async (result) => {

@@ -157,11 +157,11 @@ function PracticePage() {
   const feedbackByTask = new Map<string | null, string>();
   (feedbackQuery.data ?? []).forEach((f) => feedbackByTask.set(f.task_id ?? null, f.id));
 
-  /** ההקראה זמינה רק אם ההרשאה הכללית פתוחה וגם ההרשאה למשימה הזו לא נחסמה. */
+  /** ההקראה זמינה רק אם ההרשאה הכללית פתוחה וגם ההרשאה למשימה הזו הופעלה במפורש. */
   const speechFor = (taskId: string) => {
     if (!student?.speech_enabled) return false;
     const row = (speechQuery.data ?? []).find((r) => r.task_id === taskId);
-    return row ? row.allowed : true;
+    return row ? row.allowed : false;
   };
 
   const singleMode = choiceTasks.length === 0 && tasks.length > 0;
