@@ -12,8 +12,10 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as PracticeRouteImport } from './routes/practice'
 import { Route as TeacherRouteImport } from './routes/teacher'
+import { Route as ApiNb10AssistantRouteImport } from './routes/api/nb10-assistant'
 import { Route as ApiTtsRouteImport } from './routes/api/tts'
 import { Route as ClassSlugRouteImport } from './routes/class.$slug'
+import { Route as TaskNewBeginnings10RouteImport } from './routes/task.new-beginnings-10'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -30,6 +32,11 @@ const TeacherRoute = TeacherRouteImport.update({
   path: '/teacher',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiNb10AssistantRoute = ApiNb10AssistantRouteImport.update({
+  id: '/api/nb10-assistant',
+  path: '/api/nb10-assistant',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiTtsRoute = ApiTtsRouteImport.update({
   id: '/api/tts',
   path: '/api/tts',
@@ -40,43 +47,78 @@ const ClassSlugRoute = ClassSlugRouteImport.update({
   path: '/class/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
+const TaskNewBeginnings10Route = TaskNewBeginnings10RouteImport.update({
+  id: '/task/new-beginnings-10',
+  path: '/task/new-beginnings-10',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/practice': typeof PracticeRoute
   '/teacher': typeof TeacherRoute
+  '/api/nb10-assistant': typeof ApiNb10AssistantRoute
   '/api/tts': typeof ApiTtsRoute
   '/class/$slug': typeof ClassSlugRoute
+  '/task/new-beginnings-10': typeof TaskNewBeginnings10Route
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/practice': typeof PracticeRoute
   '/teacher': typeof TeacherRoute
+  '/api/nb10-assistant': typeof ApiNb10AssistantRoute
   '/api/tts': typeof ApiTtsRoute
   '/class/$slug': typeof ClassSlugRoute
+  '/task/new-beginnings-10': typeof TaskNewBeginnings10Route
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/practice': typeof PracticeRoute
   '/teacher': typeof TeacherRoute
+  '/api/nb10-assistant': typeof ApiNb10AssistantRoute
   '/api/tts': typeof ApiTtsRoute
   '/class/$slug': typeof ClassSlugRoute
+  '/task/new-beginnings-10': typeof TaskNewBeginnings10Route
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/practice' | '/teacher' | '/api/tts' | '/class/$slug'
+  fullPaths:
+    | '/'
+    | '/practice'
+    | '/teacher'
+    | '/api/nb10-assistant'
+    | '/api/tts'
+    | '/class/$slug'
+    | '/task/new-beginnings-10'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/practice' | '/teacher' | '/api/tts' | '/class/$slug'
-  id: '__root__' | '/' | '/practice' | '/teacher' | '/api/tts' | '/class/$slug'
+  to:
+    | '/'
+    | '/practice'
+    | '/teacher'
+    | '/api/nb10-assistant'
+    | '/api/tts'
+    | '/class/$slug'
+    | '/task/new-beginnings-10'
+  id:
+    | '__root__'
+    | '/'
+    | '/practice'
+    | '/teacher'
+    | '/api/nb10-assistant'
+    | '/api/tts'
+    | '/class/$slug'
+    | '/task/new-beginnings-10'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   PracticeRoute: typeof PracticeRoute
   TeacherRoute: typeof TeacherRoute
+  ApiNb10AssistantRoute: typeof ApiNb10AssistantRoute
   ApiTtsRoute: typeof ApiTtsRoute
   ClassSlugRoute: typeof ClassSlugRoute
+  TaskNewBeginnings10Route: typeof TaskNewBeginnings10Route
 }
 
 declare module '@tanstack/react-router' {
@@ -102,6 +144,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TeacherRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/nb10-assistant': {
+      id: '/api/nb10-assistant'
+      path: '/api/nb10-assistant'
+      fullPath: '/api/nb10-assistant'
+      preLoaderRoute: typeof ApiNb10AssistantRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/tts': {
       id: '/api/tts'
       path: '/api/tts'
@@ -116,6 +165,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ClassSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/task/new-beginnings-10': {
+      id: '/task/new-beginnings-10'
+      path: '/task/new-beginnings-10'
+      fullPath: '/task/new-beginnings-10'
+      preLoaderRoute: typeof TaskNewBeginnings10RouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -123,8 +179,10 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   PracticeRoute: PracticeRoute,
   TeacherRoute: TeacherRoute,
+  ApiNb10AssistantRoute: ApiNb10AssistantRoute,
   ApiTtsRoute: ApiTtsRoute,
   ClassSlugRoute: ClassSlugRoute,
+  TaskNewBeginnings10Route: TaskNewBeginnings10Route,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
