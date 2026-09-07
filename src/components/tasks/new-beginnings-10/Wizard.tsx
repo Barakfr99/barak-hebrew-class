@@ -225,6 +225,29 @@ export function NewBeginnings10Wizard({
 
   const readOnly = Boolean(submissionQuery.data);
 
+  /** הערות המורה — נשלפות רק אחרי הגשה, ומוצגות רק כשיש בהן תוכן. */
+  const notesQuery = useQuery({
+    queryKey: ["nb10-student-notes", task.id, studentId],
+    enabled: readOnly,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("nb10_notes")
+        .select("question_id, note")
+        .eq("task_id", task.id)
+        .eq("student_id", studentId);
+      if (error) throw error;
+      const map: Record<string, string> = {};
+      let general = "";
+      (data ?? []).forEach((row) => {
+        if (row.question_id) map[row.question_id] = row.note ?? "";
+        else general = row.note ?? "";
+      });
+      return { map, general };
+    },
+  });
+  const notes = notesQuery.data?.map ?? {};
+  const generalNote = notesQuery.data?.general ?? "";
+
   const persist = useCallback(
     async (questionId: string, value: string) => {
       setSaving(true);
