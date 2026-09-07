@@ -228,9 +228,15 @@ export function NB10Panel({
         </div>
       </section>
 
-      <section>
+      <section className="rounded-3xl border border-border bg-card p-5">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <h3 className="text-lg font-bold">בדיקת התלמידים</h3>
+          <div>
+            <h3 className="text-lg font-bold">מצב הגשות</h3>
+            <p className="mt-1 text-sm text-muted-foreground">
+              {submittedCount} מתוך {students.length} תלמידים הגישו לבדיקה. בדיקת התשובות וההערות
+              נעשית בכרטיס התלמיד/ה בלשונית "כיתות ותלמידים".
+            </p>
+          </div>
           <Button
             size="sm"
             variant="outline"
@@ -241,78 +247,11 @@ export function NB10Panel({
             {submissionsQuery.isFetching ? "מרעננים..." : "רענון הגשות"}
           </Button>
         </div>
-        <div className="mt-3 space-y-2">
-          {students.length === 0 && (
-            <p className="text-muted-foreground">אין תלמידים רשומים במרחב הזה.</p>
-          )}
-          {students.map((student) => {
-            const submitTime = submittedAt.get(student.id);
-            const submitted = Boolean(submitTime);
-            const note = notesByStudent.get(student.id);
-            return (
-              <div
-                key={student.id}
-                className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border bg-card p-4"
-              >
-                <div>
-                  <p className="font-semibold">
-                    {student.first_name} {student.last_name}
-                  </p>
-                  <div className="mt-1 flex flex-wrap items-center gap-2">
-                    {submitted ? (
-                      <Badge className="bg-success text-success-foreground">
-                        <Check className="size-3" /> הוגשה
-                        {submitTime
-                          ? ` · ${new Date(submitTime).toLocaleString("he-IL", {
-                              day: "2-digit",
-                              month: "2-digit",
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            })}`
-                          : ""}
-                      </Badge>
-                    ) : (
-                      <Badge variant="secondary">בתהליך</Badge>
-                    )}
-                    {note?.score !== null && note?.score !== undefined && (
-                      <Badge variant="outline">ציון {note.score}</Badge>
-                    )}
-                  </div>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  <Button size="sm" onClick={() => setOpenStudent(student)}>
-                    פתיחת חלון בדיקה
-                  </Button>
-                  {submitted && (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => reopen.mutate(student.id)}
-                      disabled={reopen.isPending}
-                    >
-                      <Lock className="size-3" /> פתיחה מחדש
-                    </Button>
-                  )}
-                </div>
-              </div>
-            );
-          })}
-        </div>
       </section>
-
-      <Dialog open={Boolean(openStudent)} onOpenChange={(open) => !open && setOpenStudent(null)}>
-        <DialogContent dir="rtl" className="max-h-[85vh] max-w-4xl overflow-y-auto text-start">
-          <DialogHeader>
-            <DialogTitle>
-              {openStudent?.first_name} {openStudent?.last_name} · {NB10_TASK_TITLE}
-            </DialogTitle>
-          </DialogHeader>
-          {openStudent && <StudentReview taskId={task.id} student={openStudent} />}
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
+
 
 function StudentReview({ taskId, student }: { taskId: string; student: StudentRow }) {
   const queryClient = useQueryClient();
