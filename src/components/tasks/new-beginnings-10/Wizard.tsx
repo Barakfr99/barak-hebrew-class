@@ -72,16 +72,29 @@ function PromptWithTerm({ prompt, note }: { prompt: string; note: NB10Note }) {
   );
 }
 
+/** הערת המורה לתשובה — מוצגת רק אם המורה כתב/ה בה משהו. */
+function TeacherNote({ note }: { note?: string }) {
+  if (!note || !note.trim()) return null;
+  return (
+    <div className="mt-2 rounded-xl border border-primary/30 bg-accent/40 p-3">
+      <p className="text-xs font-semibold text-primary">הערת המורה</p>
+      <p className="mt-1 whitespace-pre-wrap text-sm">{note}</p>
+    </div>
+  );
+}
+
 function QuestionCard({
   question,
   answers,
   onChange,
   readOnly,
+  notes,
 }: {
   question: NB10Question;
   answers: Record<string, string>;
   onChange: (id: string, value: string) => void;
   readOnly: boolean;
+  notes: Record<string, string>;
 }) {
   if (question.kind === "guided") {
     return (
@@ -103,6 +116,7 @@ function QuestionCard({
                   onChange={(e) => onChange(id, e.target.value)}
                   className="mt-2"
                 />
+                <TeacherNote note={notes[id]} />
               </div>
             );
           })}
@@ -133,6 +147,7 @@ function QuestionCard({
             </label>
           ))}
         </RadioGroup>
+        <TeacherNote note={notes[question.id]} />
       </div>
     );
   }
@@ -156,6 +171,7 @@ function QuestionCard({
         onChange={(e) => onChange(question.id, e.target.value)}
         className="mt-4"
       />
+      <TeacherNote note={notes[question.id]} />
     </div>
   );
 }
