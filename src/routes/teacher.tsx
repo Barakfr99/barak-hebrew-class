@@ -442,14 +442,17 @@ function TeacherDashboard() {
               {filtered.map((student) => {
                 const done = completionsByStudent.get(student.id) ?? [];
                 const isOpen = expanded === student.id;
+                const submittedCount = rollup.submittedByStudent.get(student.id) ?? 0;
                 const gradesText =
-                  classTasks
-                    .map((t) => taskGrades.find((g) => g.student_id === student.id && g.task_id === t.id)?.grade)
-                    .filter((g): g is number => typeof g === "number")
+                  (rollup.gradesByStudent.get(student.id) ?? [])
+                    .map((g) => `${g.title}: ${g.grade}`)
                     .join(" · ") || "—";
                 return (
                   <Fragment key={student.id}>
-                    <tr className="border-t border-border">
+                    <tr
+                      className="cursor-pointer border-t border-border hover:bg-secondary/40"
+                      onClick={() => setExpanded(isOpen ? null : student.id)}
+                    >
                       <td className="px-4 py-3 font-medium">
                         <span className="inline-flex items-center gap-2">
                           {fullName(student)}
