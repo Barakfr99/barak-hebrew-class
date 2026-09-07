@@ -383,6 +383,8 @@ function PracticePage() {
       </div>
 
       <div className="space-y-3">
+        <NB10TaskCard classSlug={student?.class_slug} studentId={studentId} />
+
         {listTasks.map((task) => {
           const done = completedIds.has(task.id);
           const isPreviewOpen = previewTaskId === task.id;
