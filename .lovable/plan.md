@@ -57,8 +57,9 @@
 - `src/components/tasks/main-idea-10-1/content.ts` — כל התוכן: פסקאות, אפשרויות, תשובות נכונות, נימוקי המשוב, ציטוטים, סעיפי צ'ק-ליסט, נוסחי מסכי ההוראות, `REQUIRED_PAGE1 = 4`, `REQUIRED_PAGE3 = 2`.
 - `data.ts` — שליפה/שמירה/הגשה, ספירת תשובות מהותיות וחישוב "מאמץ נוסף".
 - `InstructionsGate.tsx` — מסך הוראות עם טיימר 10 שניות.
-- `Wizard.tsx` — שלושת העמודים, בר התקדמות, שמירה אוטומטית, מסך סיכום המשוב אחרי ההגשה, מצב קריאה בלבד.
-- `FeedbackStep.tsx`, `TaskCard.tsx` (כרטיס במרחב הכיתתי), `src/routes/task.main-idea-10-1.tsx`.
+- `Wizard.tsx` — שלושת העמודים, בר התקדמות, שמירה אוטומטית, חלון אישור לפני הגשה, שאלון המשוב אחרי ההגשה, מסך סיכום עם נכון/שגוי, מצב קריאה בלבד.
+- `SubmitConfirmDialog.tsx`, `FeedbackStep.tsx`, `TaskCard.tsx` (כרטיס במרחב הכיתתי), `src/routes/task.main-idea-10-1.tsx`.
+
 - `src/components/teacher/MainIdeaPanel.tsx` + כרטיס תלמיד/ה בפירוט, ורישום ענף חדש ב-`src/lib/space-tasks.ts` (הוספת ענף בלבד, בלי שינוי בענפים הקיימים).
 
 בדיקות: `bunx tsgo --noEmit`, מעבר Playwright על שלושת העמודים, על מסכי הטיימר, על חסימת המינימום ועל תג הבונוס בלוח המורה.
