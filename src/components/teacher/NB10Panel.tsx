@@ -1,23 +1,17 @@
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Check, Lock, RotateCcw } from "lucide-react";
+import { RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  NB10_PAGES,
-  NB10_TASK_TITLE,
-  type NB10Question,
-} from "@/components/tasks/new-beginnings-10/content";
+import { NB10_PAGES, NB10_TASK_TITLE, type NB10Question } from "@/components/tasks/new-beginnings-10/content";
 import { fetchNB10Task } from "@/components/tasks/new-beginnings-10/data";
 
-type StudentRow = { id: string; first_name: string; last_name: string };
+export type StudentRow = { id: string; first_name: string; last_name: string };
 
 /** תווית קריאה לכל מזהה תשובה במשימה. */
 function answerLabels(): { id: string; label: string; page: number }[] {
@@ -52,7 +46,6 @@ export function NB10Panel({
   students: StudentRow[];
 }) {
   const queryClient = useQueryClient();
-  const [openStudent, setOpenStudent] = useState<StudentRow | null>(null);
 
   const taskQuery = useQuery({
     queryKey: ["nb10-task-admin", classSlug ?? null],
@@ -78,22 +71,6 @@ export function NB10Panel({
     refetchOnWindowFocus: true,
     staleTime: 0,
   });
-  const notesQuery = useQuery({
-    queryKey: ["nb10-notes", task?.id],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("nb10_notes")
-        .select("student_id, note, score")
-        .eq("task_id", task!.id)
-        .is("question_id", null);
-      if (error) throw error;
-      return data ?? [];
-    },
-    enabled: Boolean(task?.id),
-    refetchOnWindowFocus: true,
-    staleTime: 0,
-  });
-
   const updateTask = useMutation({
     mutationFn: async (patch: {
       is_active?: boolean;
@@ -130,22 +107,6 @@ export function NB10Panel({
     onError: () => toast.error("לא הצלחנו לאפס את המשימה."),
   });
 
-  const reopen = useMutation({
-    mutationFn: async (studentId: string) => {
-      const { error } = await supabase
-        .from("nb10_submissions")
-        .delete()
-        .eq("task_id", task!.id)
-        .eq("student_id", studentId);
-      if (error) throw error;
-    },
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ["nb10-submissions", task?.id, studentIds] });
-      toast.success("המשימה נפתחה מחדש לתלמיד/ה.");
-    },
-    onError: () => toast.error("לא הצלחנו לפתוח מחדש את המשימה."),
-  });
-
   if (!classSlug) return <p className="text-muted-foreground">בחרו מרחב לימוד.</p>;
   if (taskQuery.isLoading) return <p className="text-muted-foreground">טוענים...</p>;
   if (!task) {
@@ -156,12 +117,7 @@ export function NB10Panel({
     );
   }
 
-  const submittedAt = new Map(
-    (submissionsQuery.data ?? []).map((s) => [s.student_id, s.submitted_at]),
-  );
-  const notesByStudent = new Map(
-    (notesQuery.data ?? []).map((n) => [n.student_id, n as { note: string; score: number | null }]),
-  );
+  const submittedCount = (submissionsQuery.data ?? []).length;
 
   return (
     <div className="space-y-6">
@@ -170,7 +126,7 @@ export function NB10Panel({
           <div>
             <h3 className="text-lg font-bold">{NB10_TASK_TITLE}</h3>
             <p className="text-sm text-muted-foreground">
-              תשעה עמודים, שמירה אוטומטית ועוזר שיטה. המשימה מוצגת לתלמידים רק כשהיא מופעלת.
+              תשעה עמודים, שמירה אוטומטית ועוזר AI. המשימה מוצגת לתלמידים רק כשהיא מופעלת.
             </p>
           </div>
           <label className="flex items-center gap-3">
@@ -253,7 +209,7 @@ export function NB10Panel({
 }
 
 
-function StudentReview({ taskId, student }: { taskId: string; student: StudentRow }) {
+export function StudentReview({ taskId, student }: { taskId: string; student: StudentRow }) {
   const queryClient = useQueryClient();
   const labels = useMemo(answerLabels, []);
 
