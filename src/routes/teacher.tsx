@@ -366,7 +366,7 @@ function TeacherDashboard() {
           <TabsTrigger value="students">כיתות ותלמידים</TabsTrigger>
           <TabsTrigger value="tasks">ניהול המשימות</TabsTrigger>
           <TabsTrigger value="feedback">ניתוח משובים</TabsTrigger>
-          <TabsTrigger value="nb10">התחלות חדשות (מותאם)</TabsTrigger>
+          
 
         </TabsList>
 
