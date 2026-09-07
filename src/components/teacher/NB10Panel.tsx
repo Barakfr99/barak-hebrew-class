@@ -229,13 +229,25 @@ export function NB10Panel({
       </section>
 
       <section>
-        <h3 className="text-lg font-bold">בדיקת התלמידים</h3>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h3 className="text-lg font-bold">בדיקת התלמידים</h3>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => void submissionsQuery.refetch()}
+            disabled={submissionsQuery.isFetching}
+          >
+            <RotateCcw className="size-3" />{" "}
+            {submissionsQuery.isFetching ? "מרעננים..." : "רענון הגשות"}
+          </Button>
+        </div>
         <div className="mt-3 space-y-2">
           {students.length === 0 && (
             <p className="text-muted-foreground">אין תלמידים רשומים במרחב הזה.</p>
           )}
           {students.map((student) => {
-            const submitted = submittedIds.has(student.id);
+            const submitTime = submittedAt.get(student.id);
+            const submitted = Boolean(submitTime);
             const note = notesByStudent.get(student.id);
             return (
               <div
