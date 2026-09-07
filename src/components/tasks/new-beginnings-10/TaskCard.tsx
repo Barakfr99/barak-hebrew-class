@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { NB10_TASK_TITLE } from "./content";
 import { fetchNB10Submission, fetchNB10Task, isNB10Open } from "./data";
 
-/** כרטיס הכניסה למשימה "התחלות חדשות (מותאם)" ברשימת המשימות של התלמיד/ה. */
+/** כרטיס הכניסה למשימה "התחלות חדשות" ברשימת המשימות של התלמיד/ה. */
 export function NB10TaskCard({
   classSlug,
   studentId,

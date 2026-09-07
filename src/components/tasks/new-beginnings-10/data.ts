@@ -1,4 +1,4 @@
-/** גישה לנתוני המשימה "התחלות חדשות (מותאם)" — טבלאות nb10_* בלבד. */
+/** גישה לנתוני המשימה "התחלות חדשות" — טבלאות nb10_* בלבד. */
 import { supabase } from "@/integrations/supabase/client";
 
 export type NB10Task = {

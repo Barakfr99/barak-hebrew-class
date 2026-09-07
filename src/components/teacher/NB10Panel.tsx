@@ -43,7 +43,7 @@ function toLocalInput(value: string | null) {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
-/** ניהול ובדיקה של המשימה "התחלות חדשות (מותאם)" — טבלאות nb10_* בלבד. */
+/** ניהול ובדיקה של המשימה "התחלות חדשות" — טבלאות nb10_* בלבד. */
 export function NB10Panel({
   classSlug,
   students,
