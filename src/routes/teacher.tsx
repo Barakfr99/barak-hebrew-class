@@ -547,6 +547,11 @@ function TeacherDashboard() {
         <TabsContent value="feedback" className="mt-6">
           <FeedbackDashboard feedback={feedback} tasks={classTasks} studentIds={studentIds} />
         </TabsContent>
+
+        <TabsContent value="nb10" className="mt-6">
+          <NB10Panel classSlug={selectedClass?.slug} students={students} />
+        </TabsContent>
+
       </Tabs>
     </main>
   );
