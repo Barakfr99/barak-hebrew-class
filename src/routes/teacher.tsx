@@ -340,6 +340,14 @@ function TeacherDashboard() {
         </p>
       </section>
 
+      <Tabs defaultValue="students" dir="rtl" className="mt-6">
+        <TabsList>
+          <TabsTrigger value="students">כיתות ותלמידים</TabsTrigger>
+          <TabsTrigger value="tasks">ניהול המשימות</TabsTrigger>
+          <TabsTrigger value="feedback">ניתוח משובים</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="students">
       <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard label="תלמידים בכיתה" value={students.length} />
         <StatCard label="סיימו את התרגול" value={finishedCount} />
