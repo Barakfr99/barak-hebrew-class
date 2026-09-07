@@ -403,6 +403,7 @@ function TeacherDashboard() {
                 <SelectItem value="finished">סיימו</SelectItem>
                 <SelectItem value="speech">עם הרשאת הקראה</SelectItem>
                 <SelectItem value="no_choice">עוד לא השלימו משימה</SelectItem>
+                <SelectItem value="pending">מחכות לבדיקה</SelectItem>
               </SelectContent>
             </Select>
           </div>
