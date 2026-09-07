@@ -13,13 +13,13 @@ export const Route = createFileRoute("/task/new-beginnings-10")({
   ssr: false,
   head: () => ({
     meta: [
-      { title: "התחלות חדשות (מותאם) — משימת הבנת הנקרא" },
+      { title: "התחלות חדשות בל"י מותאם — משימת הבנת הנקרא" },
       {
         name: "description",
         content:
           "משימת הבנת הנקרא 'התחלות חדשות' בגרסה מותאמת לכיתות י': תשעה עמודים קצרים, שמירה אוטומטית ועוזר שיטה מלווה.",
       },
-      { property: "og:title", content: "התחלות חדשות (מותאם) — משימת הבנת הנקרא" },
+      { property: "og:title", content: "התחלות חדשות בל"י מותאם — משימת הבנת הנקרא" },
       {
         property: "og:description",
         content: "תשעה עמודי תרגול קצרים עם שמירה אוטומטית ועוזר שיטה מלווה.",
