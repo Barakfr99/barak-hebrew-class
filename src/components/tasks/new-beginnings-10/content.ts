@@ -4,7 +4,7 @@
  * ואינם משותפים עם שום משימה אחרת באתר.
  */
 
-export const NB10_TASK_TITLE = "התחלות חדשות (מותאם)";
+export const NB10_TASK_TITLE = 'התחלות חדשות בל"י מותאם';
 export const NB10_ARTICLE_TITLE = "התחלות חדשות";
 export const NB10_CLASS_SLUGS = ["10-1", "10-2"] as const;
 
