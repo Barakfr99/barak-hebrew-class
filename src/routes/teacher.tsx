@@ -264,8 +264,25 @@ function TeacherDashboard() {
     return map;
   }, [completions]);
 
+  /** משימות שהוגשו וטרם קיבלו ציון — מחכות לבדיקת המורה. */
+  const pendingByStudent = useMemo(() => {
+    const map = new Map<string, number>();
+    const classTaskIds = new Set(classTasks.map((t) => t.id));
+    completions.forEach((c) => {
+      if (!classTaskIds.has(c.task_id)) return;
+      const graded = taskGrades.some(
+        (g) => g.student_id === c.student_id && g.task_id === c.task_id && typeof g.grade === "number",
+      );
+      if (graded) return;
+      map.set(c.student_id, (map.get(c.student_id) ?? 0) + 1);
+    });
+    return map;
+  }, [completions, classTasks, taskGrades]);
+
   const finishedCount = students.filter((s) => s.finished_at).length;
   const feedbackCount = feedback.filter((f) => studentIds.has(f.student_id)).length;
+  const pendingTotal = students.reduce((sum, s) => sum + (pendingByStudent.get(s.id) ?? 0), 0);
+
 
   const filtered = students.filter((s) => {
     const term = search.trim();
@@ -276,6 +293,7 @@ function TeacherDashboard() {
     if (filter === "in_progress") return !s.finished_at;
     if (filter === "speech") return s.speech_enabled;
     if (filter === "no_choice") return done.length === 0;
+    if (filter === "pending") return (pendingByStudent.get(s.id) ?? 0) > 0;
     return true;
   });
 
@@ -349,12 +367,14 @@ function TeacherDashboard() {
         </TabsList>
 
         <TabsContent value="students">
-      <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
         <StatCard label="תלמידים בכיתה" value={students.length} />
         <StatCard label="סיימו את התרגול" value={finishedCount} />
+        <StatCard label="מחכות לבדיקה" value={pendingTotal} />
         <StatCard label="מילאו משוב" value={feedbackCount} />
         <StatCard label="עם הרשאת הקראה" value={students.filter((s) => s.speech_enabled).length} />
       </div>
+
 
       <section className="mt-8">
         <div className="flex flex-wrap items-end gap-3">
@@ -383,6 +403,7 @@ function TeacherDashboard() {
                 <SelectItem value="finished">סיימו</SelectItem>
                 <SelectItem value="speech">עם הרשאת הקראה</SelectItem>
                 <SelectItem value="no_choice">עוד לא השלימו משימה</SelectItem>
+                <SelectItem value="pending">מחכות לבדיקה</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -423,7 +444,19 @@ function TeacherDashboard() {
                 return (
                   <Fragment key={student.id}>
                     <tr className="border-t border-border">
-                      <td className="px-4 py-3 font-medium">{fullName(student)}</td>
+                      <td className="px-4 py-3 font-medium">
+                        <span className="inline-flex items-center gap-2">
+                          {fullName(student)}
+                          {(pendingByStudent.get(student.id) ?? 0) > 0 && (
+                            <span
+                              title={`${pendingByStudent.get(student.id)} משימות מחכות לבדיקה`}
+                              className="inline-flex min-w-5 items-center justify-center rounded-full bg-destructive px-1.5 py-0.5 text-xs font-bold text-destructive-foreground"
+                            >
+                              {pendingByStudent.get(student.id)}
+                            </span>
+                          )}
+                        </span>
+                      </td>
                       <td className="px-4 py-3 text-sm text-muted-foreground">
                         {done.length} משימות{student.finished_at ? " · סיים/ה" : ""}
                       </td>
