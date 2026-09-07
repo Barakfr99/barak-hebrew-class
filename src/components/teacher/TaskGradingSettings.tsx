@@ -38,7 +38,19 @@ function fromLocalInput(value: string): string | null {
   return Number.isNaN(d.getTime()) ? null : d.toISOString();
 }
 
-/** ניהול המשימות של הכיתה: זמינות, תזמון, ניקוד, איפוס ומחיקה. */
+function statusOf(task: Task): { text: string; open: boolean } {
+  const open = isTaskOpen(task);
+  const text = !task.is_active
+    ? "לא פעילה — התלמידים לא רואים אותה"
+    : open
+      ? "פתוחה לתלמידים"
+      : task.opens_at && new Date(task.opens_at) > new Date()
+        ? "ממתינה למועד הפתיחה"
+        : "נסגרה";
+  return { text, open };
+}
+
+/** ניהול המשימות של הכיתה: רשימה, ולחיצה על משימה פותחת חלון ניהול. */
 export function TaskGradingSettings({
   tasks,
   onChanged,
@@ -46,53 +58,91 @@ export function TaskGradingSettings({
   tasks: Task[];
   onChanged: () => Promise<void> | void;
 }) {
-  if (tasks.length === 0) return null;
+  const [openTaskId, setOpenTaskId] = useState<string | null>(null);
+  const openTask = tasks.find((t) => t.id === openTaskId) ?? null;
+
+  if (tasks.length === 0) {
+    return <p className="text-muted-foreground">אין משימות במרחב הלימוד הזה.</p>;
+  }
 
   return (
-    <section className="mt-8">
+    <section>
       <h2 className="text-xl font-bold">ניהול המשימות</h2>
       <p className="text-sm text-muted-foreground">
-        לכל משימה: פעילה או לא, מועד פתיחה וסגירה, אופן הניקוד, איפוס לכל התלמידים ומחיקה.
+        לחיצה על משימה פותחת חלון ניהול: זמינות, תזמון, אופן הניקוד, איפוס לכל התלמידים ומחיקה.
       </p>
-      <div className="mt-4 space-y-4">
-        {tasks.map((task) => (
-          <TaskCard key={task.id} task={task} onChanged={onChanged} />
-        ))}
+      <div className="mt-4 space-y-2">
+        {tasks.map((task) => {
+          const { text, open } = statusOf(task);
+          const parts = taskParts(task);
+          return (
+            <button
+              key={task.id}
+              type="button"
+              onClick={() => setOpenTaskId(task.id)}
+              className="flex w-full flex-wrap items-center justify-between gap-3 rounded-2xl border border-border bg-card p-4 text-start transition hover:border-primary/60 hover:bg-secondary/40"
+            >
+              <div>
+                <p className="font-semibold">{task.title}</p>
+                <p className="text-sm text-muted-foreground">
+                  {task.questions.length} שאלות · {parts.length} חלקים ·{" "}
+                  {task.grading_mode === "submission" ? "הגיש/לא הגיש" : "ניקוד לכל שאלה"}
+                </p>
+              </div>
+              <span
+                className={
+                  open
+                    ? "rounded-full bg-primary/10 px-3 py-1 text-sm font-medium text-primary"
+                    : "rounded-full bg-secondary px-3 py-1 text-sm text-muted-foreground"
+                }
+              >
+                {text}
+              </span>
+            </button>
+          );
+        })}
       </div>
+
+      <Dialog open={Boolean(openTask)} onOpenChange={(v) => !v && setOpenTaskId(null)}>
+        <DialogContent dir="rtl" className="max-h-[85vh] max-w-3xl overflow-y-auto text-start">
+          {openTask && (
+            <>
+              <DialogHeader className="text-start">
+                <DialogTitle>{openTask.title}</DialogTitle>
+                <DialogDescription>{statusOf(openTask).text}</DialogDescription>
+              </DialogHeader>
+              <TaskCard
+                task={openTask}
+                onChanged={onChanged}
+                onDeleted={() => setOpenTaskId(null)}
+              />
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </section>
   );
 }
 
-function TaskCard({ task, onChanged }: { task: Task; onChanged: () => Promise<void> | void }) {
+function TaskCard({
+  task,
+  onChanged,
+  onDeleted,
+}: {
+  task: Task;
+  onChanged: () => Promise<void> | void;
+  onDeleted?: () => void;
+}) {
   const sum = weightsSum(task.questions);
   const parts = taskParts(task);
-  const open = isTaskOpen(task);
   const [busy, setBusy] = useState(false);
 
-  const statusText = !task.is_active
-    ? "לא פעילה — התלמידים לא רואים אותה"
-    : open
-      ? "פתוחה לתלמידים"
-      : task.opens_at && new Date(task.opens_at) > new Date()
-        ? "ממתינה למועד הפתיחה"
-        : "נסגרה";
-
   return (
-    <div className="rounded-2xl border border-border bg-card p-4">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <p className="font-semibold">{task.title}</p>
-          <p className="text-sm text-muted-foreground">
-            {task.questions.length} שאלות · {parts.length} חלקים
-          </p>
-          <p
-            className={
-              open ? "mt-1 text-sm font-medium text-primary" : "mt-1 text-sm text-muted-foreground"
-            }
-          >
-            {statusText}
-          </p>
-        </div>
+    <div>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <p className="text-sm text-muted-foreground">
+          {task.questions.length} שאלות · {parts.length} חלקים
+        </p>
         <div className="flex items-center gap-2">
           <Label className="text-sm">פעילה</Label>
           <Switch
