@@ -25,6 +25,8 @@ import { ProgressSteps } from "@/components/practice/ProgressSteps";
 import { TaskView } from "@/components/practice/TaskView";
 import { PartsOfSpeechTask } from "@/components/practice/PartsOfSpeechTask";
 import { FeedbackForm } from "@/components/practice/FeedbackForm";
+import { NB10TaskCard } from "@/components/tasks/new-beginnings-10/TaskCard";
+
 
 export const Route = createFileRoute("/practice")({
   ssr: false,
