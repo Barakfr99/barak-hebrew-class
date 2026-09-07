@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/dialog";
 import { Check, Eye } from "lucide-react";
 import { NB10StudentCard } from "./NB10StudentCard";
+import { MIStudentCard } from "./MIStudentCard";
 import { groupQuestions, taskParts, type Student, type Task } from "@/lib/practice";
 import { weightedGrade } from "@/lib/task-parts";
 import {
@@ -85,6 +86,7 @@ export function StudentDetails({
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         <NB10StudentCard classSlug={classSlug ?? student.class_slug} student={student} />
+        <MIStudentCard classSlug={classSlug ?? student.class_slug} student={student} />
         {tasks.length > 0 &&
           tasks.map((task) => {
             const done = completedTaskIds.has(task.id);
