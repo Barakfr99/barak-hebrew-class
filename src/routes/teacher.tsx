@@ -500,10 +500,16 @@ function TeacherDashboard() {
           </table>
         </div>
       </section>
+        </TabsContent>
 
-      <TaskGradingSettings tasks={classTasks} onChanged={refreshAll} />
+        <TabsContent value="tasks" className="mt-6">
+          <TaskGradingSettings tasks={classTasks} onChanged={refreshAll} />
+        </TabsContent>
 
-      <FeedbackDashboard feedback={feedback} tasks={classTasks} studentIds={studentIds} />
+        <TabsContent value="feedback" className="mt-6">
+          <FeedbackDashboard feedback={feedback} tasks={classTasks} studentIds={studentIds} />
+        </TabsContent>
+      </Tabs>
     </main>
   );
 }
