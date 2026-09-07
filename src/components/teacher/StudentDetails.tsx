@@ -34,6 +34,13 @@ import {
 
 type AnswerRow = { task_id: string; question_id: string; answer_text: string };
 
+const SUBMISSION_GRADES = [
+  { value: 100, label: "מלא — 100" },
+  { value: 75, label: "חלקי — 75" },
+  { value: 50, label: "מינימלי — 50" },
+  { value: 0, label: "לא הגיש/ה — 0" },
+] as const;
+
 export function StudentDetails({
   student,
   tasks,
@@ -205,7 +212,7 @@ function TaskDetail({
         <p className="text-sm text-muted-foreground">
           {completedTaskIds.has(task.id) ? "הוגשה" : "בתהליך"} ·{" "}
           {task.grading_mode === "submission"
-            ? "ניקוד הגשה (0 או 100)"
+            ? "ניקוד הגשה (0 / 50 / 75 / 100)"
             : "ניקוד לפי משקל השאלות"}
           {parts.length > 1 ? ` · ${parts.length} חלקים` : ""}
         </p>
@@ -230,26 +237,23 @@ function TaskDetail({
       {task.grading_mode === "submission" ? (
         <div className="flex flex-wrap items-center gap-2">
           <span className="text-sm">ציון המשימה:</span>
-          <Button
-            size="sm"
-            variant={grade === 100 ? "default" : "outline"}
-            onClick={async () => {
-              await saveTaskGrade({ studentId: student.id, taskId: task.id, grade: 100 });
-              await onChanged();
-            }}
-          >
-            הגיש/ה — 100
-          </Button>
-          <Button
-            size="sm"
-            variant={grade === 0 ? "default" : "outline"}
-            onClick={async () => {
-              await saveTaskGrade({ studentId: student.id, taskId: task.id, grade: 0 });
-              await onChanged();
-            }}
-          >
-            לא הגיש/ה — 0
-          </Button>
+          {SUBMISSION_GRADES.map((option) => (
+            <Button
+              key={option.value}
+              size="sm"
+              variant={grade === option.value ? "default" : "outline"}
+              onClick={async () => {
+                await saveTaskGrade({
+                  studentId: student.id,
+                  taskId: task.id,
+                  grade: option.value,
+                });
+                await onChanged();
+              }}
+            >
+              {option.label}
+            </Button>
+          ))}
         </div>
       ) : (
         <div className="flex flex-wrap items-end gap-3">
