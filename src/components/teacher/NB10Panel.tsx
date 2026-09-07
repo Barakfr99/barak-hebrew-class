@@ -73,6 +73,10 @@ export function NB10Panel({
       return data ?? [];
     },
     enabled: Boolean(task?.id),
+    // הגשות חדשות צריכות להופיע למורה בלי רענון של הדף
+    refetchInterval: 10000,
+    refetchOnWindowFocus: true,
+    staleTime: 0,
   });
   const notesQuery = useQuery({
     queryKey: ["nb10-notes", task?.id],
@@ -86,6 +90,8 @@ export function NB10Panel({
       return data ?? [];
     },
     enabled: Boolean(task?.id),
+    refetchOnWindowFocus: true,
+    staleTime: 0,
   });
 
   const updateTask = useMutation({
