@@ -69,9 +69,20 @@ export type Task = {
   help_sections: HelpSection[];
   task_parts: TaskPart[];
   grading_mode: GradingMode;
+  is_active: boolean;
+  opens_at: string | null;
+  closes_at: string | null;
   created_at: string;
   questions: Question[];
 };
+
+/** האם המשימה פתוחה עכשיו לתלמידים: פעילה ובתוך חלון התזמון. */
+export function isTaskOpen(task: Task, now: Date = new Date()): boolean {
+  if (!task.is_active) return false;
+  if (task.opens_at && new Date(task.opens_at) > now) return false;
+  if (task.closes_at && new Date(task.closes_at) < now) return false;
+  return true;
+}
 
 /** רשימת החלקים של משימה. משימה בלי חלקים מוגדרים נחשבת כחלק אחד. */
 export function taskParts(task: Task): TaskPart[] {
