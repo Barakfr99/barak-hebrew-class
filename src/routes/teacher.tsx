@@ -467,10 +467,13 @@ function TeacherDashboard() {
                         </span>
                       </td>
                       <td className="px-4 py-3 text-sm text-muted-foreground">
-                        {done.length} משימות{student.finished_at ? " · סיים/ה" : ""}
+                        {submittedCount > 0
+                          ? `${submittedCount} הוגשו`
+                          : `${done.length} משימות`}
+                        {student.finished_at ? " · סיים/ה" : ""}
                       </td>
-                      <td className="px-4 py-3 font-semibold">{gradesText}</td>
-                      <td className="px-4 py-3">
+                      <td className="px-4 py-3 text-sm font-semibold">{gradesText}</td>
+                      <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
                         <Switch
                           checked={student.speech_enabled}
                           onCheckedChange={async (checked) => {
@@ -485,21 +488,17 @@ function TeacherDashboard() {
                           }}
                         />
                       </td>
-                      <td className="px-4 py-3">
+                      <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
                         <MoveClassSelect student={student} onMoved={refreshAll} />
                       </td>
-                      <td className="px-4 py-3">
+                      <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
                         <div className="flex flex-wrap items-center gap-1">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => setExpanded(isOpen ? null : student.id)}
-                          >
-                            <ChevronDown
-                              className={cn("size-4 transition-transform", isOpen && "rotate-180")}
-                            />
-                            {isOpen ? "סגירה" : "פירוט"}
-                          </Button>
+                          <ChevronDown
+                            className={cn(
+                              "size-4 text-muted-foreground transition-transform",
+                              isOpen && "rotate-180",
+                            )}
+                          />
                           <ReopenTaskButton
                             student={student}
                             canReopen={done.length > 0 || Boolean(student.finished_at)}
@@ -508,6 +507,7 @@ function TeacherDashboard() {
                           <DeleteStudentButton student={student} />
                         </div>
                       </td>
+
                     </tr>
                     {isOpen && (
                       <tr className="border-t border-border bg-background/60">
