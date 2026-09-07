@@ -245,6 +245,24 @@ export function StudentReview({ taskId, student }: { taskId: string; student: St
       return data ?? null;
     },
   });
+  /** סיכום הניקוד שניתן לתשובות הבודדות. */
+  const answerNotesQuery = useQuery({
+    queryKey: ["nb10-answer-notes", taskId, student.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("nb10_notes")
+        .select("question_id, note, score")
+        .eq("task_id", taskId)
+        .eq("student_id", student.id)
+        .not("question_id", "is", null);
+      if (error) throw error;
+      const map: Record<string, { note: string; score: number | null }> = {};
+      (data ?? []).forEach((row) => {
+        if (row.question_id) map[row.question_id] = { note: row.note ?? "", score: row.score ?? null };
+      });
+      return map;
+    },
+  });
   const noteQuery = useQuery({
     queryKey: ["nb10-review-note", taskId, student.id],
     queryFn: async () => {
@@ -293,9 +311,18 @@ export function StudentReview({ taskId, student }: { taskId: string; student: St
   if (answersQuery.isLoading) return <p className="text-muted-foreground">טוענים תשובות...</p>;
   const answers = answersQuery.data ?? {};
   const feedback = feedbackQuery.data;
+  const answerScores = answerNotesQuery.data ?? {};
+  const scored = Object.values(answerScores).filter((row) => row.score != null);
+  const scoreSum = scored.reduce((sum, row) => sum + (row.score ?? 0), 0);
 
   return (
     <div className="space-y-5">
+      {scored.length > 0 && (
+        <div className="rounded-2xl border border-primary/30 bg-accent/40 p-3 text-sm">
+          סכום הניקוד שנתתם לתשובות: <span className="font-bold">{scoreSum}</span> (ב-
+          {scored.length} תשובות). הציון הכללי נשאר בהזנה שלכם למטה.
+        </div>
+      )}
       <div className="space-y-3">
         {labels.map((row) => (
           <div key={row.id} className="rounded-2xl border border-border p-4">
