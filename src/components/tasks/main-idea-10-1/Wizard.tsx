@@ -285,10 +285,9 @@ export function MainIdeaWizard({
 
   const goNext = async () => {
     if (!readOnly && pageIndex === 0 && effort.page1Missing > 0) {
-      setBlockNote(
-        `כדי להמשיך יש להשלים ${MI_REQUIRED_PAGE1} פסקאות (נושא ומסר בשתיהן). עד כה מולאו ${effort.page1} — נשארו עוד ${effort.page1Missing}.`,
+      toast.warning(
+        `לא עמדת במינימום הנדרש בעמוד הזה: נדרש ${MI_REQUIRED_PAGE1} פסקאות, מולאו ${effort.page1}. אפשר להמשיך, אבל כדאי לחזור ולהשלים.`,
       );
-      return;
     }
     await goTo(pageIndex + 1);
   };
@@ -296,14 +295,14 @@ export function MainIdeaWizard({
   const trySubmit = async () => {
     await flush();
     if (effort.page3Missing > 0) {
-      setBlockNote(
-        `כדי להגיש יש לנסח ${MI_REQUIRED_PAGE3} פסקאות בעמוד הזה. עד כה נוסחו ${effort.page3} — נשארה עוד ${effort.page3Missing}.`,
+      toast.warning(
+        `לא עמדת במינימום הנדרש בעמוד הזה: נדרש ${MI_REQUIRED_PAGE3} ניסוחים, נוסחו ${effort.page3}.`,
       );
-      return;
     }
     setBlockNote(null);
     setConfirmOpen(true);
   };
+
 
   const saveDraft = async () => {
     await flush();
