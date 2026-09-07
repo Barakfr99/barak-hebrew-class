@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Select,
   SelectContent,
@@ -340,6 +341,14 @@ function TeacherDashboard() {
         </p>
       </section>
 
+      <Tabs defaultValue="students" dir="rtl" className="mt-6">
+        <TabsList>
+          <TabsTrigger value="students">כיתות ותלמידים</TabsTrigger>
+          <TabsTrigger value="tasks">ניהול המשימות</TabsTrigger>
+          <TabsTrigger value="feedback">ניתוח משובים</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="students">
       <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard label="תלמידים בכיתה" value={students.length} />
         <StatCard label="סיימו את התרגול" value={finishedCount} />
@@ -492,10 +501,16 @@ function TeacherDashboard() {
           </table>
         </div>
       </section>
+        </TabsContent>
 
-      <TaskGradingSettings tasks={classTasks} onChanged={refreshAll} />
+        <TabsContent value="tasks" className="mt-6">
+          <TaskGradingSettings tasks={classTasks} onChanged={refreshAll} />
+        </TabsContent>
 
-      <FeedbackDashboard feedback={feedback} tasks={classTasks} studentIds={studentIds} />
+        <TabsContent value="feedback" className="mt-6">
+          <FeedbackDashboard feedback={feedback} tasks={classTasks} studentIds={studentIds} />
+        </TabsContent>
+      </Tabs>
     </main>
   );
 }
