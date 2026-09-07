@@ -314,7 +314,7 @@ export async function ensureTeacherTestStudent(cls: {
       class_name: cls.name,
       class_slug: cls.slug,
       mode: "regular",
-      speech_enabled: true,
+      speech_enabled: false,
       stage: "choice",
     })
     .select("id")
