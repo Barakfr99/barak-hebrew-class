@@ -156,7 +156,9 @@ export function NB10Panel({
     );
   }
 
-  const submittedIds = new Set((submissionsQuery.data ?? []).map((s) => s.student_id));
+  const submittedAt = new Map(
+    (submissionsQuery.data ?? []).map((s) => [s.student_id, s.submitted_at]),
+  );
   const notesByStudent = new Map(
     (notesQuery.data ?? []).map((n) => [n.student_id, n as { note: string; score: number | null }]),
   );
