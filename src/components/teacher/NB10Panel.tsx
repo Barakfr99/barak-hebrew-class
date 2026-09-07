@@ -301,9 +301,11 @@ export function StudentReview({ taskId, student }: { taskId: string; student: St
             <p className="reading-text mt-2 whitespace-pre-wrap">
               {answers[row.id]?.trim() ? answers[row.id] : "— אין תשובה —"}
             </p>
+            <QuestionNote taskId={taskId} studentId={student.id} questionId={row.id} />
           </div>
         ))}
       </div>
+
 
       <div className="rounded-2xl border border-border p-4">
         <p className="font-semibold">המשוב של התלמיד/ה</p>
