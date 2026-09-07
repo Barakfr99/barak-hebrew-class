@@ -31,7 +31,7 @@ import { computeMIEffort, fetchMITask } from "@/components/tasks/main-idea-10-1/
 export type MIStudentRow = { id: string; first_name: string; last_name: string };
 
 /** תוויות קריאה לכל פריט תשובה במשימה, לפי עמוד. */
-type ItemLabel = { key: string; label: string; page: number; expected?: string };
+type ItemLabel = { key: string; label: string; page: number; expected?: string | undefined };
 
 function itemLabels(): ItemLabel[] {
   const rows: ItemLabel[] = [];
