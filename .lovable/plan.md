@@ -25,7 +25,7 @@
 
 ## פרטים טכניים
 
-- `src/routes/teacher.tsx`: שאילתות חדשות ל-`nb10_tasks` (לפי `class_slug`), `nb10_submissions` ו-`nb10_notes` (שורות `question_id is null` עם `score`); מיזוג ל-`pendingByStudent`, `pendingTotal`, `gradesText` והסינון; מאזין realtime ל-`nb10_submissions`/`nb10_notes`; השורה `<tr>` מקבלת `onClick` להרחבה, עם `stopPropagation` בתאי המתג/הכפתורים.
+- `src/routes/teacher.tsx`: רג'יסטרי ענפי משימות למרחב (`src/lib/space-tasks.ts`) — כל ענף חושף `submissionsForClass` ו-`gradesForClass`; המימוש הראשון הוא ענף "התחלות חדשות" (`nb10_tasks` לפי `class_slug`, `nb10_submissions`, `nb10_notes` עם `question_id is null` ו-`score`). הלוח מסכם ממנו ל-`pendingByStudent`, `pendingTotal`, `gradesText` והסינון; מאזין realtime ל-`nb10_submissions`/`nb10_notes`; השורה `<tr>` מקבלת `onClick` להרחבה, עם `stopPropagation` בתאי המתג/הכפתורים.
 - `src/components/teacher/NB10Panel.tsx` (`StudentReview`): הוספת `QuestionNote` לכל שורת תשובה — upsert ל-`nb10_notes` עם `question_id` של אותה תשובה (`onConflict: student_id,task_id,question_id`); בשמירה — invalidate של `nb10-student-note`, `nb10-review-note`, `nb10-notes`, `teacher-nb10-notes`.
 - `src/components/teacher/NB10StudentCard.tsx`: invalidate נכון של `["nb10-student-note", task.id, student.id]` אחרי שמירת ציון/הערה (מגיע דרך ה-invalidation שב-`StudentReview`).
 - `src/components/tasks/new-beginnings-10/Wizard.tsx`: במצב קריאה-בלבד שליפת `nb10_notes` של התלמיד/ה למשימה, והצגת ההערה מתחת לתשובה כשה-`note` אינו ריק (כולל ההערה הכללית בראש העמוד האחרון).
