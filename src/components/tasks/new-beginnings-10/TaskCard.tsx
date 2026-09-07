@@ -44,7 +44,7 @@ export function NB10TaskCard({
             )}
           </div>
           <p className="mt-1 text-muted-foreground">
-            תשעה עמודים קצרים: קריאה לפי פסקאות, שאלות, כתיבה מסכמת ומשוב — עם עוזר שיטה מלווה.
+            תשעה עמודים קצרים: קריאה לפי פסקאות, שאלות, כתיבה מסכמת ומשוב — עם עוזר AI מלווה.
           </p>
         </div>
         <Button asChild size="lg" variant={done ? "outline" : "default"}>

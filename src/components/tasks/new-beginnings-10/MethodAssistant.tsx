@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Textarea } from "@/components/ui/textarea";
 
-/** עוזר שיטה — צ'אט מלווה למשימה "התחלות חדשות". לא נותן תשובות לתוכן. */
+/** עוזר AI — צ'אט מלווה למשימה "התחלות חדשות". לא נותן תשובות לתוכן. */
 export function MethodAssistant() {
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState("");
@@ -44,7 +44,7 @@ export function MethodAssistant() {
         className="fixed bottom-6 start-6 z-40 h-14 rounded-full px-5 shadow-lg"
       >
         <MessageCircleQuestion className="size-5" />
-        עוזר שיטה
+        עוזר AI
       </Button>
 
       <Sheet open={open} onOpenChange={setOpen}>
@@ -52,7 +52,7 @@ export function MethodAssistant() {
           <SheetHeader className="text-start">
             <SheetTitle className="flex items-center gap-2">
               <Sparkles className="size-5 text-primary" />
-              עוזר שיטה
+              עוזר AI
             </SheetTitle>
             <SheetDescription>
               מלמד איך לגשת לשאלה — לא נותן תשובות. אפשר לשאול על מושגים, על דרכי זיהוי ועל שיטת

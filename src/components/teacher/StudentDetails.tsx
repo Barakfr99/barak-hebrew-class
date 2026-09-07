@@ -14,6 +14,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Check, Eye } from "lucide-react";
+import { NB10StudentCard } from "./NB10StudentCard";
 import { groupQuestions, taskParts, type Student, type Task } from "@/lib/practice";
 import { weightedGrade } from "@/lib/task-parts";
 import {
@@ -43,6 +44,7 @@ const SUBMISSION_GRADES = [
 
 export function StudentDetails({
   student,
+  classSlug,
   tasks,
   answers,
   notes,
@@ -53,6 +55,7 @@ export function StudentDetails({
   onChanged,
 }: {
   student: Student;
+  classSlug?: string | null;
   tasks: Task[];
   answers: AnswerRow[];
   notes: TeacherNote[];
@@ -80,9 +83,10 @@ export function StudentDetails({
         </p>
       </div>
 
-      {tasks.length > 0 && (
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {tasks.map((task) => {
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <NB10StudentCard classSlug={classSlug ?? student.class_slug} student={student} />
+        {tasks.length > 0 &&
+          tasks.map((task) => {
             const done = completedTaskIds.has(task.id);
             const grade = taskGrades.find((g) => g.task_id === task.id)?.grade ?? null;
             return (
@@ -108,8 +112,7 @@ export function StudentDetails({
               </TaskSummaryCard>
             );
           })}
-        </div>
-      )}
+      </div>
     </div>
   );
 }

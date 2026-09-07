@@ -17,12 +17,12 @@ export const Route = createFileRoute("/task/new-beginnings-10")({
       {
         name: "description",
         content:
-          "משימת הבנת הנקרא 'התחלות חדשות' לכיתות י': תשעה עמודים קצרים, שמירה אוטומטית ועוזר שיטה מלווה.",
+          "משימת הבנת הנקרא 'התחלות חדשות' לכיתות י': תשעה עמודים קצרים, שמירה אוטומטית ועוזר AI מלווה.",
       },
       { property: "og:title", content: 'התחלות חדשות — משימת הבנת הנקרא' },
       {
         property: "og:description",
-        content: "תשעה עמודי תרגול קצרים עם שמירה אוטומטית ועוזר שיטה מלווה.",
+        content: "תשעה עמודי תרגול קצרים עם שמירה אוטומטית ועוזר AI מלווה.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
