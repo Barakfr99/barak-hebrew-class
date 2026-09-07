@@ -117,6 +117,261 @@ export type Database = {
           },
         ]
       }
+      mi_answers: {
+        Row: {
+          answer_text: string
+          created_at: string
+          id: string
+          item_key: string
+          student_id: string
+          task_id: string
+          updated_at: string
+        }
+        Insert: {
+          answer_text?: string
+          created_at?: string
+          id?: string
+          item_key: string
+          student_id: string
+          task_id: string
+          updated_at?: string
+        }
+        Update: {
+          answer_text?: string
+          created_at?: string
+          id?: string
+          item_key?: string
+          student_id?: string
+          task_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mi_answers_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mi_answers_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "mi_tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      mi_feedback: {
+        Row: {
+          clarity_scale: number | null
+          created_at: string
+          explanation_scale: number | null
+          hardest_part: string | null
+          id: string
+          learning_scale: number | null
+          still_unclear: string | null
+          student_id: string
+          task_id: string
+          updated_at: string
+        }
+        Insert: {
+          clarity_scale?: number | null
+          created_at?: string
+          explanation_scale?: number | null
+          hardest_part?: string | null
+          id?: string
+          learning_scale?: number | null
+          still_unclear?: string | null
+          student_id: string
+          task_id: string
+          updated_at?: string
+        }
+        Update: {
+          clarity_scale?: number | null
+          created_at?: string
+          explanation_scale?: number | null
+          hardest_part?: string | null
+          id?: string
+          learning_scale?: number | null
+          still_unclear?: string | null
+          student_id?: string
+          task_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mi_feedback_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mi_feedback_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "mi_tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      mi_notes: {
+        Row: {
+          created_at: string
+          id: string
+          item_key: string | null
+          note: string
+          score: number | null
+          student_id: string
+          task_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          item_key?: string | null
+          note?: string
+          score?: number | null
+          student_id: string
+          task_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          item_key?: string | null
+          note?: string
+          score?: number | null
+          student_id?: string
+          task_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mi_notes_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mi_notes_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "mi_tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      mi_student_speech: {
+        Row: {
+          allowed: boolean
+          created_at: string
+          id: string
+          student_id: string
+          task_id: string
+          updated_at: string
+        }
+        Insert: {
+          allowed?: boolean
+          created_at?: string
+          id?: string
+          student_id: string
+          task_id: string
+          updated_at?: string
+        }
+        Update: {
+          allowed?: boolean
+          created_at?: string
+          id?: string
+          student_id?: string
+          task_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mi_student_speech_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mi_student_speech_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "mi_tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      mi_submissions: {
+        Row: {
+          id: string
+          student_id: string
+          submitted_at: string
+          task_id: string
+        }
+        Insert: {
+          id?: string
+          student_id: string
+          submitted_at?: string
+          task_id: string
+        }
+        Update: {
+          id?: string
+          student_id?: string
+          submitted_at?: string
+          task_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mi_submissions_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mi_submissions_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "mi_tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      mi_tasks: {
+        Row: {
+          class_slug: string
+          closes_at: string | null
+          created_at: string
+          id: string
+          is_active: boolean
+          opens_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          class_slug: string
+          closes_at?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          opens_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          class_slug?: string
+          closes_at?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          opens_at?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       nb10_answers: {
         Row: {
           answer_text: string
