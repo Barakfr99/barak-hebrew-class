@@ -59,6 +59,8 @@ import {
   fetchMIFeedback,
   fetchMISubmission,
   saveMIAnswer,
+  saveMIAnswers,
+  syncMIAnswers,
   saveMIFeedback,
   submitMI,
   type MIFeedbackValues,
