@@ -550,11 +550,11 @@ export function MainIdeaWizard({
 
           <div className="rounded-3xl border border-border bg-card p-5">
 
-            <p className="font-semibold text-primary">צ'ק-ליסט</p>
+            <p className="font-semibold text-primary">צ'ק-ליסט — מה חייב להתקיים בניסוח</p>
             <ul className="mt-3 space-y-2">
               {MI_CHECKLIST.map((item) => (
                 <li key={item.id} className="reading-text">
-                  {item.kind === "do" ? "✅" : "❌"} {item.text}
+                  ✅ {item.text}
                 </li>
               ))}
             </ul>
@@ -562,8 +562,10 @@ export function MainIdeaWizard({
 
           <p className="text-muted-foreground">
             לפניכם ניסוחים אמיתיים ואנונימיים של תלמידים. החליטו לכל אחד אם הוא תקין, ואם לא —
-            סמנו איזה סעיפים מהצ'ק-ליסט הוא מפר (אפשר יותר מאחד).
+            סמנו איזה סעיפים מהצ'ק-ליסט <span className="font-semibold">אינם מתקיימים</span> בו
+            (אפשר יותר מאחד).
           </p>
+
 
           {MI_QUOTES.map((quote) => {
             const verdictKey = miVerdictKey(quote.n);
