@@ -59,6 +59,8 @@ import {
   fetchMIFeedback,
   fetchMISubmission,
   saveMIAnswer,
+  saveMIAnswers,
+  syncMIAnswers,
   saveMIFeedback,
   submitMI,
   type MIFeedbackValues,
@@ -247,8 +249,21 @@ export function MainIdeaWizard({
     const pending = Object.keys(timers.current);
     pending.forEach((id) => clearTimeout(timers.current[id]!));
     timers.current = {};
-    await Promise.all(pending.map((id) => persist(id, answers[id] ?? "")));
-  }, [answers, persist]);
+    if (pending.length === 0) return;
+    setSaving(true);
+    try {
+      await saveMIAnswers({
+        taskId: task.id,
+        studentId,
+        entries: pending.map((id) => ({ itemKey: id, answerText: answers[id] ?? "" })),
+      });
+    } catch {
+      toast.error("לא הצלחנו לשמור את התשובות. בדקו את החיבור לאינטרנט.");
+    } finally {
+      setSaving(false);
+    }
+  }, [answers, studentId, task.id]);
+
 
   const effort = computeMIEffort(answers);
   const quotesAnswered = MI_QUOTES.filter(
@@ -300,14 +315,25 @@ export function MainIdeaWizard({
 
   const trySubmit = async () => {
     await flush();
-    if (effort.page3Missing > 0) {
+    // מוודאים שכל מה שנכתב אכן נשמר בשרת, ורק אז מציגים את הסיכום.
+    let verified = answers;
+    try {
+      verified = await syncMIAnswers(task.id, studentId, answers);
+      setAnswers((prev) => ({ ...verified, ...prev }));
+    } catch {
+      toast.error("לא הצלחנו לוודא שכל התשובות נשמרו. בדקו את החיבור ונסו שוב.");
+      return;
+    }
+    const check = computeMIEffort({ ...verified, ...answers });
+    if (check.page3Missing > 0) {
       toast.warning(
-        `לא עמדת במינימום הנדרש בעמוד הזה: נדרש ${MI_REQUIRED_PAGE3} ניסוחים, נוסחו ${effort.page3}.`,
+        `לא עמדת במינימום הנדרש בעמוד הזה: נדרש ${MI_REQUIRED_PAGE3} ניסוחים, נוסחו ${check.page3}.`,
       );
     }
     setBlockNote(null);
     setConfirmOpen(true);
   };
+
 
 
   const saveDraft = async () => {

@@ -179,7 +179,48 @@ export async function saveMINote(input: {
   if (error) throw error;
 }
 
-/* ---------- ספירת תשובות מהותיות ומאמץ נוסף ---------- */
+/**
+ * שמירת כמה תשובות בבקשה אחת (upsert יחיד) — מונע מצב שבו שמירות מקבילות
+ * נדרסות זו את זו ותשובות "נעלמות".
+ */
+export async function saveMIAnswers(input: {
+  taskId: string;
+  studentId: string;
+  entries: { itemKey: string; answerText: string }[];
+}) {
+  if (input.entries.length === 0) return;
+  const now = new Date().toISOString();
+  const { error } = await supabase.from("mi_answers").upsert(
+    input.entries.map((entry) => ({
+      task_id: input.taskId,
+      student_id: input.studentId,
+      item_key: entry.itemKey,
+      answer_text: entry.answerText,
+      updated_at: now,
+    })),
+    { onConflict: "student_id,task_id,item_key" },
+  );
+  if (error) throw error;
+}
+
+/**
+ * מוודא שכל התשובות המקומיות אכן קיימות בשרת, ומחזיר את התמונה המעודכנת מהשרת.
+ * משמש לפני ההגשה הסופית כדי שהסיכום יוצג לפי מה שנשמר בפועל.
+ */
+export async function syncMIAnswers(
+  taskId: string,
+  studentId: string,
+  local: Record<string, string>,
+): Promise<Record<string, string>> {
+  const remote = await fetchMIAnswers(taskId, studentId);
+  const missing = Object.entries(local)
+    .filter(([key, value]) => (value ?? "") !== (remote[key] ?? ""))
+    .map(([itemKey, answerText]) => ({ itemKey, answerText }));
+  if (missing.length === 0) return remote;
+  await saveMIAnswers({ taskId, studentId, entries: missing });
+  return fetchMIAnswers(taskId, studentId);
+}
+
 
 const filled = (value: string | undefined) => (value ?? "").trim().length > 0;
 
