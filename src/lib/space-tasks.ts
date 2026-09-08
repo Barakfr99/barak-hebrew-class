@@ -1,14 +1,201 @@
 import { useMemo } from "react";
-import { useQueries, useQueryClient } from "@tanstack/react-query";
+import { useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { NB10_TASK_TITLE } from "@/components/tasks/new-beginnings-10/content";
-import { MI_TASK_TITLE } from "@/components/tasks/main-idea-10-1/content";
 
 /**
- * שכבת דיווח בין ענפי המשימות של מרחב לימוד ללוח המורה.
- * כל ענף מנהל את הנתונים שלו בעצמו ומדווח כאן, בממשק אחיד, מי הגיש ומי קיבל ציון.
- * הלוח לא יודע דבר על ענף מסוים — הוא רק מסכם.
+ * רשם המשימות של מרחבי הלימוד.
+ *
+ * מקור האמת לכל משימה — בכל מרחב, מכל סוג — הוא שורה אחת בטבלת `tasks`:
+ * כותרת, מרחב, מנוע (מי מרנדר אותה), מצב, מועדים, אופן ניקוד ותאריך פרסום.
+ * הענפים הישנים (nb10_*, mi_*) עדיין מחזיקים את הנתונים שלהם בטבלאות משלהם,
+ * ולכן בזמן המעבר כל שינוי מצב/מועד נכתב גם לרשם וגם לטבלת הענף.
  */
+
+export type TaskEngine = "legacy-core" | "legacy-nb10" | "legacy-mi" | "runner";
+export type RegistryGradingMode = "weighted" | "submission" | "manual";
+
+export type RegistryTask = {
+  id: string;
+  classSlug: string | null;
+  spaceId: string | null;
+  title: string;
+  description: string;
+  engine: TaskEngine;
+  kind: string;
+  isActive: boolean;
+  opensAt: string | null;
+  closesAt: string | null;
+  gradingMode: RegistryGradingMode;
+  publishedAt: string;
+  createdAt: string;
+  sortOrder: number;
+};
+
+export const ENGINE_LABELS: Record<TaskEngine, string> = {
+  "legacy-core": "משימת שאלות",
+  "legacy-nb10": "אשף עמודים",
+  "legacy-mi": "אשף עמודים",
+  runner: "חבילת משימה",
+};
+
+export const GRADING_MODE_LABELS: Record<RegistryGradingMode, string> = {
+  weighted: "ניקוד לכל שאלה (אחוזים)",
+  submission: "ניקוד הגשה — 0 / 50 / 75 / 100",
+  manual: "ציון ידני למשימה",
+};
+
+const REGISTRY_COLUMNS =
+  "id, class_slug, space_id, title, description, engine, kind, is_active, opens_at, closes_at, grading_mode, published_at, created_at, sort_order";
+
+type RegistryRow = {
+  id: string;
+  class_slug: string | null;
+  space_id: string | null;
+  title: string;
+  description: string;
+  engine: string;
+  kind: string;
+  is_active: boolean;
+  opens_at: string | null;
+  closes_at: string | null;
+  grading_mode: string;
+  published_at: string | null;
+  created_at: string;
+  sort_order: number;
+};
+
+function toRegistryTask(row: RegistryRow): RegistryTask {
+  return {
+    id: row.id,
+    classSlug: row.class_slug,
+    spaceId: row.space_id,
+    title: row.title,
+    description: row.description ?? "",
+    engine: (row.engine as TaskEngine) ?? "legacy-core",
+    kind: row.kind,
+    isActive: row.is_active,
+    opensAt: row.opens_at,
+    closesAt: row.closes_at,
+    gradingMode: (row.grading_mode as RegistryGradingMode) ?? "submission",
+    publishedAt: row.published_at ?? row.created_at,
+    createdAt: row.created_at,
+    sortOrder: row.sort_order,
+  };
+}
+
+/** המשימות של מרחב, מהחדשה לישנה (לפי תאריך הפרסום). */
+export async function fetchRegistry(classSlug: string): Promise<RegistryTask[]> {
+  const { data, error } = await supabase
+    .from("tasks")
+    .select(REGISTRY_COLUMNS)
+    .eq("class_slug", classSlug)
+    .order("published_at", { ascending: false, nullsFirst: false })
+    .order("created_at", { ascending: false });
+  if (error) throw error;
+  return ((data ?? []) as RegistryRow[]).map(toRegistryTask);
+}
+
+/** האם המשימה פתוחה עכשיו לתלמידים: פעילה ובתוך חלון התזמון. */
+export function isRegistryTaskOpen(task: RegistryTask, now: Date = new Date()): boolean {
+  if (!task.isActive) return false;
+  if (task.opensAt && new Date(task.opensAt) > now) return false;
+  if (task.closesAt && new Date(task.closesAt) < now) return false;
+  return true;
+}
+
+export function registryStatus(task: RegistryTask): { text: string; open: boolean } {
+  const open = isRegistryTaskOpen(task);
+  const text = !task.isActive
+    ? "לא פעילה — התלמידים לא רואים אותה"
+    : open
+      ? "פתוחה לתלמידים"
+      : task.opensAt && new Date(task.opensAt) > new Date()
+        ? "ממתינה למועד הפתיחה"
+        : "נסגרה";
+  return { text, open };
+}
+
+/** טבלת הענף שצריך לעדכן במקביל לרשם, כל עוד הענף קורא ממנה. */
+function legacyTableFor(engine: TaskEngine): "nb10_tasks" | "mi_tasks" | null {
+  if (engine === "legacy-nb10") return "nb10_tasks";
+  if (engine === "legacy-mi") return "mi_tasks";
+  return null;
+}
+
+async function mirrorToLegacy(
+  task: Pick<RegistryTask, "id" | "engine">,
+  patch: { is_active?: boolean; opens_at?: string | null; closes_at?: string | null },
+) {
+  const table = legacyTableFor(task.engine);
+  if (!table) return;
+  const { error } = await supabase
+    .from(table)
+    .update({ ...patch, updated_at: new Date().toISOString() })
+    .eq("id", task.id);
+  if (error) throw error;
+}
+
+export async function setRegistryActive(
+  task: Pick<RegistryTask, "id" | "engine">,
+  isActive: boolean,
+) {
+  const { error } = await supabase
+    .from("tasks")
+    .update({ is_active: isActive, updated_at: new Date().toISOString() })
+    .eq("id", task.id);
+  if (error) throw error;
+  await mirrorToLegacy(task, { is_active: isActive });
+}
+
+export async function setRegistrySchedule(
+  task: Pick<RegistryTask, "id" | "engine">,
+  schedule: { opensAt?: string | null; closesAt?: string | null },
+) {
+  const patch: { opens_at?: string | null; closes_at?: string | null } = {};
+  if (schedule.opensAt !== undefined) patch.opens_at = schedule.opensAt;
+  if (schedule.closesAt !== undefined) patch.closes_at = schedule.closesAt;
+  const { error } = await supabase
+    .from("tasks")
+    .update({ ...patch, updated_at: new Date().toISOString() })
+    .eq("id", task.id);
+  if (error) throw error;
+  await mirrorToLegacy(task, patch);
+}
+
+export async function setRegistryGradingMode(taskId: string, mode: RegistryGradingMode) {
+  const { error } = await supabase
+    .from("tasks")
+    .update({ grading_mode: mode, updated_at: new Date().toISOString() })
+    .eq("id", taskId);
+  if (error) throw error;
+}
+
+/** סימון מחדש של תאריך הפרסום — מעלה את המשימה לראש הרשימה. */
+export async function republishRegistryTask(taskId: string) {
+  const { error } = await supabase
+    .from("tasks")
+    .update({ published_at: new Date().toISOString(), updated_at: new Date().toISOString() })
+    .eq("id", taskId);
+  if (error) throw error;
+}
+
+export const SPACE_TASK_LIST_KEY = "space-task-list";
+
+/** רשימת המשימות של המרחב מהרשם, מהחדשה לישנה. */
+export function useSpaceTaskList(classSlug: string | null | undefined) {
+  const query = useQuery({
+    queryKey: [SPACE_TASK_LIST_KEY, classSlug ?? null],
+    queryFn: () => fetchRegistry(classSlug!),
+    enabled: Boolean(classSlug),
+    refetchInterval: 30000,
+  });
+  return { tasks: query.data ?? [], isLoading: query.isLoading, refetch: query.refetch };
+}
+
+/* ------------------------------------------------------------------ */
+/* דיווח הגשות וציונים מכל ענף — מסכם ללוח המורה                        */
+/* ------------------------------------------------------------------ */
+
 export type BranchTaskState = {
   branchId: string;
   taskId: string;
@@ -18,32 +205,22 @@ export type BranchTaskState = {
   grade: number | null;
 };
 
-export type BranchTaskInfo = {
-  branchId: string;
-  taskId: string;
-  title: string;
-  /** אופן הניקוד, אם הענף מנהל כזה. */
-  gradingMode?: "weighted" | "submission" | null;
-};
-
 export type SpaceTaskBranch = {
   id: string;
-  title: string;
+  engine: TaskEngine;
   fetchForClass: (classSlug: string) => Promise<BranchTaskState[]>;
-  /** כל המשימות של הענף במרחב — גם אלו שאף אחד לא הגיש. */
-  listTasks: (classSlug: string) => Promise<BranchTaskInfo[]>;
 };
 
-
-/** ענף המשימות הכללי של המערך (tasks / task_completions / task_grades). */
+/** ענף הליבה (tasks עם questions / task_completions / task_grades). */
 const coreBranch: SpaceTaskBranch = {
   id: "core-tasks",
-  title: "משימות המרחב",
+  engine: "legacy-core",
   fetchForClass: async (classSlug) => {
     const { data: tasks, error: tasksError } = await supabase
       .from("tasks")
       .select("id, title")
-      .eq("class_slug", classSlug);
+      .eq("class_slug", classSlug)
+      .eq("engine", "legacy-core");
     if (tasksError) throw tasksError;
     const taskIds = (tasks ?? []).map((t) => t.id);
     if (taskIds.length === 0) return [];
@@ -70,27 +247,12 @@ const coreBranch: SpaceTaskBranch = {
           ?.grade ?? null,
     }));
   },
-  listTasks: async (classSlug) => {
-    const { data, error } = await supabase
-      .from("tasks")
-      .select("id, title, grading_mode, sort_order")
-      .eq("class_slug", classSlug)
-      .order("sort_order");
-    if (error) throw error;
-    return (data ?? []).map((t) => ({
-      branchId: "core-tasks",
-      taskId: t.id,
-      title: t.title,
-      gradingMode: (t.grading_mode as "weighted" | "submission") ?? null,
-    }));
-  },
 };
 
-
-/** ענף המשימה "התחלות חדשות" (nb10_*). */
+/** ענף "התחלות חדשות" (nb10_*). מזהה המשימה זהה למזהה ברשם. */
 const newBeginnings10Branch: SpaceTaskBranch = {
   id: "new-beginnings-10",
-  title: NB10_TASK_TITLE,
+  engine: "legacy-nb10",
   fetchForClass: async (classSlug) => {
     const { data: tasks, error } = await supabase
       .from("nb10_tasks")
@@ -101,7 +263,10 @@ const newBeginnings10Branch: SpaceTaskBranch = {
     if (taskIds.length === 0) return [];
 
     const [{ data: subs, error: sErr }, { data: notes, error: nErr }] = await Promise.all([
-      supabase.from("nb10_submissions").select("student_id, task_id, submitted_at").in("task_id", taskIds),
+      supabase
+        .from("nb10_submissions")
+        .select("student_id, task_id, submitted_at")
+        .in("task_id", taskIds),
       supabase
         .from("nb10_notes")
         .select("student_id, task_id, score")
@@ -114,34 +279,20 @@ const newBeginnings10Branch: SpaceTaskBranch = {
     return (subs ?? []).map((s) => ({
       branchId: "new-beginnings-10",
       taskId: s.task_id,
-      title: NB10_TASK_TITLE,
+      title: "התחלות חדשות",
       studentId: s.student_id,
       submittedAt: s.submitted_at,
       grade:
-        (notes ?? []).find((n) => n.student_id === s.student_id && n.task_id === s.task_id)?.score ??
-        null,
-    }));
-  },
-  listTasks: async (classSlug) => {
-    const { data, error } = await supabase
-      .from("nb10_tasks")
-      .select("id")
-      .eq("class_slug", classSlug);
-    if (error) throw error;
-    return (data ?? []).map((t) => ({
-      branchId: "new-beginnings-10",
-      taskId: t.id,
-      title: NB10_TASK_TITLE,
-      gradingMode: null,
+        (notes ?? []).find((n) => n.student_id === s.student_id && n.task_id === s.task_id)
+          ?.score ?? null,
     }));
   },
 };
 
-
-/** ענף המשימה "ניסוח רעיון מרכזי — תרגול" (mi_*). */
+/** ענף "ניסוח רעיון מרכזי — תרגול" (mi_*). מזהה המשימה זהה למזהה ברשם. */
 const mainIdeaBranch: SpaceTaskBranch = {
   id: "main-idea",
-  title: MI_TASK_TITLE,
+  engine: "legacy-mi",
   fetchForClass: async (classSlug) => {
     const { data: tasks, error } = await supabase
       .from("mi_tasks")
@@ -168,29 +319,15 @@ const mainIdeaBranch: SpaceTaskBranch = {
     return (subs ?? []).map((s) => ({
       branchId: "main-idea",
       taskId: s.task_id,
-      title: MI_TASK_TITLE,
+      title: "ניסוח רעיון מרכזי — תרגול",
       studentId: s.student_id,
       submittedAt: s.submitted_at,
       grade:
-        (notes ?? []).find((n) => n.student_id === s.student_id && n.task_id === s.task_id)?.score ??
-        null,
-    }));
-  },
-  listTasks: async (classSlug) => {
-    const { data, error } = await supabase
-      .from("mi_tasks")
-      .select("id")
-      .eq("class_slug", classSlug);
-    if (error) throw error;
-    return (data ?? []).map((t) => ({
-      branchId: "main-idea",
-      taskId: t.id,
-      title: MI_TASK_TITLE,
-      gradingMode: null,
+        (notes ?? []).find((n) => n.student_id === s.student_id && n.task_id === s.task_id)
+          ?.score ?? null,
     }));
   },
 };
-
 
 export const SPACE_TASK_BRANCHES: SpaceTaskBranch[] = [
   coreBranch,
@@ -198,15 +335,15 @@ export const SPACE_TASK_BRANCHES: SpaceTaskBranch[] = [
   mainIdeaBranch,
 ];
 
-
 export const SPACE_ROLLUP_KEY = "space-task-rollup";
 
 /**
  * מסכם את כל ענפי המשימות של המרחב: מי הגיש/ה וטרם קיבל/ה ציון, ואילו ציונים נרשמו.
- * הוספת ענף חדש בעתיד נספרת אוטומטית, בלי לגעת בלוח.
+ * הכותרות נלקחות מהרשם כדי שיהיו זהות בכל מקום בלוח.
  */
 export function useSpaceTaskRollup(classSlug: string | null | undefined) {
   const queryClient = useQueryClient();
+  const { tasks } = useSpaceTaskList(classSlug);
   const results = useQueries({
     queries: SPACE_TASK_BRANCHES.map((branch) => ({
       queryKey: [SPACE_ROLLUP_KEY, branch.id, classSlug ?? null],
@@ -218,10 +355,15 @@ export function useSpaceTaskRollup(classSlug: string | null | undefined) {
     })),
   });
 
+  const titles = useMemo(() => new Map(tasks.map((t) => [t.id, t.title])), [tasks]);
+
   const rows = useMemo(
-    () => results.flatMap((r) => r.data ?? []),
+    () =>
+      results
+        .flatMap((r) => r.data ?? [])
+        .map((row) => ({ ...row, title: titles.get(row.taskId) ?? row.title })),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [results.map((r) => r.dataUpdatedAt).join("|")],
+    [results.map((r) => r.dataUpdatedAt).join("|"), titles],
   );
 
   const pendingByStudent = useMemo(() => {
@@ -237,7 +379,10 @@ export function useSpaceTaskRollup(classSlug: string | null | undefined) {
     const map = new Map<string, { title: string; grade: number }[]>();
     rows.forEach((row) => {
       if (row.grade == null) return;
-      map.set(row.studentId, [...(map.get(row.studentId) ?? []), { title: row.title, grade: row.grade }]);
+      map.set(row.studentId, [
+        ...(map.get(row.studentId) ?? []),
+        { title: row.title, grade: row.grade },
+      ]);
     });
     return map;
   }, [rows]);
@@ -251,29 +396,56 @@ export function useSpaceTaskRollup(classSlug: string | null | undefined) {
     return map;
   }, [rows]);
 
-  const refresh = () => queryClient.invalidateQueries({ queryKey: [SPACE_ROLLUP_KEY] });
+  const refresh = () => {
+    queryClient.invalidateQueries({ queryKey: [SPACE_ROLLUP_KEY] });
+    queryClient.invalidateQueries({ queryKey: [SPACE_TASK_LIST_KEY] });
+  };
 
   return { rows, pendingByStudent, gradesByStudent, submittedByStudent, refresh };
 }
 
-export const SPACE_TASK_LIST_KEY = "space-task-list";
+/* ------------------------------------------------------------------ */
+/* פעולות ניהול לפי מנוע — עד שכל הענפים יעברו לטבלאות הליבה             */
+/* ------------------------------------------------------------------ */
 
-/** רשימת כל המשימות של המרחב מכל הענפים — כולל משימות שאף אחד לא הגיש. */
-export function useSpaceTaskList(classSlug: string | null | undefined) {
-  const results = useQueries({
-    queries: SPACE_TASK_BRANCHES.map((branch) => ({
-      queryKey: [SPACE_TASK_LIST_KEY, branch.id, classSlug ?? null],
-      queryFn: () => branch.listTasks(classSlug!),
-      enabled: Boolean(classSlug),
-      refetchInterval: 30000,
-    })),
-  });
-
-  const tasks = useMemo(
-    () => results.flatMap((r) => r.data ?? []),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [results.map((r) => r.dataUpdatedAt).join("|")],
-  );
-
-  return { tasks, isLoading: results.some((r) => r.isLoading) };
+/** איפוס המשימה לכל תלמידי המרחב: תשובות, הגשות, הערות/ציונים ומשוב. */
+export async function resetRegistryTaskForStudents(
+  task: Pick<RegistryTask, "id" | "engine">,
+  studentIds: string[],
+) {
+  if (task.engine === "legacy-core") {
+    for (const table of [
+      "answers",
+      "task_completions",
+      "task_grades",
+      "teacher_notes",
+      "feedback",
+    ] as const) {
+      const { error } = await supabase.from(table).delete().eq("task_id", task.id);
+      if (error) throw error;
+    }
+    if (studentIds.length > 0) {
+      const { error } = await supabase
+        .from("students")
+        .update({ finished_at: null, updated_at: new Date().toISOString() })
+        .in("id", studentIds);
+      if (error) throw error;
+    }
+    return;
+  }
+  if (studentIds.length === 0) return;
+  const tables =
+    task.engine === "legacy-nb10"
+      ? (["nb10_answers", "nb10_submissions", "nb10_notes", "nb10_feedback"] as const)
+      : task.engine === "legacy-mi"
+        ? (["mi_answers", "mi_submissions", "mi_notes", "mi_feedback"] as const)
+        : ([] as const);
+  for (const table of tables) {
+    const { error } = await supabase
+      .from(table)
+      .delete()
+      .eq("task_id", task.id)
+      .in("student_id", studentIds);
+    if (error) throw error;
+  }
 }

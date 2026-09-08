@@ -25,7 +25,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
-import { CLASSES, findClass } from "@/lib/classes";
+import { createSpace, findClass, useSpaces } from "@/lib/classes";
 import {
   ensureTeacherTestStudent,
   fetchSettings,
@@ -48,13 +48,9 @@ import {
   setStudentSpeech,
 } from "@/lib/teacher";
 import { StudentDetails } from "@/components/teacher/StudentDetails";
-import { TaskGradingSettings } from "@/components/teacher/TaskGradingSettings";
 import { FeedbackDashboard } from "@/components/teacher/FeedbackDashboard";
-import { NB10Panel } from "@/components/teacher/NB10Panel";
-import { MainIdeaPanel } from "@/components/teacher/MainIdeaPanel";
-import { SubmissionsOverview } from "@/components/teacher/SubmissionsOverview";
-import { SPACE_ROLLUP_KEY, useSpaceTaskRollup } from "@/lib/space-tasks";
-
+import { TaskRegistryPanel } from "@/components/teacher/TaskRegistryPanel";
+import { SPACE_ROLLUP_KEY, SPACE_TASK_LIST_KEY, useSpaceTaskRollup } from "@/lib/space-tasks";
 
 import { cn } from "@/lib/utils";
 import { useServerFn } from "@tanstack/react-start";
@@ -135,16 +131,19 @@ function TeacherDashboard() {
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("all");
   const [expanded, setExpanded] = useState<string | null>(null);
-  const [classSlug, setClassSlug] = useState(CLASSES[0]?.slug ?? "");
+  const spacesQuery = useSpaces(true);
+  const spaces = spacesQuery.data;
+  const [classSlug, setClassSlug] = useState(spaces[0]?.slug ?? "");
   const [testBusy, setTestBusy] = useState(false);
   const [adding, setAdding] = useState(false);
+  const [addingSpace, setAddingSpace] = useState(false);
 
   useEffect(() => {
     const saved = window.localStorage.getItem(TEACHER_CLASS_KEY);
-    if (saved && findClass(saved)) setClassSlug(saved);
+    if (saved) setClassSlug(saved);
   }, []);
 
-  const selectedClass = findClass(classSlug);
+  const selectedClass = findClass(classSlug, spaces);
 
   const changeClass = (slug: string) => {
     setClassSlug(slug);
@@ -250,6 +249,19 @@ function TeacherDashboard() {
         queryClient.invalidateQueries({ queryKey: [SPACE_ROLLUP_KEY] });
         queryClient.invalidateQueries({ queryKey: ["nb10-student-note"] });
       })
+      .on("postgres_changes", { event: "*", schema: "public", table: "mi_submissions" }, () => {
+        queryClient.invalidateQueries({ queryKey: [SPACE_ROLLUP_KEY] });
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "mi_notes" }, () => {
+        queryClient.invalidateQueries({ queryKey: [SPACE_ROLLUP_KEY] });
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "tasks" }, () => {
+        queryClient.invalidateQueries({ queryKey: [SPACE_TASK_LIST_KEY] });
+        queryClient.invalidateQueries({ queryKey: ["teacher-tasks"] });
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "spaces" }, () => {
+        queryClient.invalidateQueries({ queryKey: ["spaces"] });
+      })
 
       .subscribe();
     return () => {
@@ -288,8 +300,6 @@ function TeacherDashboard() {
   const finishedCount = students.filter((s) => s.finished_at).length;
   const feedbackCount = feedback.filter((f) => studentIds.has(f.student_id)).length;
   const pendingTotal = students.reduce((sum, s) => sum + (pendingByStudent.get(s.id) ?? 0), 0);
-
-
 
   const filtered = students.filter((s) => {
     const term = search.trim();
@@ -337,14 +347,18 @@ function TeacherDashboard() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent dir="rtl">
-                {CLASSES.map((c) => (
+                {spaces.map((c) => (
                   <SelectItem key={c.slug} value={c.slug}>
                     {c.name}
+                    {c.is_active === false ? " (לא פעיל)" : ""}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
+          <Button variant="outline" onClick={() => setAddingSpace((v) => !v)}>
+            <Plus className="size-4" /> מרחב חדש
+          </Button>
           <Button onClick={openAsTestStudent} disabled={testBusy}>
             <PlayCircle className="me-2 size-4" />
             בדיקת המרחב כתלמיד/ה
@@ -364,6 +378,15 @@ function TeacherDashboard() {
         <p className="mt-2 text-sm text-muted-foreground">
           כל המידע בלוח מוצג עבור {selectedClass?.name ?? "הכיתה"} בלבד.
         </p>
+        {addingSpace && (
+          <AddSpaceForm
+            onClose={() => setAddingSpace(false)}
+            onAdded={async (slug) => {
+              await queryClient.invalidateQueries({ queryKey: ["spaces"] });
+              changeClass(slug);
+            }}
+          />
+        )}
       </section>
 
       <Tabs defaultValue="students" dir="rtl" className="mt-6">
@@ -371,197 +394,195 @@ function TeacherDashboard() {
           <TabsTrigger value="students">כיתות ותלמידים</TabsTrigger>
           <TabsTrigger value="tasks">ניהול המשימות</TabsTrigger>
           <TabsTrigger value="feedback">ניתוח משובים</TabsTrigger>
-          
-
         </TabsList>
 
         <TabsContent value="students">
-      <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-        <StatCard label="תלמידים בכיתה" value={students.length} />
-        <StatCard label="סיימו את התרגול" value={finishedCount} />
-        <StatCard label="מחכות לבדיקה" value={pendingTotal} />
-        <StatCard label="מילאו משוב" value={feedbackCount} />
-        <StatCard label="עם הרשאת הקראה" value={students.filter((s) => s.speech_enabled).length} />
-      </div>
+          <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+            <StatCard label="תלמידים בכיתה" value={students.length} />
+            <StatCard label="סיימו את התרגול" value={finishedCount} />
+            <StatCard label="מחכות לבדיקה" value={pendingTotal} />
+            <StatCard label="מילאו משוב" value={feedbackCount} />
+            <StatCard
+              label="עם הרשאת הקראה"
+              value={students.filter((s) => s.speech_enabled).length}
+            />
+          </div>
 
-
-      <section className="mt-8">
-        <div className="flex flex-wrap items-end gap-3">
-          <div className="min-w-56 flex-1">
-            <Label htmlFor="search">חיפוש תלמיד/ה</Label>
-            <div className="relative mt-1">
-              <Search className="pointer-events-none absolute start-3 top-2.5 size-4 text-muted-foreground" />
-              <Input
-                id="search"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="שם התלמיד/ה"
-                className="bg-card ps-9"
-              />
+          <section className="mt-8">
+            <div className="flex flex-wrap items-end gap-3">
+              <div className="min-w-56 flex-1">
+                <Label htmlFor="search">חיפוש תלמיד/ה</Label>
+                <div className="relative mt-1">
+                  <Search className="pointer-events-none absolute start-3 top-2.5 size-4 text-muted-foreground" />
+                  <Input
+                    id="search"
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    placeholder="שם התלמיד/ה"
+                    className="bg-card ps-9"
+                  />
+                </div>
+              </div>
+              <div className="w-56">
+                <Label>סינון</Label>
+                <Select value={filter} onValueChange={setFilter}>
+                  <SelectTrigger className="mt-1 bg-card">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent dir="rtl">
+                    <SelectItem value="all">כולם</SelectItem>
+                    <SelectItem value="in_progress">בתהליך</SelectItem>
+                    <SelectItem value="finished">סיימו</SelectItem>
+                    <SelectItem value="speech">עם הרשאת הקראה</SelectItem>
+                    <SelectItem value="no_choice">עוד לא השלימו משימה</SelectItem>
+                    <SelectItem value="pending">מחכות לבדיקה</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <Button variant="outline" onClick={() => setAdding((v) => !v)}>
+                <Plus className="size-4" /> הוספת תלמיד/ה
+              </Button>
             </div>
-          </div>
-          <div className="w-56">
-            <Label>סינון</Label>
-            <Select value={filter} onValueChange={setFilter}>
-              <SelectTrigger className="mt-1 bg-card">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent dir="rtl">
-                <SelectItem value="all">כולם</SelectItem>
-                <SelectItem value="in_progress">בתהליך</SelectItem>
-                <SelectItem value="finished">סיימו</SelectItem>
-                <SelectItem value="speech">עם הרשאת הקראה</SelectItem>
-                <SelectItem value="no_choice">עוד לא השלימו משימה</SelectItem>
-                <SelectItem value="pending">מחכות לבדיקה</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <Button variant="outline" onClick={() => setAdding((v) => !v)}>
-            <Plus className="size-4" /> הוספת תלמיד/ה
-          </Button>
-        </div>
 
-        {adding && selectedClass && (
-          <AddStudentForm
-            classSlug={selectedClass.slug}
-            onClose={() => setAdding(false)}
-            onAdded={refreshAll}
-          />
-        )}
+            {adding && selectedClass && (
+              <AddStudentForm
+                classSlug={selectedClass.slug}
+                onClose={() => setAdding(false)}
+                onAdded={refreshAll}
+              />
+            )}
 
-        <div className="mt-4 overflow-hidden rounded-2xl border border-border bg-card">
-          <table className="w-full text-start">
-            <thead className="bg-secondary/60 text-sm">
-              <tr>
-                <th className="px-4 py-3 font-semibold">שם</th>
-                <th className="px-4 py-3 font-semibold">התקדמות</th>
-                <th className="px-4 py-3 font-semibold">ציונים</th>
-                <th className="px-4 py-3 font-semibold">הקראה</th>
-                <th className="px-4 py-3 font-semibold">כיתה</th>
-                <th className="px-4 py-3" />
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((student) => {
-                const done = completionsByStudent.get(student.id) ?? [];
-                const isOpen = expanded === student.id;
-                const submittedCount = rollup.submittedByStudent.get(student.id) ?? 0;
-                const gradesText =
-                  (rollup.gradesByStudent.get(student.id) ?? [])
-                    .map((g) => `${g.title}: ${g.grade}`)
-                    .join(" · ") || "—";
-                return (
-                  <Fragment key={student.id}>
-                    <tr
-                      className="cursor-pointer border-t border-border hover:bg-secondary/40"
-                      onClick={() => setExpanded(isOpen ? null : student.id)}
-                    >
-                      <td className="px-4 py-3 font-medium">
-                        <span className="inline-flex items-center gap-2">
-                          {fullName(student)}
-                          {(pendingByStudent.get(student.id) ?? 0) > 0 && (
-                            <span
-                              title={`${pendingByStudent.get(student.id)} משימות מחכות לבדיקה`}
-                              className="inline-flex min-w-5 items-center justify-center rounded-full bg-destructive px-1.5 py-0.5 text-xs font-bold text-destructive-foreground"
-                            >
-                              {pendingByStudent.get(student.id)}
+            <div className="mt-4 overflow-hidden rounded-2xl border border-border bg-card">
+              <table className="w-full text-start">
+                <thead className="bg-secondary/60 text-sm">
+                  <tr>
+                    <th className="px-4 py-3 font-semibold">שם</th>
+                    <th className="px-4 py-3 font-semibold">התקדמות</th>
+                    <th className="px-4 py-3 font-semibold">ציונים</th>
+                    <th className="px-4 py-3 font-semibold">הקראה</th>
+                    <th className="px-4 py-3 font-semibold">כיתה</th>
+                    <th className="px-4 py-3" />
+                  </tr>
+                </thead>
+                <tbody>
+                  {filtered.map((student) => {
+                    const done = completionsByStudent.get(student.id) ?? [];
+                    const isOpen = expanded === student.id;
+                    const submittedCount = rollup.submittedByStudent.get(student.id) ?? 0;
+                    const gradesText =
+                      (rollup.gradesByStudent.get(student.id) ?? [])
+                        .map((g) => `${g.title}: ${g.grade}`)
+                        .join(" · ") || "—";
+                    return (
+                      <Fragment key={student.id}>
+                        <tr
+                          className="cursor-pointer border-t border-border hover:bg-secondary/40"
+                          onClick={() => setExpanded(isOpen ? null : student.id)}
+                        >
+                          <td className="px-4 py-3 font-medium">
+                            <span className="inline-flex items-center gap-2">
+                              {fullName(student)}
+                              {(pendingByStudent.get(student.id) ?? 0) > 0 && (
+                                <span
+                                  title={`${pendingByStudent.get(student.id)} משימות מחכות לבדיקה`}
+                                  className="inline-flex min-w-5 items-center justify-center rounded-full bg-destructive px-1.5 py-0.5 text-xs font-bold text-destructive-foreground"
+                                >
+                                  {pendingByStudent.get(student.id)}
+                                </span>
+                              )}
                             </span>
-                          )}
-                        </span>
+                          </td>
+                          <td className="px-4 py-3 text-sm text-muted-foreground">
+                            {submittedCount > 0
+                              ? `${submittedCount} הוגשו`
+                              : `${done.length} משימות`}
+                            {student.finished_at ? " · סיים/ה" : ""}
+                          </td>
+                          <td className="px-4 py-3 text-sm font-semibold">{gradesText}</td>
+                          <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
+                            <Switch
+                              checked={student.speech_enabled}
+                              onCheckedChange={async (checked) => {
+                                try {
+                                  await setStudentSpeech(student.id, checked);
+                                  await queryClient.invalidateQueries({
+                                    queryKey: ["teacher-students"],
+                                  });
+                                } catch {
+                                  toast.error("לא הצלחתי לעדכן את ההרשאה");
+                                }
+                              }}
+                            />
+                          </td>
+                          <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
+                            <MoveClassSelect student={student} onMoved={refreshAll} />
+                          </td>
+                          <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
+                            <div className="flex flex-wrap items-center gap-1">
+                              <ChevronDown
+                                className={cn(
+                                  "size-4 text-muted-foreground transition-transform",
+                                  isOpen && "rotate-180",
+                                )}
+                              />
+                              <ReopenTaskButton
+                                student={student}
+                                canReopen={done.length > 0 || Boolean(student.finished_at)}
+                              />
+                              <ResetPasswordButton student={student} compact />
+                              <DeleteStudentButton student={student} />
+                            </div>
+                          </td>
+                        </tr>
+                        {isOpen && (
+                          <tr className="border-t border-border bg-background/60">
+                            <td colSpan={6} className="px-4 py-5">
+                              <div className="mb-4">
+                                <ResetPasswordButton student={student} />
+                              </div>
+                              <StudentDetails
+                                student={student}
+                                classSlug={selectedClass?.slug ?? student.class_slug}
+                                tasks={classTasks}
+                                answers={answers.filter((a) => a.student_id === student.id)}
+                                notes={notes.filter((n) => n.student_id === student.id)}
+                                taskGrades={taskGrades.filter((g) => g.student_id === student.id)}
+                                feedback={feedback.filter((f) => f.student_id === student.id)}
+                                taskSpeech={taskSpeech.filter((r) => r.student_id === student.id)}
+                                completedTaskIds={new Set(done)}
+                                onChanged={refreshAll}
+                              />
+                            </td>
+                          </tr>
+                        )}
+                      </Fragment>
+                    );
+                  })}
+                  {filtered.length === 0 && (
+                    <tr className="border-t border-border">
+                      <td colSpan={6} className="px-4 py-8 text-center text-muted-foreground">
+                        אין תלמידים להצגה בכיתה הזו.
                       </td>
-                      <td className="px-4 py-3 text-sm text-muted-foreground">
-                        {submittedCount > 0
-                          ? `${submittedCount} הוגשו`
-                          : `${done.length} משימות`}
-                        {student.finished_at ? " · סיים/ה" : ""}
-                      </td>
-                      <td className="px-4 py-3 text-sm font-semibold">{gradesText}</td>
-                      <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
-                        <Switch
-                          checked={student.speech_enabled}
-                          onCheckedChange={async (checked) => {
-                            try {
-                              await setStudentSpeech(student.id, checked);
-                              await queryClient.invalidateQueries({
-                                queryKey: ["teacher-students"],
-                              });
-                            } catch {
-                              toast.error("לא הצלחתי לעדכן את ההרשאה");
-                            }
-                          }}
-                        />
-                      </td>
-                      <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
-                        <MoveClassSelect student={student} onMoved={refreshAll} />
-                      </td>
-                      <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
-                        <div className="flex flex-wrap items-center gap-1">
-                          <ChevronDown
-                            className={cn(
-                              "size-4 text-muted-foreground transition-transform",
-                              isOpen && "rotate-180",
-                            )}
-                          />
-                          <ReopenTaskButton
-                            student={student}
-                            canReopen={done.length > 0 || Boolean(student.finished_at)}
-                          />
-                          <ResetPasswordButton student={student} compact />
-                          <DeleteStudentButton student={student} />
-                        </div>
-                      </td>
-
                     </tr>
-                    {isOpen && (
-                      <tr className="border-t border-border bg-background/60">
-                        <td colSpan={6} className="px-4 py-5">
-                          <div className="mb-4">
-                            <ResetPasswordButton student={student} />
-                          </div>
-                          <StudentDetails
-                            student={student}
-                            classSlug={selectedClass?.slug ?? student.class_slug}
-                            tasks={classTasks}
-                            answers={answers.filter((a) => a.student_id === student.id)}
-                            notes={notes.filter((n) => n.student_id === student.id)}
-                            taskGrades={taskGrades.filter((g) => g.student_id === student.id)}
-                            feedback={feedback.filter((f) => f.student_id === student.id)}
-                            taskSpeech={taskSpeech.filter((r) => r.student_id === student.id)}
-                            completedTaskIds={new Set(done)}
-                            onChanged={refreshAll}
-                          />
-                        </td>
-                      </tr>
-                    )}
-                  </Fragment>
-                );
-              })}
-              {filtered.length === 0 && (
-                <tr className="border-t border-border">
-                  <td colSpan={6} className="px-4 py-8 text-center text-muted-foreground">
-                    אין תלמידים להצגה בכיתה הזו.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </section>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </section>
         </TabsContent>
 
         <TabsContent value="tasks" className="mt-6 space-y-8">
-          <TaskGradingSettings tasks={classTasks} onChanged={refreshAll} />
-          <SubmissionsOverview classSlug={selectedClass?.slug} students={students} />
-          <NB10Panel classSlug={selectedClass?.slug} students={students} />
-          <MainIdeaPanel classSlug={selectedClass?.slug} students={students} />
+          <TaskRegistryPanel
+            classSlug={selectedClass?.slug ?? classSlug}
+            students={students}
+            coreTasks={classTasks}
+            onChanged={refreshAll}
+          />
         </TabsContent>
-
 
         <TabsContent value="feedback" className="mt-6">
           <FeedbackDashboard feedback={feedback} tasks={classTasks} studentIds={studentIds} />
         </TabsContent>
-
-
       </Tabs>
     </main>
   );
@@ -589,7 +610,8 @@ function AddStudentForm({
   const [first, setFirst] = useState("");
   const [last, setLast] = useState("");
   const [pending, setPending] = useState(false);
-  const cls = findClass(classSlug);
+  const { data: spaces } = useSpaces(true);
+  const cls = findClass(classSlug, spaces);
 
   return (
     <form
@@ -654,13 +676,14 @@ function MoveClassSelect({
   onMoved: () => Promise<void> | void;
 }) {
   const [pending, setPending] = useState(false);
+  const { data: spaces } = useSpaces(true);
 
   return (
     <Select
       value={student.class_slug ?? ""}
       disabled={pending}
       onValueChange={async (slug) => {
-        const cls = findClass(slug);
+        const cls = findClass(slug, spaces);
         if (!cls || slug === student.class_slug) return;
         if (!window.confirm(`להעביר את ${fullName(student)} ל${cls.name}?`)) return;
         setPending(true);
@@ -679,13 +702,91 @@ function MoveClassSelect({
         <SelectValue />
       </SelectTrigger>
       <SelectContent dir="rtl">
-        {CLASSES.map((c) => (
+        {spaces.map((c) => (
           <SelectItem key={c.slug} value={c.slug}>
             {c.name}
           </SelectItem>
         ))}
       </SelectContent>
     </Select>
+  );
+}
+
+/** פתיחת מרחב לימוד חדש — מופיע מיד בדף הפתיחה ובלוח. */
+function AddSpaceForm({
+  onClose,
+  onAdded,
+}: {
+  onClose: () => void;
+  onAdded: (slug: string) => Promise<void> | void;
+}) {
+  const [slug, setSlug] = useState("");
+  const [name, setName] = useState("");
+  const [subtitle, setSubtitle] = useState("עברית");
+  const [pending, setPending] = useState(false);
+
+  return (
+    <form
+      className="mt-4 flex flex-wrap items-end gap-3 rounded-2xl border border-border bg-background p-4"
+      onSubmit={async (e) => {
+        e.preventDefault();
+        setPending(true);
+        try {
+          await createSpace({ slug, name, subtitle });
+          toast.success("המרחב נפתח");
+          await onAdded(slug.trim());
+          onClose();
+        } catch (err) {
+          const code = err instanceof Error ? err.message : "";
+          toast.error(
+            code === "bad_slug"
+              ? "המזהה יכול להכיל רק אותיות לטיניות, ספרות ומקף (למשל 10-3)"
+              : code === "bad_name"
+                ? "יש להזין שם למרחב"
+                : "המרחב לא נפתח — ייתכן שהמזהה כבר קיים",
+          );
+        } finally {
+          setPending(false);
+        }
+      }}
+    >
+      <div className="w-32">
+        <Label htmlFor="spaceSlug">מזהה (באנגלית)</Label>
+        <Input
+          id="spaceSlug"
+          value={slug}
+          onChange={(e) => setSlug(e.target.value)}
+          placeholder="10-3"
+          dir="ltr"
+          className="mt-1 bg-card"
+        />
+      </div>
+      <div className="w-44">
+        <Label htmlFor="spaceName">שם המרחב</Label>
+        <Input
+          id="spaceName"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder="כיתה י' 3"
+          className="mt-1 bg-card"
+        />
+      </div>
+      <div className="w-32">
+        <Label htmlFor="spaceSubtitle">כותרת משנה</Label>
+        <Input
+          id="spaceSubtitle"
+          value={subtitle}
+          onChange={(e) => setSubtitle(e.target.value)}
+          className="mt-1 bg-card"
+        />
+      </div>
+      <Button type="submit" disabled={pending}>
+        פתיחת המרחב
+      </Button>
+      <Button type="button" variant="ghost" onClick={onClose}>
+        ביטול
+      </Button>
+    </form>
   );
 }
 

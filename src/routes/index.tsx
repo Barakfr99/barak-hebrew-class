@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowLeft, GraduationCap, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { CLASSES } from "@/lib/classes";
+import { useSpaces } from "@/lib/classes";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -30,6 +30,7 @@ const CARD_TINTS = [
 ];
 
 function Landing() {
+  const { data: spaces } = useSpaces();
   return (
     <main className="mx-auto w-full max-w-5xl px-4 py-12">
       <header className="flex flex-wrap items-end justify-between gap-4">
@@ -51,7 +52,7 @@ function Landing() {
       </header>
 
       <ul className="mt-10 grid gap-5 sm:grid-cols-2">
-        {CLASSES.map((schoolClass, index) => (
+        {spaces.map((schoolClass, index) => (
           <li key={schoolClass.slug}>
             <Link
               to="/class/$slug"

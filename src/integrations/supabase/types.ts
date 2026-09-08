@@ -683,6 +683,42 @@ export type Database = {
           },
         ]
       }
+      spaces: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          name: string
+          slug: string
+          sort_order: number
+          subtitle: string
+          teacher_code: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name: string
+          slug: string
+          sort_order?: number
+          subtitle?: string
+          teacher_code?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          slug?: string
+          sort_order?: number
+          subtitle?: string
+          teacher_code?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       student_credentials: {
         Row: {
           created_at: string
@@ -927,6 +963,12 @@ export type Database = {
           source_note: string | null
           task_parts: Json
           title: string
+          space_id: string | null
+          engine: string
+          definition: Json | null
+          published_at: string | null
+          source_id: string | null
+          updated_at: string
         }
         Insert: {
           article_title?: string | null
@@ -947,6 +989,12 @@ export type Database = {
           source_note?: string | null
           task_parts?: Json
           title: string
+          space_id?: string | null
+          engine?: string
+          definition?: Json | null
+          published_at?: string | null
+          source_id?: string | null
+          updated_at?: string
         }
         Update: {
           article_title?: string | null
@@ -967,6 +1015,12 @@ export type Database = {
           source_note?: string | null
           task_parts?: Json
           title?: string
+          space_id?: string | null
+          engine?: string
+          definition?: Json | null
+          published_at?: string | null
+          source_id?: string | null
+          updated_at?: string
         }
         Relationships: []
       }

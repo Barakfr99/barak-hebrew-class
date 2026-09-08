@@ -16,7 +16,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { CLASSES, findClass } from "@/lib/classes";
+import { fetchSpaces, findClass } from "@/lib/classes";
 import { rememberClassSlug } from "@/lib/session";
 import { fetchSettings, isTeacherTestStudent, writeDeviceStudentId } from "@/lib/practice";
 import {
@@ -27,8 +27,9 @@ import {
 } from "@/lib/auth.functions";
 
 export const Route = createFileRoute("/class/$slug")({
-  loader: ({ params }) => {
-    const schoolClass = findClass(params.slug);
+  loader: async ({ params }) => {
+    const spaces = await fetchSpaces();
+    const schoolClass = findClass(params.slug, spaces);
     if (!schoolClass) throw notFound();
     return { schoolClass };
   },
@@ -77,7 +78,6 @@ function ClassPage() {
     () => (studentsQuery.data ?? []).filter((s) => !isTeacherTestStudent(s)),
     [studentsQuery.data],
   );
-
 
   const enter = (id: string) => {
     writeDeviceStudentId(id);
@@ -411,9 +411,7 @@ function ClassNotFound() {
   return (
     <main className="mx-auto w-full max-w-xl px-4 py-16 text-center">
       <h1 className="text-3xl font-bold">הכיתה הזאת לא נמצאה</h1>
-      <p className="mt-2 text-muted-foreground">
-        אפשר לחזור לרשימת הכיתות ולבחור אחת מהן: {CLASSES.map((c) => c.name).join(", ")}.
-      </p>
+      <p className="mt-2 text-muted-foreground">אפשר לחזור לרשימת הכיתות ולבחור את הכיתה שלכם.</p>
       <Button asChild className="mt-6">
         <Link to="/">לרשימת הכיתות</Link>
       </Button>

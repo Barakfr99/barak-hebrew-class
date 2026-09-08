@@ -28,7 +28,7 @@ import { PartsOfSpeechTask } from "@/components/practice/PartsOfSpeechTask";
 import { FeedbackForm } from "@/components/practice/FeedbackForm";
 import { NB10TaskCard } from "@/components/tasks/new-beginnings-10/TaskCard";
 import { MITaskCard } from "@/components/tasks/main-idea-10-1/TaskCard";
-
+import { useSpaceTaskList } from "@/lib/space-tasks";
 
 export const Route = createFileRoute("/practice")({
   ssr: false,
@@ -173,6 +173,42 @@ function PracticePage() {
 
   const singleMode = choiceTasks.length === 0 && tasks.length > 0;
   const listTasks = singleMode ? tasks : choiceTasks;
+
+  /** סדר התצוגה מגיע מרשם המשימות של המרחב — מהחדשה לישנה, מכל הסוגים. */
+  const registry = useSpaceTaskList(student?.class_slug);
+  const orderedItems = useMemo(() => {
+    const items: { key: string; engine: string; task?: Task }[] = [];
+    const seen = new Set<string>();
+    registry.tasks.forEach((entry) => {
+      if (entry.engine === "legacy-core") {
+        const task = listTasks.find((t) => t.id === entry.id);
+        if (task) {
+          items.push({ key: entry.id, engine: entry.engine, task });
+          seen.add(task.id);
+        }
+        return;
+      }
+      if (!seen.has(entry.engine)) {
+        items.push({ key: entry.id, engine: entry.engine });
+        seen.add(entry.engine);
+      }
+    });
+    // משימות ליבה שעדיין לא ברשם (לא אמור לקרות) — בסוף הרשימה.
+    listTasks.forEach((task) => {
+      if (!seen.has(task.id)) items.push({ key: task.id, engine: "legacy-core", task });
+    });
+    // עד שהרשם נטען — הסדר הישן, כדי שהמסך לא יהיה ריק.
+    if (registry.tasks.length === 0 && registry.isLoading) {
+      return [
+        { key: "nb10", engine: "legacy-nb10" },
+        { key: "mi", engine: "legacy-mi" },
+        ...listTasks.map((task) => ({ key: task.id, engine: "legacy-core", task })),
+      ];
+    }
+    if (!seen.has("legacy-nb10")) items.push({ key: "nb10", engine: "legacy-nb10" });
+    if (!seen.has("legacy-mi")) items.push({ key: "mi", engine: "legacy-mi" });
+    return items;
+  }, [registry.tasks, registry.isLoading, listTasks]);
   const openTask = listTasks.find((t) => t.id === openTaskId) ?? null;
 
   /** המשימה הבאה שממתינה למשוב (משוב נפרד לכל משימה שהושלמה). */
@@ -390,16 +426,25 @@ function PracticePage() {
       </div>
 
       <div className="space-y-3">
-        <NB10TaskCard classSlug={student?.class_slug} studentId={studentId} />
-        <MITaskCard classSlug={student?.class_slug} studentId={studentId} />
-
-        {listTasks.map((task) => {
+        {orderedItems.map((item) => {
+          if (item.engine === "legacy-nb10") {
+            return (
+              <NB10TaskCard key={item.key} classSlug={student?.class_slug} studentId={studentId} />
+            );
+          }
+          if (item.engine === "legacy-mi") {
+            return (
+              <MITaskCard key={item.key} classSlug={student?.class_slug} studentId={studentId} />
+            );
+          }
+          const task = item.task!;
           const done = completedIds.has(task.id);
           const isPreviewOpen = previewTaskId === task.id;
           const isSelected = selectedTaskId === task.id;
           const parts = taskParts(task);
-          const donePartsCount = parts.filter((p, i) => isPartComplete(task, p, i, answersMap))
-            .length;
+          const donePartsCount = parts.filter((p, i) =>
+            isPartComplete(task, p, i, answersMap),
+          ).length;
           const previewPart = parts[0]!;
           return (
             <div

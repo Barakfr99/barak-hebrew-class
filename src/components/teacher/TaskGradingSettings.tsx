@@ -132,7 +132,6 @@ export function TaskGradingSettings({
             </div>
           );
         })}
-
       </div>
 
       <Dialog open={Boolean(openTask)} onOpenChange={(v) => !v && setOpenTaskId(null)}>
@@ -143,7 +142,7 @@ export function TaskGradingSettings({
                 <DialogTitle>{openTask.title}</DialogTitle>
                 <DialogDescription>{statusOf(openTask).text}</DialogDescription>
               </DialogHeader>
-              <TaskCard
+              <CoreTaskAdmin
                 task={openTask}
                 onChanged={onChanged}
                 onDeleted={() => setOpenTaskId(null)}
@@ -156,14 +155,20 @@ export function TaskGradingSettings({
   );
 }
 
-function TaskCard({
+/**
+ * ניהול משימת ליבה (שאלות בטבלת questions): משקולות, איפוס ומחיקה.
+ * עם hideControls — בלי הפעלה/תזמון/אופן ניקוד, כי אלה מנוהלים ברשם המשימות.
+ */
+export function CoreTaskAdmin({
   task,
   onChanged,
   onDeleted,
+  hideControls,
 }: {
   task: Task;
   onChanged: () => Promise<void> | void;
   onDeleted?: () => void;
+  hideControls?: boolean;
 }) {
   const sum = weightsSum(task.questions);
   const parts = taskParts(task);
@@ -171,72 +176,76 @@ function TaskCard({
 
   return (
     <div>
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-sm text-muted-foreground">
-          {task.questions.length} שאלות · {parts.length} חלקים
-        </p>
-        <div className="flex items-center gap-2">
-          <Label className="text-sm">פעילה</Label>
-          <Switch
-            checked={task.is_active}
-            disabled={busy}
-            onCheckedChange={async (checked) => {
-              setBusy(true);
-              try {
-                await setTaskActive(task.id, checked);
-                await onChanged();
-                toast.success(checked ? "המשימה הופעלה" : "המשימה כובתה");
-              } catch {
-                toast.error("העדכון לא נשמר");
-              } finally {
-                setBusy(false);
-              }
-            }}
-          />
-        </div>
-      </div>
+      {!hideControls && (
+        <>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <p className="text-sm text-muted-foreground">
+              {task.questions.length} שאלות · {parts.length} חלקים
+            </p>
+            <div className="flex items-center gap-2">
+              <Label className="text-sm">פעילה</Label>
+              <Switch
+                checked={task.is_active}
+                disabled={busy}
+                onCheckedChange={async (checked) => {
+                  setBusy(true);
+                  try {
+                    await setTaskActive(task.id, checked);
+                    await onChanged();
+                    toast.success(checked ? "המשימה הופעלה" : "המשימה כובתה");
+                  } catch {
+                    toast.error("העדכון לא נשמר");
+                  } finally {
+                    setBusy(false);
+                  }
+                }}
+              />
+            </div>
+          </div>
 
-      <div className="mt-4 grid gap-3 md:grid-cols-3">
-        <ScheduleField
-          label="מועד פתיחה"
-          value={task.opens_at}
-          onSave={async (iso) => {
-            await setTaskSchedule(task.id, { opensAt: iso });
-            await onChanged();
-          }}
-        />
-        <ScheduleField
-          label="מועד סגירה"
-          value={task.closes_at}
-          onSave={async (iso) => {
-            await setTaskSchedule(task.id, { closesAt: iso });
-            await onChanged();
-          }}
-        />
-        <div>
-          <Label className="text-sm">אופן הניקוד</Label>
-          <Select
-            value={task.grading_mode}
-            onValueChange={async (value) => {
-              try {
-                await setTaskGradingMode(task.id, value as GradingMode);
+          <div className="mt-4 grid gap-3 md:grid-cols-3">
+            <ScheduleField
+              label="מועד פתיחה"
+              value={task.opens_at}
+              onSave={async (iso) => {
+                await setTaskSchedule(task.id, { opensAt: iso });
                 await onChanged();
-                toast.success("אופן הניקוד עודכן");
-              } catch {
-                toast.error("העדכון לא נשמר");
-              }
-            }}
-          >
-            <SelectTrigger className="mt-1 bg-background">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent dir="rtl">
-              <SelectItem value="weighted">ניקוד לכל שאלה (אחוזים)</SelectItem>
-              <SelectItem value="submission">ניקוד הגשה — 0 / 50 / 75 / 100</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
+              }}
+            />
+            <ScheduleField
+              label="מועד סגירה"
+              value={task.closes_at}
+              onSave={async (iso) => {
+                await setTaskSchedule(task.id, { closesAt: iso });
+                await onChanged();
+              }}
+            />
+            <div>
+              <Label className="text-sm">אופן הניקוד</Label>
+              <Select
+                value={task.grading_mode}
+                onValueChange={async (value) => {
+                  try {
+                    await setTaskGradingMode(task.id, value as GradingMode);
+                    await onChanged();
+                    toast.success("אופן הניקוד עודכן");
+                  } catch {
+                    toast.error("העדכון לא נשמר");
+                  }
+                }}
+              >
+                <SelectTrigger className="mt-1 bg-background">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent dir="rtl">
+                  <SelectItem value="weighted">ניקוד לכל שאלה (אחוזים)</SelectItem>
+                  <SelectItem value="submission">ניקוד הגשה — 0 / 50 / 75 / 100</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </>
+      )}
 
       {task.grading_mode === "weighted" && (
         <>

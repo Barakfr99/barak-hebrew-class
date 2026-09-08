@@ -1,7 +1,6 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import { Home } from "lucide-react";
 import { useEffect, useState } from "react";
-import { findClass } from "@/lib/classes";
 import { isTeacherSession, readLastClassSlug } from "@/lib/session";
 
 /**
@@ -18,7 +17,7 @@ export function HomeButton() {
       return;
     }
     const slug = readLastClassSlug();
-    if (slug && findClass(slug)) {
+    if (slug) {
       setTarget({ to: "/class/$slug", label: "מרחב הלימוד הכיתתי", slug });
       return;
     }
@@ -27,7 +26,9 @@ export function HomeButton() {
 
   if (!target) return null;
   const currentIsTarget =
-    target.to === "/" ? pathname === "/" : pathname === (target.slug ? `/class/${target.slug}` : target.to);
+    target.to === "/"
+      ? pathname === "/"
+      : pathname === (target.slug ? `/class/${target.slug}` : target.to);
   if (currentIsTarget) return null;
 
   const className =
@@ -43,7 +44,11 @@ export function HomeButton() {
       <Home className="size-4" /> {target.label}
     </Link>
   ) : (
-    <Link to={target.to as "/" | "/teacher"} className={className} aria-label={`חזרה ל${target.label}`}>
+    <Link
+      to={target.to as "/" | "/teacher"}
+      className={className}
+      aria-label={`חזרה ל${target.label}`}
+    >
       <Home className="size-4" /> {target.label}
     </Link>
   );

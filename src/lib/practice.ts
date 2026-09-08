@@ -73,6 +73,8 @@ export type Task = {
   opens_at: string | null;
   closes_at: string | null;
   created_at: string;
+  published_at: string | null;
+  engine: string;
   questions: Question[];
 };
 
@@ -100,9 +102,7 @@ export function taskParts(task: Task): TaskPart[] {
 
 /** השאלות של חלק מסוים. חלק ראשון אוסף גם שאלות בלי שיוך. */
 export function questionsForPart(task: Task, part: TaskPart, index: number): Question[] {
-  return task.questions.filter((q) =>
-    q.part_id ? q.part_id === part.id : index === 0,
-  );
+  return task.questions.filter((q) => (q.part_id ? q.part_id === part.id : index === 0));
 }
 
 /** משימה "וירטואלית" לחלק בודד, לשימוש ברכיבי התרגול הקיימים. */
@@ -212,12 +212,20 @@ export async function fetchSettings(): Promise<Settings> {
 }
 
 const TASK_COLUMNS =
-  "id, kind, class_slug, title, article_title, source_note, footnote, description, paragraphs, max_points, sort_order, help_sections, task_parts, grading_mode, is_active, opens_at, closes_at, created_at";
+  "id, kind, class_slug, title, article_title, source_note, footnote, description, paragraphs, max_points, sort_order, help_sections, task_parts, grading_mode, is_active, opens_at, closes_at, created_at, published_at, engine";
 
-/** כל המשימות, כולל לא פעילות ומחוץ לחלון התזמון — לשימוש לוח המורה. */
+/**
+ * כל משימות "מנוע הליבה" (שאלות בטבלת questions), כולל לא פעילות — לשימוש לוח המורה.
+ * משימות במנועים אחרים רשומות באותה טבלה (רשם המשימות) אבל מנוהלות על ידי הענף שלהן.
+ */
 export async function fetchAllTasks(): Promise<Task[]> {
   const [tasksRes, questionsRes] = await Promise.all([
-    supabase.from("tasks").select(TASK_COLUMNS).order("created_at", { ascending: false }),
+    supabase
+      .from("tasks")
+      .select(TASK_COLUMNS)
+      .eq("engine", "legacy-core")
+      .order("published_at", { ascending: false, nullsFirst: false })
+      .order("created_at", { ascending: false }),
     supabase
       .from("questions")
       .select(
@@ -244,6 +252,8 @@ export async function fetchAllTasks(): Promise<Task[]> {
     is_active: t.is_active ?? true,
     opens_at: t.opens_at ?? null,
     closes_at: t.closes_at ?? null,
+    published_at: t.published_at ?? t.created_at,
+    engine: t.engine ?? "legacy-core",
     questions: questions.filter((q) => q.task_id === t.id),
   })) as Task[];
 }
@@ -390,7 +400,6 @@ export async function resetTeacherTestStudent(studentId: string) {
     .eq("id", studentId);
   if (error) throw error;
 }
-
 
 export type TaskGrade = { student_id: string; task_id: string; grade: number | null };
 
