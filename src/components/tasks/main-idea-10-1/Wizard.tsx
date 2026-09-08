@@ -247,8 +247,21 @@ export function MainIdeaWizard({
     const pending = Object.keys(timers.current);
     pending.forEach((id) => clearTimeout(timers.current[id]!));
     timers.current = {};
-    await Promise.all(pending.map((id) => persist(id, answers[id] ?? "")));
-  }, [answers, persist]);
+    if (pending.length === 0) return;
+    setSaving(true);
+    try {
+      await saveMIAnswers({
+        taskId: task.id,
+        studentId,
+        entries: pending.map((id) => ({ itemKey: id, answerText: answers[id] ?? "" })),
+      });
+    } catch {
+      toast.error("לא הצלחנו לשמור את התשובות. בדקו את החיבור לאינטרנט.");
+    } finally {
+      setSaving(false);
+    }
+  }, [answers, studentId, task.id]);
+
 
   const effort = computeMIEffort(answers);
   const quotesAnswered = MI_QUOTES.filter(
