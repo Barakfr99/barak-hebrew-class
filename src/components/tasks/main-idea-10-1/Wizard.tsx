@@ -454,73 +454,76 @@ export function MainIdeaWizard({
             </div>
           </div>
 
-          {!gate1 && !readOnly ? (
-            <InstructionsGate
-              title="הוראות התרגול"
-              lines={MI_INSTRUCTIONS_PAGE1}
-              onConfirm={() => setGate1(true)}
-            />
-          ) : (
-            <>
-              <div className="rounded-2xl bg-secondary/60 p-4 text-sm">
-                מולאו {effort.page1} מתוך {MI_TOTAL_PAGE1} פסקאות · נדרש {MI_REQUIRED_PAGE1}.
-                {effort.page1 > MI_REQUIRED_PAGE1 && " ענית על יותר מהנדרש — מאמץ נוסף!"}
-              </div>
-              {MI_PARAGRAPHS.map((item) => {
-                const topicKey = miTopicKey(item.n);
-                const messageKey = miMessageKey(item.n);
-                return (
-                  <div key={item.n} className="rounded-3xl border border-border bg-card p-5">
-                    <div className="flex items-start gap-2">
-                      <span className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full bg-secondary text-sm font-semibold">
-                        {item.n}
-                      </span>
-                      <p className="reading-text flex-1">{item.text}</p>
-                      {speechEnabled && (
-                        <SpeakButton
-                          onClick={() => speak(`mi:p1:${item.n}`, item.text)}
-                          active={speech.speakingId === `mi:p1:${item.n}`}
-                          loading={speech.loadingId === `mi:p1:${item.n}`}
-                          label="הקראת הפסקה"
-                        />
-                      )}
-                    </div>
-
-                    <div className="mt-4">
-                      <p className="font-semibold">מהו הנושא של הפסקה?</p>
-                      <OptionsGroup
-                        name={topicKey}
-                        options={item.topic}
-                        value={answers[topicKey] ?? ""}
-                        onChange={(v) => change(topicKey, v)}
-                        readOnly={readOnly}
-                        showAnswers={readOnly}
-                      />
-                      <TeacherNote note={notes[topicKey]} />
-                    </div>
-
-                    <div className="mt-4">
-                      <p className="font-semibold">ומהו המסר שלה?</p>
-                      <OptionsGroup
-                        name={messageKey}
-                        options={item.message}
-                        value={answers[messageKey] ?? ""}
-                        onChange={(v) => change(messageKey, v)}
-                        readOnly={readOnly}
-                        showAnswers={readOnly}
-                      />
-                      <TeacherNote note={notes[messageKey]} />
-                    </div>
-                  </div>
-                );
-              })}
-            </>
-          )}
         </div>
       )}
 
-      {/* ===== עמוד 2 ===== */}
+      {/* ===== עמוד 2 — תרגיל זיהוי נושא ומסר ===== */}
       {pageIndex === 1 && (
+        <div className="mt-6 space-y-5">
+          <h2 className="text-2xl font-bold">זיהוי הנושא והמסר בפסקאות</h2>
+          <InstructionsGate
+            open={!gate1 && !readOnly}
+            title="הוראות התרגול"
+            lines={MI_INSTRUCTIONS_PAGE1}
+            onConfirm={() => setGate1(true)}
+          />
+          <div className="rounded-2xl bg-secondary/60 p-4 text-sm">
+            מולאו {effort.page1} מתוך {MI_TOTAL_PAGE1} פסקאות · נדרש {MI_REQUIRED_PAGE1}.
+            {effort.page1 > MI_REQUIRED_PAGE1 && " ענית על יותר מהנדרש — מאמץ נוסף!"}
+          </div>
+          {MI_PARAGRAPHS.map((item) => {
+            const topicKey = miTopicKey(item.n);
+            const messageKey = miMessageKey(item.n);
+            return (
+              <div key={item.n} className="rounded-3xl border border-border bg-card p-5">
+                <div className="flex items-start gap-2">
+                  <span className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full bg-secondary text-sm font-semibold">
+                    {item.n}
+                  </span>
+                  <p className="reading-text flex-1">{item.text}</p>
+                  {speechEnabled && (
+                    <SpeakButton
+                      onClick={() => speak(`mi:p1:${item.n}`, item.text)}
+                      active={speech.speakingId === `mi:p1:${item.n}`}
+                      loading={speech.loadingId === `mi:p1:${item.n}`}
+                      label="הקראת הפסקה"
+                    />
+                  )}
+                </div>
+
+                <div className="mt-4">
+                  <p className="font-semibold">מהו הנושא של הפסקה?</p>
+                  <OptionsGroup
+                    name={topicKey}
+                    options={item.topic}
+                    value={answers[topicKey] ?? ""}
+                    onChange={(v) => change(topicKey, v)}
+                    readOnly={readOnly}
+                    showAnswers={readOnly}
+                  />
+                  <TeacherNote note={notes[topicKey]} />
+                </div>
+
+                <div className="mt-4">
+                  <p className="font-semibold">ומהו המסר שלה?</p>
+                  <OptionsGroup
+                    name={messageKey}
+                    options={item.message}
+                    value={answers[messageKey] ?? ""}
+                    onChange={(v) => change(messageKey, v)}
+                    readOnly={readOnly}
+                    showAnswers={readOnly}
+                  />
+                  <TeacherNote note={notes[messageKey]} />
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* ===== עמוד 3 ===== */}
+      {pageIndex === 2 && (
         <div className="mt-6 space-y-5">
           <h2 className="text-2xl font-bold">איך בודקים אם ניסוח טוב?</h2>
 
