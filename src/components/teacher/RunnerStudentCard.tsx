@@ -27,6 +27,7 @@ import {
 } from "@/lib/task-runner/data";
 import {
   computeEffort,
+  describePosAnswer,
   optionIsCorrect,
   optionText,
   type RunnerQuestion,
@@ -323,7 +324,14 @@ function RunnerStudentReview({ task, student }: { task: RunnerTask; student: Stu
             {(def.feedbackQuestions ?? []).map((q) => (
               <li key={q.id}>
                 <span className="text-muted-foreground">
-                  {q.kind === "guided" ? q.label : q.kind === "judge" ? q.quote : q.prompt}:{" "}
+                  {q.kind === "guided"
+                    ? q.label
+                    : q.kind === "judge"
+                      ? q.quote
+                      : q.kind === "pos"
+                        ? q.title
+                        : q.prompt}
+                  :{" "}
                 </span>
                 <span className="font-medium">{answers[q.id] || "—"}</span>
               </li>
@@ -357,6 +365,8 @@ function AnswerRow({
         ? [`${question.id}.verdict`]
         : [question.id];
   const primaryKey = keys[0]!;
+  const posLines =
+    question.kind === "pos" ? describePosAnswer(question, answers[question.id]) : null;
   const existing = notes[primaryKey] ?? { note: "", score: null };
   const [note, setNote] = useState<string | null>(null);
   const [score, setScore] = useState<string | null>(null);
@@ -385,7 +395,9 @@ function AnswerRow({
       ? question.label
       : question.kind === "judge"
         ? `שיפוט הניסוח: "${question.quote}"`
-        : question.prompt;
+        : question.kind === "pos"
+          ? question.title
+          : question.prompt;
 
   /** האם התשובה נכונה — רק בשאלות שההגדרה סימנה בהן תשובה נכונה. */
   const correctness = (() => {
@@ -408,19 +420,36 @@ function AnswerRow({
     <div className="rounded-2xl border border-border p-3">
       <p className="text-sm text-muted-foreground">{prompt}</p>
       <div className="mt-1 space-y-1">
-        {keys.map((key) => (
-          <p
-            key={key}
-            className={cn(
-              "reading-text whitespace-pre-wrap rounded-xl px-2 py-1",
-              correctness === true && "bg-success/10",
-              correctness === false && "bg-destructive/10",
-              correctness === null && "bg-secondary/40",
-            )}
-          >
-            {answers[key] || "—"}
-          </p>
-        ))}
+        {posLines ? (
+          posLines.length > 0 ? (
+            posLines.map((line, i) => (
+              <p
+                key={i}
+                className="reading-text whitespace-pre-wrap rounded-xl bg-secondary/40 px-2 py-1"
+              >
+                {line}
+              </p>
+            ))
+          ) : (
+            <p className="reading-text whitespace-pre-wrap rounded-xl bg-secondary/40 px-2 py-1">
+              —
+            </p>
+          )
+        ) : (
+          keys.map((key) => (
+            <p
+              key={key}
+              className={cn(
+                "reading-text whitespace-pre-wrap rounded-xl px-2 py-1",
+                correctness === true && "bg-success/10",
+                correctness === false && "bg-destructive/10",
+                correctness === null && "bg-secondary/40",
+              )}
+            >
+              {answers[key] || "—"}
+            </p>
+          ))
+        )}
         {question.kind === "judge" && answers[`${question.id}.violations`] && (
           <p className="text-xs text-muted-foreground">
             סעיפים שסומנו: {answers[`${question.id}.violations`]}

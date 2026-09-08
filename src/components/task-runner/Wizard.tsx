@@ -88,6 +88,15 @@ export function TaskRunnerWizard({
         />
       )
     : undefined;
+  /** הקראת קטע שלם ברצף — לתרגילי תיוג מילים (חלקי דיבר וכדומה). */
+  const speechSequence = speechEnabled
+    ? {
+        isPlayingSequence: speech.isPlayingSequence,
+        loadingId: speech.loadingId,
+        speakSequence: (units: { id: string; text: string }[]) => void speech.speakSequence(units),
+        stop: speech.stop,
+      }
+    : undefined;
   const [pageIndex, setPageIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [loaded, setLoaded] = useState(false);
@@ -271,6 +280,8 @@ export function TaskRunnerWizard({
         notes={notes}
         showAnswers={readOnly}
         renderSpeak={renderSpeak}
+        speechSequence={speechSequence}
+        paragraphs={paragraphs}
       />
     ));
 

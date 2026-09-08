@@ -19,6 +19,47 @@ export function optionWhy(option: RunnerOption): string | undefined {
   return typeof option === "string" ? undefined : option.why;
 }
 
+/** קטגוריה בתרגיל תיוג (למשל חלקי דיבר) — מזהה, תווית, והסבר אופציונלי. */
+export type RunnerPosCategory = { id: string; label: string; note?: RunnerNote };
+
+type RunnerPosBase = {
+  id: string;
+  title: string;
+  instruction: string;
+  /** קטגוריות הרלוונטיות לתרגיל הזה (לתצוגת מקרא ולצביעה). */
+  categories: RunnerPosCategory[];
+  paragraphRefs?: number[];
+};
+
+/**
+ * תרגיל תיוג מילים אינטראקטיבי (כמו זיהוי חלקי דיבר): הקשה על מילים בקטע,
+ * מיון מילים מסומנות, או המרת צורה למילה. שלוש הצורות משתפות כותרת/הוראה/קטגוריות.
+ */
+export type RunnerPosQuestion =
+  | (RunnerPosBase & {
+      kind: "pos";
+      posKind: "pick";
+      /** מזהה הקטגוריה שאליה שייכות המילים המבוקשות. */
+      categoryId: string;
+      source: string;
+      passage: string;
+      needed: number;
+      valid: string[];
+    })
+  | (RunnerPosBase & {
+      kind: "pos";
+      posKind: "convert";
+      rows: { word: string; direction: string; answer: string }[];
+    })
+  | (RunnerPosBase & {
+      kind: "pos";
+      posKind: "sort";
+      source: string;
+      passage: string;
+      /** אינדקס מילה (לפי tokenize) -> מזהה הקטגוריה הנכונה. */
+      marked: Record<number, string>;
+    });
+
 export type RunnerQuestion =
   | {
       /** שאלה מודרכת: כמה שורות השלמה תחת כותרת אחת. */
@@ -28,6 +69,7 @@ export type RunnerQuestion =
       lines: string[];
       note?: RunnerNote;
     }
+  | RunnerPosQuestion
   | {
       kind: "open";
       id: string;
@@ -155,8 +197,80 @@ export function isQuestionAnswered(
     return question.lines.every((_, i) => isFilled(answers[`${question.id}.${i}`]));
   }
   if (question.kind === "judge") return isFilled(answers[`${question.id}.verdict`]);
+  if (question.kind === "pos") return isPosAnswerComplete(question, answers[question.id]);
   // כל תשובה שאינה ריקה נחשבת מענה — בלי סף אורך, כדי לא לפסול ניסוח קצר.
   return isFilled(answers[question.id]);
+}
+
+/** מפצל קטע למילים לצורך הקשה על מילה בתרגילי תיוג. */
+export function posTokenize(passage: string): string[] {
+  return passage.split(/\s+/).filter(Boolean);
+}
+
+/** מנקה סימני פיסוק בקצות המילה, לצורך השוואה לרשימת התשובות התקפות. */
+export function posCleanWord(word: string): string {
+  return word.replace(/^[^֐-׿A-Za-z]+/u, "").replace(/[^֐-׿A-Za-z]+$/u, "");
+}
+
+export function parsePosAnswer<T>(text: string | undefined, fallback: T): T {
+  if (!text) return fallback;
+  try {
+    return { ...fallback, ...(JSON.parse(text) as T) };
+  } catch {
+    return fallback;
+  }
+}
+
+/** האם תרגיל תיוג הושלם — לפי סוג התרגיל (הקשה/מיון/המרה). */
+export function isPosAnswerComplete(question: RunnerPosQuestion, raw: string | undefined): boolean {
+  if (!raw) return false;
+  try {
+    if (question.posKind === "pick") {
+      const idx = (JSON.parse(raw) as { idx?: number[] }).idx ?? [];
+      return idx.length >= question.needed;
+    }
+    if (question.posKind === "convert") {
+      const values = (JSON.parse(raw) as { values?: string[] }).values ?? [];
+      return question.rows.every((_, i) => isFilled(values[i]));
+    }
+    const assign = (JSON.parse(raw) as { assign?: Record<string, string> }).assign ?? {};
+    return Object.keys(question.marked).every((key) => Boolean(assign[key]));
+  } catch {
+    return false;
+  }
+}
+
+/** תיאור קריא של תשובת תרגיל תיוג — ללוח המורה. */
+export function describePosAnswer(question: RunnerPosQuestion, text: string | undefined): string[] {
+  if (!text) return [];
+  try {
+    if (question.posKind === "pick") {
+      const idx = (JSON.parse(text) as { idx?: number[] }).idx ?? [];
+      const tokens = posTokenize(question.passage);
+      return [
+        `סימנו: ${idx.map((i) => posCleanWord(tokens[i] ?? "")).join(", ") || "—"}`,
+        `תשובות תקפות: ${question.valid.join(", ")}`,
+      ];
+    }
+    if (question.posKind === "convert") {
+      const values = (JSON.parse(text) as { values?: string[] }).values ?? [];
+      return question.rows.map(
+        (row, i) => `${row.word} ← ${values[i] || "—"} (תקין: ${row.answer})`,
+      );
+    }
+    const assign = (JSON.parse(text) as { assign?: Record<string, string> }).assign ?? {};
+    const tokens = posTokenize(question.passage);
+    const labelById = new Map(question.categories.map((c) => [c.id, c.label]));
+    return Object.entries(question.marked).map(([index, correctId]) => {
+      const word = posCleanWord(tokens[Number(index)] ?? "");
+      const chosenId = assign[index];
+      const chosenLabel = chosenId ? (labelById.get(chosenId) ?? chosenId) : "—";
+      const correctLabel = labelById.get(correctId) ?? correctId;
+      return `${word}: ${chosenLabel} (תקין: ${correctLabel})`;
+    });
+  } catch {
+    return [];
+  }
 }
 
 /** פריט בקבוצה נחשב "נענה" רק כשכל שאלותיו נענו. */
