@@ -329,10 +329,53 @@ const mainIdeaBranch: SpaceTaskBranch = {
   },
 };
 
+/** ענף מנוע ה-runner: כל המשימות שמוגדרות כ-JSON חיות ישירות ב-tasks, בלי טבלת ענף. */
+const runnerBranch: SpaceTaskBranch = {
+  id: "runner",
+  engine: "runner",
+  fetchForClass: async (classSlug) => {
+    const { data: tasks, error } = await supabase
+      .from("tasks")
+      .select("id, title")
+      .eq("class_slug", classSlug)
+      .eq("engine", "runner");
+    if (error) throw error;
+    const taskIds = (tasks ?? []).map((t) => t.id);
+    if (taskIds.length === 0) return [];
+
+    const [{ data: subs, error: sErr }, { data: notes, error: nErr }] = await Promise.all([
+      supabase
+        .from("runner_submissions")
+        .select("student_id, task_id, submitted_at")
+        .in("task_id", taskIds),
+      supabase
+        .from("runner_notes")
+        .select("student_id, task_id, score")
+        .in("task_id", taskIds)
+        .is("item_key", null),
+    ]);
+    if (sErr) throw sErr;
+    if (nErr) throw nErr;
+
+    const titles = new Map((tasks ?? []).map((t) => [t.id, t.title]));
+    return (subs ?? []).map((s) => ({
+      branchId: "runner",
+      taskId: s.task_id,
+      title: titles.get(s.task_id) ?? "משימה",
+      studentId: s.student_id,
+      submittedAt: s.submitted_at,
+      grade:
+        (notes ?? []).find((n) => n.student_id === s.student_id && n.task_id === s.task_id)
+          ?.score ?? null,
+    }));
+  },
+};
+
 export const SPACE_TASK_BRANCHES: SpaceTaskBranch[] = [
   coreBranch,
   newBeginnings10Branch,
   mainIdeaBranch,
+  runnerBranch,
 ];
 
 export const SPACE_ROLLUP_KEY = "space-task-rollup";
@@ -439,7 +482,9 @@ export async function resetRegistryTaskForStudents(
       ? (["nb10_answers", "nb10_submissions", "nb10_notes", "nb10_feedback"] as const)
       : task.engine === "legacy-mi"
         ? (["mi_answers", "mi_submissions", "mi_notes", "mi_feedback"] as const)
-        : ([] as const);
+        : task.engine === "runner"
+          ? (["runner_answers", "runner_submissions", "runner_notes"] as const)
+          : ([] as const);
   for (const table of tables) {
     const { error } = await supabase
       .from(table)

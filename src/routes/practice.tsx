@@ -28,6 +28,7 @@ import { PartsOfSpeechTask } from "@/components/practice/PartsOfSpeechTask";
 import { FeedbackForm } from "@/components/practice/FeedbackForm";
 import { NB10TaskCard } from "@/components/tasks/new-beginnings-10/TaskCard";
 import { MITaskCard } from "@/components/tasks/main-idea-10-1/TaskCard";
+import { RunnerTaskCard } from "@/components/task-runner/TaskCard";
 import { useSpaceTaskList } from "@/lib/space-tasks";
 
 export const Route = createFileRoute("/practice")({
@@ -45,6 +46,9 @@ export const Route = createFileRoute("/practice")({
   }),
   component: PracticePage,
 });
+
+/** פריט ברשימת המשימות המסודרת — כרטיס ליבה (עם task) או כרטיס ענף/runner (עם taskId). */
+type OrderedTaskItem = { key: string; engine: string; task?: Task; taskId?: string };
 
 function PracticePage() {
   const navigate = useNavigate();
@@ -176,8 +180,8 @@ function PracticePage() {
 
   /** סדר התצוגה מגיע מרשם המשימות של המרחב — מהחדשה לישנה, מכל הסוגים. */
   const registry = useSpaceTaskList(student?.class_slug);
-  const orderedItems = useMemo(() => {
-    const items: { key: string; engine: string; task?: Task }[] = [];
+  const orderedItems = useMemo((): OrderedTaskItem[] => {
+    const items: OrderedTaskItem[] = [];
     const seen = new Set<string>();
     registry.tasks.forEach((entry) => {
       if (entry.engine === "legacy-core") {
@@ -185,6 +189,15 @@ function PracticePage() {
         if (task) {
           items.push({ key: entry.id, engine: entry.engine, task });
           seen.add(task.id);
+        }
+        return;
+      }
+      if (entry.engine === "runner") {
+        // כל משימת runner היא ישות עצמאית (יכולות להיות כמה באותו מרחב) —
+        // דה-דופ לפי מזהה המשימה, לא לפי המנוע.
+        if (!seen.has(entry.id)) {
+          items.push({ key: entry.id, engine: entry.engine, taskId: entry.id });
+          seen.add(entry.id);
         }
         return;
       }
@@ -199,11 +212,12 @@ function PracticePage() {
     });
     // עד שהרשם נטען — הסדר הישן, כדי שהמסך לא יהיה ריק.
     if (registry.tasks.length === 0 && registry.isLoading) {
-      return [
+      const fallback: OrderedTaskItem[] = [
         { key: "nb10", engine: "legacy-nb10" },
         { key: "mi", engine: "legacy-mi" },
         ...listTasks.map((task) => ({ key: task.id, engine: "legacy-core", task })),
       ];
+      return fallback;
     }
     if (!seen.has("legacy-nb10")) items.push({ key: "nb10", engine: "legacy-nb10" });
     if (!seen.has("legacy-mi")) items.push({ key: "mi", engine: "legacy-mi" });
@@ -436,6 +450,9 @@ function PracticePage() {
             return (
               <MITaskCard key={item.key} classSlug={student?.class_slug} studentId={studentId} />
             );
+          }
+          if (item.engine === "runner") {
+            return <RunnerTaskCard key={item.key} taskId={item.taskId!} studentId={studentId} />;
           }
           const task = item.task!;
           const done = completedIds.has(task.id);
