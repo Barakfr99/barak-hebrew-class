@@ -255,3 +255,25 @@ export function useSpaceTaskRollup(classSlug: string | null | undefined) {
 
   return { rows, pendingByStudent, gradesByStudent, submittedByStudent, refresh };
 }
+
+export const SPACE_TASK_LIST_KEY = "space-task-list";
+
+/** רשימת כל המשימות של המרחב מכל הענפים — כולל משימות שאף אחד לא הגיש. */
+export function useSpaceTaskList(classSlug: string | null | undefined) {
+  const results = useQueries({
+    queries: SPACE_TASK_BRANCHES.map((branch) => ({
+      queryKey: [SPACE_TASK_LIST_KEY, branch.id, classSlug ?? null],
+      queryFn: () => branch.listTasks(classSlug!),
+      enabled: Boolean(classSlug),
+      refetchInterval: 30000,
+    })),
+  });
+
+  const tasks = useMemo(
+    () => results.flatMap((r) => r.data ?? []),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [results.map((r) => r.dataUpdatedAt).join("|")],
+  );
+
+  return { tasks, isLoading: results.some((r) => r.isLoading) };
+}
