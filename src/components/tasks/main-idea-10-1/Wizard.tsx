@@ -609,9 +609,10 @@ export function MainIdeaWizard({
 
                 {verdict === MI_VERDICT_BAD && (
                   <div className="mt-3 rounded-2xl bg-secondary/50 p-3">
-                    <p className="text-sm font-semibold">אילו סעיפים הופרו?</p>
+                    <p className="text-sm font-semibold">אילו סעיפים אינם מתקיימים?</p>
                     <div className="mt-2 space-y-2">
-                      {MI_CHECKLIST.filter((c) => c.kind === "dont").map((c) => (
+                      {MI_CHECKLIST.map((c) => (
+
                         <label key={c.id} className="flex items-start gap-2">
                           <Checkbox
                             checked={selected.includes(c.id)}

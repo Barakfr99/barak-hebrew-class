@@ -41,17 +41,14 @@ export function MinimumWarningDialog({
         </div>
 
         <DialogFooter className="gap-2 sm:justify-start">
-          <Button
-            size="lg"
-            variant="outline"
-            onClick={() => onOpenChange(false)}
-          >
+          <Button size="lg" autoFocus onClick={() => onOpenChange(false)}>
             ביטול — להשלים את המינימום
           </Button>
-          <Button size="lg" onClick={onConfirm}>
+          <Button size="lg" variant="outline" onClick={onConfirm}>
             אישור להמשיך
           </Button>
         </DialogFooter>
+
       </DialogContent>
     </Dialog>
   );
