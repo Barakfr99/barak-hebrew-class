@@ -70,7 +70,22 @@ const coreBranch: SpaceTaskBranch = {
           ?.grade ?? null,
     }));
   },
+  listTasks: async (classSlug) => {
+    const { data, error } = await supabase
+      .from("tasks")
+      .select("id, title, grading_mode, sort_order")
+      .eq("class_slug", classSlug)
+      .order("sort_order");
+    if (error) throw error;
+    return (data ?? []).map((t) => ({
+      branchId: "core-tasks",
+      taskId: t.id,
+      title: t.title,
+      gradingMode: (t.grading_mode as "weighted" | "submission") ?? null,
+    }));
+  },
 };
+
 
 /** ענף המשימה "התחלות חדשות" (nb10_*). */
 const newBeginnings10Branch: SpaceTaskBranch = {
