@@ -410,15 +410,16 @@ export function MainIdeaWizard({
             </div>
             <ul className="mt-3 space-y-1 text-sm">
               <li>
-                <b>צעד 1:</b> {MI_DEMO.step1}
+                <b>צעד 1 — על מה הפסקה מדברת (הנושא):</b> {MI_DEMO.step1}
               </li>
               <li>
-                <b>צעד 2:</b> {MI_DEMO.step2}
+                <b>צעד 2 — מה היא אומרת על זה (המסר):</b> {MI_DEMO.step2}
               </li>
               <li>
-                <b>צעד 3:</b> {MI_DEMO.step3}
+                <b>צעד 3 — חיבור הנושא והמסר למשפט אחד:</b> {MI_DEMO.step3}
               </li>
             </ul>
+
           </div>
 
           <div className="rounded-3xl border border-border bg-card p-5">
