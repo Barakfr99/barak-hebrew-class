@@ -301,20 +301,14 @@ export function MIStudentReview({
   });
 
   const saveNote = useMutation({
-    mutationFn: async (input: { itemKey: string | null; value: AnswerNoteValue }) => {
-      const { error } = await supabase.from("mi_notes").upsert(
-        {
-          task_id: taskId,
-          student_id: student.id,
-          item_key: input.itemKey,
-          note: input.value.note,
-          score: input.value.score,
-          updated_at: new Date().toISOString(),
-        },
-        { onConflict: input.itemKey ? "student_id,task_id,item_key" : "student_id,task_id" },
-      );
-      if (error) throw error;
-    },
+    mutationFn: async (input: { itemKey: string | null; value: AnswerNoteValue }) =>
+      saveMINote({
+        taskId,
+        studentId: student.id,
+        itemKey: input.itemKey,
+        note: input.value.note,
+        score: input.value.score,
+      }),
     onSuccess: async () => {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["mi-review-notes", taskId, student.id] }),
