@@ -38,19 +38,19 @@ export function SubmitConfirmDialog({
 }) {
   const rows = [
     {
-      label: `עמוד 1 — זיהוי נושא ומסר (נדרש ${MI_REQUIRED_PAGE1})`,
+      label: `עמוד 2 — זיהוי נושא ומסר (נדרש ${MI_REQUIRED_PAGE1})`,
       done: page1Count,
       total: MI_TOTAL_PAGE1,
       required: MI_REQUIRED_PAGE1,
     },
     {
-      label: "עמוד 2 — שיפוט ניסוחים",
+      label: "עמוד 3 — שיפוט ניסוחים",
       done: quotesCount,
       total: MI_QUOTES.length,
       required: MI_QUOTES.length,
     },
     {
-      label: `עמוד 3 — ניסוח עצמאי (נדרש ${MI_REQUIRED_PAGE3})`,
+      label: `עמוד 4 — ניסוח עצמאי (נדרש ${MI_REQUIRED_PAGE3})`,
       done: page3Count,
       total: MI_TOTAL_PAGE3,
       required: MI_REQUIRED_PAGE3,
@@ -92,10 +92,10 @@ export function SubmitConfirmDialog({
             <span>
               לא עמדת במינימום הנדרש:
               {page1Count < MI_REQUIRED_PAGE1
-                ? ` בעמוד 1 נדרש ${MI_REQUIRED_PAGE1} פסקאות ומולאו ${page1Count}.`
+                ? ` בעמוד 2 נדרש ${MI_REQUIRED_PAGE1} פסקאות ומולאו ${page1Count}.`
                 : ""}
               {page3Count < MI_REQUIRED_PAGE3
-                ? ` בעמוד 3 נדרש ${MI_REQUIRED_PAGE3} ניסוחים ונוסחו ${page3Count}.`
+                ? ` בעמוד 4 נדרש ${MI_REQUIRED_PAGE3} ניסוחים ונוסחו ${page3Count}.`
                 : ""}
               {" "}אפשר להגיש בכל זאת, אבל זה ישפיע על הציון.
             </span>
