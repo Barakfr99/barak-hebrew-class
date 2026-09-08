@@ -122,7 +122,21 @@ const newBeginnings10Branch: SpaceTaskBranch = {
         null,
     }));
   },
+  listTasks: async (classSlug) => {
+    const { data, error } = await supabase
+      .from("nb10_tasks")
+      .select("id")
+      .eq("class_slug", classSlug);
+    if (error) throw error;
+    return (data ?? []).map((t) => ({
+      branchId: "new-beginnings-10",
+      taskId: t.id,
+      title: NB10_TASK_TITLE,
+      gradingMode: null,
+    }));
+  },
 };
+
 
 /** ענף המשימה "ניסוח רעיון מרכזי — תרגול" (mi_*). */
 const mainIdeaBranch: SpaceTaskBranch = {
