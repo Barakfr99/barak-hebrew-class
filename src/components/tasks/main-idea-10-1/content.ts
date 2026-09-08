@@ -191,21 +191,21 @@ export const MI_PARAGRAPHS: MIParagraphItem[] = [
 ];
 
 
-/** צ'ק-ליסט הניסוח של עמוד 2. */
-export type MIChecklistItem = { id: string; kind: "do" | "dont"; text: string };
+/** צ'ק-ליסט הניסוח — רק דברים שיש לעשות. */
+export type MIChecklistItem = { id: string; text: string };
 
 export const MI_CHECKLIST: MIChecklistItem[] = [
-  { id: "full", kind: "do", text: "כתבו משפט שלם, לא מילה אחת" },
-  { id: "own", kind: "do", text: "כתבו במילים שלכם — לא להעתיק מהטקסט" },
-  { id: "whole", kind: "do", text: "המשפט מתאים לכל הפסקה, לא רק לדוגמה אחת מתוכה" },
-  { id: "copied", kind: "dont", text: "לא להעתיק משפט מהטקסט" },
-  { id: "single-word", kind: "dont", text: "לא לכתוב מילה בודדת" },
-  { id: "generic-advice", kind: "dont", text: "לא לכתוב עצה כללית שלא קשורה ישירות לפסקה" },
+  { id: "full", text: "כתבו משפט שלם, לא מילה בודדת" },
+  { id: "own", text: "כתבו במילים שלכם — לא להעתיק מהטקסט" },
+  { id: "whole", text: "המשפט מתאים לכל הפסקה, לא רק לדוגמה אחת מתוכה" },
+  { id: "claim", text: "כתבו משפט קובע — רעיון מרכזי לא יכול להיות מנוסח כשאלה" },
+  { id: "fromText", text: "המשפט נובע מהפסקה עצמה, ולא עצה כללית מבחוץ" },
 ];
 
 export const MI_CHECKLIST_LABELS: Record<string, string> = Object.fromEntries(
   MI_CHECKLIST.map((item) => [item.id, item.text]),
 );
+
 
 /** הפסקה שעליה מבוססים ציטוטי הניסוח בעמוד 3. */
 export const MI_QUOTES_PARAGRAPH =
@@ -228,14 +228,14 @@ export const MI_QUOTES: MIQuote[] = [
     n: 1,
     text: "רבים אינם חוששים מ'התחלה' עצמה, אלא מהשינוי שמתלווה אליה.",
     ok: false,
-    violations: ["copied"],
+    violations: ["own"],
     explain: "זהו משפט שהועתק מהטקסט, ולא ניסוח במילים שלכם.",
   },
   {
     n: 2,
     text: "שינוי",
     ok: false,
-    violations: ["single-word"],
+    violations: ["full"],
     explain: "מילה בודדת — זה נושא בלבד, בלי מסר ובלי משפט שלם.",
   },
   {
@@ -249,7 +249,7 @@ export const MI_QUOTES: MIQuote[] = [
     n: 4,
     text: "שינוי הוא חלק טבעי מהחיים ולא צריך לפחד ממנו",
     ok: false,
-    violations: ["generic-advice"],
+    violations: ["fromText"],
     explain: "עצה כללית שלא נובעת ישירות מהפסקה.",
   },
   {
@@ -263,7 +263,7 @@ export const MI_QUOTES: MIQuote[] = [
     n: 6,
     text: "כח",
     ok: false,
-    violations: ["single-word"],
+    violations: ["full"],
     explain: "מילה בודדת — קצר מדי, אין בה מסר.",
   },
   {
@@ -273,7 +273,15 @@ export const MI_QUOTES: MIQuote[] = [
     violations: [],
     explain: "משפט שלם שמנוסח באופן עצמאי ומתאים לכלל הפסקה.",
   },
+  {
+    n: 8,
+    text: "האם כדאי לפחוד משינוי?",
+    ok: false,
+    violations: ["claim"],
+    explain: "זו שאלה ולא קביעה — רעיון מרכזי צריך להיות מנוסח כמשפט קובע.",
+  },
 ];
+
 
 /** פסקאות הניסוח העצמאי של עמוד 3 — בלי פיגום. */
 export type MIWriteItem = { id: string; label: string; text: string };

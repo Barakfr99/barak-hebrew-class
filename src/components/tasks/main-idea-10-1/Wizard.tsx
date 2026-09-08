@@ -550,11 +550,11 @@ export function MainIdeaWizard({
 
           <div className="rounded-3xl border border-border bg-card p-5">
 
-            <p className="font-semibold text-primary">צ'ק-ליסט</p>
+            <p className="font-semibold text-primary">צ'ק-ליסט — מה חייב להתקיים בניסוח</p>
             <ul className="mt-3 space-y-2">
               {MI_CHECKLIST.map((item) => (
                 <li key={item.id} className="reading-text">
-                  {item.kind === "do" ? "✅" : "❌"} {item.text}
+                  ✅ {item.text}
                 </li>
               ))}
             </ul>
@@ -562,8 +562,10 @@ export function MainIdeaWizard({
 
           <p className="text-muted-foreground">
             לפניכם ניסוחים אמיתיים ואנונימיים של תלמידים. החליטו לכל אחד אם הוא תקין, ואם לא —
-            סמנו איזה סעיפים מהצ'ק-ליסט הוא מפר (אפשר יותר מאחד).
+            סמנו איזה סעיפים מהצ'ק-ליסט <span className="font-semibold">אינם מתקיימים</span> בו
+            (אפשר יותר מאחד).
           </p>
+
 
           {MI_QUOTES.map((quote) => {
             const verdictKey = miVerdictKey(quote.n);
@@ -607,9 +609,10 @@ export function MainIdeaWizard({
 
                 {verdict === MI_VERDICT_BAD && (
                   <div className="mt-3 rounded-2xl bg-secondary/50 p-3">
-                    <p className="text-sm font-semibold">אילו סעיפים הופרו?</p>
+                    <p className="text-sm font-semibold">אילו סעיפים אינם מתקיימים?</p>
                     <div className="mt-2 space-y-2">
-                      {MI_CHECKLIST.filter((c) => c.kind === "dont").map((c) => (
+                      {MI_CHECKLIST.map((c) => (
+
                         <label key={c.id} className="flex items-start gap-2">
                           <Checkbox
                             checked={selected.includes(c.id)}
