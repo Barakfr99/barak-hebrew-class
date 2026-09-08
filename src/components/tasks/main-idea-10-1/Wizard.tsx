@@ -284,7 +284,7 @@ export function MainIdeaWizard({
   };
 
   const goNext = async () => {
-    if (!readOnly && pageIndex === 0 && effort.page1Missing > 0) {
+    if (!readOnly && pageIndex === 1 && effort.page1Missing > 0) {
       toast.warning(
         `לא עמדת במינימום הנדרש בעמוד הזה: נדרש ${MI_REQUIRED_PAGE1} פסקאות, מולאו ${effort.page1}. אפשר להמשיך, אבל כדאי לחזור ולהשלים.`,
       );
