@@ -18,11 +18,22 @@ export type BranchTaskState = {
   grade: number | null;
 };
 
+export type BranchTaskInfo = {
+  branchId: string;
+  taskId: string;
+  title: string;
+  /** אופן הניקוד, אם הענף מנהל כזה. */
+  gradingMode?: "weighted" | "submission" | null;
+};
+
 export type SpaceTaskBranch = {
   id: string;
   title: string;
   fetchForClass: (classSlug: string) => Promise<BranchTaskState[]>;
+  /** כל המשימות של הענף במרחב — גם אלו שאף אחד לא הגיש. */
+  listTasks: (classSlug: string) => Promise<BranchTaskInfo[]>;
 };
+
 
 /** ענף המשימות הכללי של המערך (tasks / task_completions / task_grades). */
 const coreBranch: SpaceTaskBranch = {
