@@ -5,7 +5,7 @@
 
 export const MI_TASK_TITLE = "ניסוח רעיון מרכזי — תרגול";
 export const MI_CLASS_SLUG = "10-1";
-export const MI_PAGE_COUNT = 3;
+export const MI_PAGE_COUNT = 4;
 
 export const MI_REQUIRED_PAGE1 = 4;
 export const MI_TOTAL_PAGE1 = 7;
