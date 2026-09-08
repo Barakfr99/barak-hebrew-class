@@ -83,18 +83,42 @@ export function TaskGradingSettings({
           const { text, open } = statusOf(task);
           const parts = taskParts(task);
           return (
-            <button
+            <div
               key={task.id}
-              type="button"
-              onClick={() => setOpenTaskId(task.id)}
-              className="flex w-full flex-wrap items-center justify-between gap-3 rounded-2xl border border-border bg-card p-4 text-start transition hover:border-primary/60 hover:bg-secondary/40"
+              className="flex w-full flex-wrap items-center justify-between gap-3 rounded-2xl border border-border bg-card p-4 text-start transition hover:border-primary/60"
             >
-              <div>
+              <button
+                type="button"
+                onClick={() => setOpenTaskId(task.id)}
+                className="flex-1 text-start"
+              >
                 <p className="font-semibold">{task.title}</p>
                 <p className="text-sm text-muted-foreground">
-                  {task.questions.length} שאלות · {parts.length} חלקים ·{" "}
-                  {task.grading_mode === "submission" ? "ניקוד הגשה" : "ניקוד לכל שאלה"}
+                  {task.questions.length} שאלות · {parts.length} חלקים
                 </p>
+              </button>
+              <div className="w-64">
+                <Label className="text-xs text-muted-foreground">אופן הניקוד</Label>
+                <Select
+                  value={task.grading_mode}
+                  onValueChange={async (value) => {
+                    try {
+                      await setTaskGradingMode(task.id, value as GradingMode);
+                      await onChanged();
+                      toast.success("אופן הניקוד עודכן");
+                    } catch {
+                      toast.error("העדכון לא נשמר");
+                    }
+                  }}
+                >
+                  <SelectTrigger className="mt-1 bg-background">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent dir="rtl">
+                    <SelectItem value="weighted">ניקוד לכל שאלה</SelectItem>
+                    <SelectItem value="submission">ניקוד הגשה</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
               <span
                 className={
@@ -105,9 +129,10 @@ export function TaskGradingSettings({
               >
                 {text}
               </span>
-            </button>
+            </div>
           );
         })}
+
       </div>
 
       <Dialog open={Boolean(openTask)} onOpenChange={(v) => !v && setOpenTaskId(null)}>

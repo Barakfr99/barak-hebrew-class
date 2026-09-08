@@ -18,11 +18,22 @@ export type BranchTaskState = {
   grade: number | null;
 };
 
+export type BranchTaskInfo = {
+  branchId: string;
+  taskId: string;
+  title: string;
+  /** אופן הניקוד, אם הענף מנהל כזה. */
+  gradingMode?: "weighted" | "submission" | null;
+};
+
 export type SpaceTaskBranch = {
   id: string;
   title: string;
   fetchForClass: (classSlug: string) => Promise<BranchTaskState[]>;
+  /** כל המשימות של הענף במרחב — גם אלו שאף אחד לא הגיש. */
+  listTasks: (classSlug: string) => Promise<BranchTaskInfo[]>;
 };
+
 
 /** ענף המשימות הכללי של המערך (tasks / task_completions / task_grades). */
 const coreBranch: SpaceTaskBranch = {
@@ -59,7 +70,22 @@ const coreBranch: SpaceTaskBranch = {
           ?.grade ?? null,
     }));
   },
+  listTasks: async (classSlug) => {
+    const { data, error } = await supabase
+      .from("tasks")
+      .select("id, title, grading_mode, sort_order")
+      .eq("class_slug", classSlug)
+      .order("sort_order");
+    if (error) throw error;
+    return (data ?? []).map((t) => ({
+      branchId: "core-tasks",
+      taskId: t.id,
+      title: t.title,
+      gradingMode: (t.grading_mode as "weighted" | "submission") ?? null,
+    }));
+  },
 };
+
 
 /** ענף המשימה "התחלות חדשות" (nb10_*). */
 const newBeginnings10Branch: SpaceTaskBranch = {
@@ -96,7 +122,21 @@ const newBeginnings10Branch: SpaceTaskBranch = {
         null,
     }));
   },
+  listTasks: async (classSlug) => {
+    const { data, error } = await supabase
+      .from("nb10_tasks")
+      .select("id")
+      .eq("class_slug", classSlug);
+    if (error) throw error;
+    return (data ?? []).map((t) => ({
+      branchId: "new-beginnings-10",
+      taskId: t.id,
+      title: NB10_TASK_TITLE,
+      gradingMode: null,
+    }));
+  },
 };
+
 
 /** ענף המשימה "ניסוח רעיון מרכזי — תרגול" (mi_*). */
 const mainIdeaBranch: SpaceTaskBranch = {
@@ -136,7 +176,21 @@ const mainIdeaBranch: SpaceTaskBranch = {
         null,
     }));
   },
+  listTasks: async (classSlug) => {
+    const { data, error } = await supabase
+      .from("mi_tasks")
+      .select("id")
+      .eq("class_slug", classSlug);
+    if (error) throw error;
+    return (data ?? []).map((t) => ({
+      branchId: "main-idea",
+      taskId: t.id,
+      title: MI_TASK_TITLE,
+      gradingMode: null,
+    }));
+  },
 };
+
 
 export const SPACE_TASK_BRANCHES: SpaceTaskBranch[] = [
   coreBranch,
@@ -200,4 +254,26 @@ export function useSpaceTaskRollup(classSlug: string | null | undefined) {
   const refresh = () => queryClient.invalidateQueries({ queryKey: [SPACE_ROLLUP_KEY] });
 
   return { rows, pendingByStudent, gradesByStudent, submittedByStudent, refresh };
+}
+
+export const SPACE_TASK_LIST_KEY = "space-task-list";
+
+/** רשימת כל המשימות של המרחב מכל הענפים — כולל משימות שאף אחד לא הגיש. */
+export function useSpaceTaskList(classSlug: string | null | undefined) {
+  const results = useQueries({
+    queries: SPACE_TASK_BRANCHES.map((branch) => ({
+      queryKey: [SPACE_TASK_LIST_KEY, branch.id, classSlug ?? null],
+      queryFn: () => branch.listTasks(classSlug!),
+      enabled: Boolean(classSlug),
+      refetchInterval: 30000,
+    })),
+  });
+
+  const tasks = useMemo(
+    () => results.flatMap((r) => r.data ?? []),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [results.map((r) => r.dataUpdatedAt).join("|")],
+  );
+
+  return { tasks, isLoading: results.some((r) => r.isLoading) };
 }

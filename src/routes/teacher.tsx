@@ -52,7 +52,9 @@ import { TaskGradingSettings } from "@/components/teacher/TaskGradingSettings";
 import { FeedbackDashboard } from "@/components/teacher/FeedbackDashboard";
 import { NB10Panel } from "@/components/teacher/NB10Panel";
 import { MainIdeaPanel } from "@/components/teacher/MainIdeaPanel";
+import { SubmissionsOverview } from "@/components/teacher/SubmissionsOverview";
 import { SPACE_ROLLUP_KEY, useSpaceTaskRollup } from "@/lib/space-tasks";
+
 
 import { cn } from "@/lib/utils";
 import { useServerFn } from "@tanstack/react-start";
@@ -549,9 +551,11 @@ function TeacherDashboard() {
 
         <TabsContent value="tasks" className="mt-6 space-y-8">
           <TaskGradingSettings tasks={classTasks} onChanged={refreshAll} />
+          <SubmissionsOverview classSlug={selectedClass?.slug} students={students} />
           <NB10Panel classSlug={selectedClass?.slug} students={students} />
           <MainIdeaPanel classSlug={selectedClass?.slug} students={students} />
         </TabsContent>
+
 
         <TabsContent value="feedback" className="mt-6">
           <FeedbackDashboard feedback={feedback} tasks={classTasks} studentIds={studentIds} />
