@@ -217,7 +217,7 @@ export function TaskRunnerWizard({
         setMinWarning({
           open: true,
           next,
-          message: `נדרשו ${page.group.required} ${noun} לפחות, ומולאו ${answered}. אפשר להמשיך בכל זאת, אבל כדאי להשלים את המינימום כדי לקבל משוב וציון מלא.`,
+          message: `בעמוד "${page.title}" נדרשו ${page.group.required} ${noun} לפחות, ומולאו ${answered}. אפשר להמשיך בכל זאת, אבל כדאי להשלים את המינימום כדי לקבל משוב וציון מלא.`,
         });
         return;
       }

@@ -36,8 +36,6 @@ export type RunnerQuestion =
       prefix?: string;
       term?: RunnerNote;
       tip?: RunnerNote;
-      /** מספר תווים מינימלי שנחשב תשובה מהותית (לספירת "נענה"). */
-      minChars?: number;
     }
   | {
       kind: "choice";
@@ -157,7 +155,7 @@ export function isQuestionAnswered(
     return question.lines.every((_, i) => isFilled(answers[`${question.id}.${i}`]));
   }
   if (question.kind === "judge") return isFilled(answers[`${question.id}.verdict`]);
-  if (question.kind === "open") return isFilled(answers[question.id], question.minChars ?? 1);
+  // כל תשובה שאינה ריקה נחשבת מענה — בלי סף אורך, כדי לא לפסול ניסוח קצר.
   return isFilled(answers[question.id]);
 }
 
