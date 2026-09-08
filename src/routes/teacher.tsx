@@ -52,7 +52,9 @@ import { TaskGradingSettings } from "@/components/teacher/TaskGradingSettings";
 import { FeedbackDashboard } from "@/components/teacher/FeedbackDashboard";
 import { NB10Panel } from "@/components/teacher/NB10Panel";
 import { MainIdeaPanel } from "@/components/teacher/MainIdeaPanel";
+import { SubmissionsOverview } from "@/components/teacher/SubmissionsOverview";
 import { SPACE_ROLLUP_KEY, useSpaceTaskRollup } from "@/lib/space-tasks";
+
 
 import { cn } from "@/lib/utils";
 import { useServerFn } from "@tanstack/react-start";
