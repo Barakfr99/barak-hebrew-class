@@ -191,21 +191,21 @@ export const MI_PARAGRAPHS: MIParagraphItem[] = [
 ];
 
 
-/** צ'ק-ליסט הניסוח של עמוד 2. */
-export type MIChecklistItem = { id: string; kind: "do" | "dont"; text: string };
+/** צ'ק-ליסט הניסוח — רק דברים שיש לעשות. */
+export type MIChecklistItem = { id: string; text: string };
 
 export const MI_CHECKLIST: MIChecklistItem[] = [
-  { id: "full", kind: "do", text: "כתבו משפט שלם, לא מילה אחת" },
-  { id: "own", kind: "do", text: "כתבו במילים שלכם — לא להעתיק מהטקסט" },
-  { id: "whole", kind: "do", text: "המשפט מתאים לכל הפסקה, לא רק לדוגמה אחת מתוכה" },
-  { id: "copied", kind: "dont", text: "לא להעתיק משפט מהטקסט" },
-  { id: "single-word", kind: "dont", text: "לא לכתוב מילה בודדת" },
-  { id: "generic-advice", kind: "dont", text: "לא לכתוב עצה כללית שלא קשורה ישירות לפסקה" },
+  { id: "full", text: "כתבו משפט שלם, לא מילה בודדת" },
+  { id: "own", text: "כתבו במילים שלכם — לא להעתיק מהטקסט" },
+  { id: "whole", text: "המשפט מתאים לכל הפסקה, לא רק לדוגמה אחת מתוכה" },
+  { id: "claim", text: "כתבו משפט קובע — רעיון מרכזי לא יכול להיות מנוסח כשאלה" },
+  { id: "fromText", text: "המשפט נובע מהפסקה עצמה, ולא עצה כללית מבחוץ" },
 ];
 
 export const MI_CHECKLIST_LABELS: Record<string, string> = Object.fromEntries(
   MI_CHECKLIST.map((item) => [item.id, item.text]),
 );
+
 
 /** הפסקה שעליה מבוססים ציטוטי הניסוח בעמוד 3. */
 export const MI_QUOTES_PARAGRAPH =
