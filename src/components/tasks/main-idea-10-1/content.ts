@@ -228,14 +228,14 @@ export const MI_QUOTES: MIQuote[] = [
     n: 1,
     text: "רבים אינם חוששים מ'התחלה' עצמה, אלא מהשינוי שמתלווה אליה.",
     ok: false,
-    violations: ["copied"],
+    violations: ["own"],
     explain: "זהו משפט שהועתק מהטקסט, ולא ניסוח במילים שלכם.",
   },
   {
     n: 2,
     text: "שינוי",
     ok: false,
-    violations: ["single-word"],
+    violations: ["full"],
     explain: "מילה בודדת — זה נושא בלבד, בלי מסר ובלי משפט שלם.",
   },
   {
@@ -249,7 +249,7 @@ export const MI_QUOTES: MIQuote[] = [
     n: 4,
     text: "שינוי הוא חלק טבעי מהחיים ולא צריך לפחד ממנו",
     ok: false,
-    violations: ["generic-advice"],
+    violations: ["fromText"],
     explain: "עצה כללית שלא נובעת ישירות מהפסקה.",
   },
   {
@@ -263,7 +263,7 @@ export const MI_QUOTES: MIQuote[] = [
     n: 6,
     text: "כח",
     ok: false,
-    violations: ["single-word"],
+    violations: ["full"],
     explain: "מילה בודדת — קצר מדי, אין בה מסר.",
   },
   {
