@@ -338,7 +338,7 @@ export function MIStudentReview({
     <div className="space-y-5">
       <div className="flex flex-wrap items-center gap-2 rounded-2xl bg-secondary/60 p-4 text-sm">
         <span>
-          עמוד 1: {effort.page1} מתוך 7 · עמוד 3: {effort.page3} מתוך 4
+          עמוד 2: {effort.page1} מתוך 7 · עמוד 4: {effort.page3} מתוך 4
         </span>
         {effort.hasExtra && (
           <Badge className="bg-primary text-primary-foreground">
@@ -350,7 +350,7 @@ export function MIStudentReview({
 
       {[1, 2, 3].map((page) => (
         <section key={page} className="space-y-3">
-          <h4 className="font-bold text-primary">עמוד {page}</h4>
+          <h4 className="font-bold text-primary">עמוד {page + 1}</h4>
           {labels
             .filter((item) => item.page === page)
             .map((item) => {

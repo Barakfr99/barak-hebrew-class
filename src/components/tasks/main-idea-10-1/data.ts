@@ -1,7 +1,6 @@
 /** גישה לנתוני המשימה "ניסוח רעיון מרכזי — תרגול" — טבלאות mi_* בלבד. */
 import { supabase } from "@/integrations/supabase/client";
 import {
-  MI_MIN_TEXT_CHARS,
   MI_PARAGRAPHS,
   MI_REQUIRED_PAGE1,
   MI_REQUIRED_PAGE3,
@@ -191,10 +190,10 @@ export function countPage1(answers: Record<string, string>): number {
   ).length;
 }
 
-/** בכתיבה חופשית נחשבת תשובה רק כשיש בה תוכן משמעותי. */
+/** בכתיבה חופשית נחשבת כל פסקה שנוסחה בה תשובה כלשהי. */
 export function countPage3(answers: Record<string, string>): number {
   return MI_WRITE_ITEMS.filter(
-    (item) => (answers[miWriteKey(item.id)] ?? "").trim().length >= MI_MIN_TEXT_CHARS,
+    (item) => filled(answers[miWriteKey(item.id)]),
   ).length;
 }
 
