@@ -32,8 +32,7 @@ export function InstructionsGate({
     <Dialog open={open}>
       <DialogContent
         dir="rtl"
-        showCloseButton={false}
-        className="max-w-lg text-right"
+        className="max-w-lg text-right [&>button]:hidden"
         onEscapeKeyDown={(e) => e.preventDefault()}
         onPointerDownOutside={(e) => e.preventDefault()}
         onInteractOutside={(e) => e.preventDefault()}
