@@ -176,7 +176,21 @@ const mainIdeaBranch: SpaceTaskBranch = {
         null,
     }));
   },
+  listTasks: async (classSlug) => {
+    const { data, error } = await supabase
+      .from("mi_tasks")
+      .select("id")
+      .eq("class_slug", classSlug);
+    if (error) throw error;
+    return (data ?? []).map((t) => ({
+      branchId: "main-idea",
+      taskId: t.id,
+      title: MI_TASK_TITLE,
+      gradingMode: null,
+    }));
+  },
 };
+
 
 export const SPACE_TASK_BRANCHES: SpaceTaskBranch[] = [
   coreBranch,
