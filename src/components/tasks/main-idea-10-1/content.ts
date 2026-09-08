@@ -273,7 +273,15 @@ export const MI_QUOTES: MIQuote[] = [
     violations: [],
     explain: "משפט שלם שמנוסח באופן עצמאי ומתאים לכלל הפסקה.",
   },
+  {
+    n: 8,
+    text: "האם כדאי לפחוד משינוי?",
+    ok: false,
+    violations: ["claim"],
+    explain: "זו שאלה ולא קביעה — רעיון מרכזי צריך להיות מנוסח כמשפט קובע.",
+  },
 ];
+
 
 /** פסקאות הניסוח העצמאי של עמוד 3 — בלי פיגום. */
 export type MIWriteItem = { id: string; label: string; text: string };
