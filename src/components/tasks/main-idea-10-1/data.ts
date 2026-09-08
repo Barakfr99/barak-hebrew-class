@@ -140,6 +140,46 @@ export async function fetchMIFeedback(taskId: string, studentId: string) {
   return (data ?? null) as MIFeedbackValues | null;
 }
 
+/**
+ * שמירת הערה/ניקוד של המורה.
+ * המדדים הייחודיים בטבלה הם חלקיים (item_key IS NULL / IS NOT NULL),
+ * ולכן לא ניתן להשתמש ב-upsert — מאתרים שורה קיימת ומעדכנים או מוסיפים.
+ */
+export async function saveMINote(input: {
+  taskId: string;
+  studentId: string;
+  itemKey: string | null;
+  note: string;
+  score: number | null;
+}) {
+  const base = supabase
+    .from("mi_notes")
+    .select("id")
+    .eq("task_id", input.taskId)
+    .eq("student_id", input.studentId);
+  const query = input.itemKey ? base.eq("item_key", input.itemKey) : base.is("item_key", null);
+  const { data: existing, error: findError } = await query.limit(1).maybeSingle();
+  if (findError) throw findError;
+
+  if (existing?.id) {
+    const { error } = await supabase
+      .from("mi_notes")
+      .update({ note: input.note, score: input.score, updated_at: new Date().toISOString() })
+      .eq("id", existing.id);
+    if (error) throw error;
+    return;
+  }
+
+  const { error } = await supabase.from("mi_notes").insert({
+    task_id: input.taskId,
+    student_id: input.studentId,
+    item_key: input.itemKey,
+    note: input.note,
+    score: input.score,
+  });
+  if (error) throw error;
+}
+
 /* ---------- ספירת תשובות מהותיות ומאמץ נוסף ---------- */
 
 const filled = (value: string | undefined) => (value ?? "").trim().length > 0;
