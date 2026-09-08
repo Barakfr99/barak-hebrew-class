@@ -14,8 +14,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Check, Eye } from "lucide-react";
-import { NB10StudentCard } from "./NB10StudentCard";
-import { MIStudentCard } from "./MIStudentCard";
+import { RunnerStudentCards } from "./RunnerStudentCard";
 import { groupQuestions, taskParts, type Student, type Task } from "@/lib/practice";
 import { weightedGrade } from "@/lib/task-parts";
 import {
@@ -85,8 +84,7 @@ export function StudentDetails({
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        <NB10StudentCard classSlug={classSlug ?? student.class_slug} student={student} />
-        <MIStudentCard classSlug={classSlug ?? student.class_slug} student={student} />
+        <RunnerStudentCards classSlug={classSlug ?? student.class_slug} student={student} />
         {tasks.length > 0 &&
           tasks.map((task) => {
             const done = completedTaskIds.has(task.id);
@@ -481,10 +479,7 @@ function QuestionScoreAndNote({
         <Label className="text-xs text-muted-foreground">
           ניקוד (0–100){typeof weight === "number" ? ` · משקל ${weight}%` : ""}
         </Label>
-        <GradeInput
-          value={note?.score ?? null}
-          onCommit={(value) => onCommit({ score: value })}
-        />
+        <GradeInput value={note?.score ?? null} onCommit={(value) => onCommit({ score: value })} />
       </div>
       <div>
         <Label className="text-xs text-muted-foreground">הערה לשאלה</Label>

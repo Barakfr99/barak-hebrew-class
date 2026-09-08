@@ -7,11 +7,11 @@ import { supabase } from "@/integrations/supabase/client";
  *
  * מקור האמת לכל משימה — בכל מרחב, מכל סוג — הוא שורה אחת בטבלת `tasks`:
  * כותרת, מרחב, מנוע (מי מרנדר אותה), מצב, מועדים, אופן ניקוד ותאריך פרסום.
- * הענפים הישנים (nb10_*, mi_*) עדיין מחזיקים את הנתונים שלהם בטבלאות משלהם,
- * ולכן בזמן המעבר כל שינוי מצב/מועד נכתב גם לרשם וגם לטבלת הענף.
+ * משימות עם engine="runner" מוגדרות כ-JSON בעמודת definition ושומרות את
+ * הנתונים בטבלאות המשותפות (runner_answers/submissions/notes) — בלי טבלה למשימה.
  */
 
-export type TaskEngine = "legacy-core" | "legacy-nb10" | "legacy-mi" | "runner";
+export type TaskEngine = "legacy-core" | "runner";
 export type RegistryGradingMode = "weighted" | "submission" | "manual";
 
 export type RegistryTask = {
@@ -33,9 +33,7 @@ export type RegistryTask = {
 
 export const ENGINE_LABELS: Record<TaskEngine, string> = {
   "legacy-core": "משימת שאלות",
-  "legacy-nb10": "אשף עמודים",
-  "legacy-mi": "אשף עמודים",
-  runner: "חבילת משימה",
+  runner: "אשף עמודים (חבילת JSON)",
 };
 
 export const GRADING_MODE_LABELS: Record<RegistryGradingMode, string> = {
@@ -115,26 +113,6 @@ export function registryStatus(task: RegistryTask): { text: string; open: boolea
   return { text, open };
 }
 
-/** טבלת הענף שצריך לעדכן במקביל לרשם, כל עוד הענף קורא ממנה. */
-function legacyTableFor(engine: TaskEngine): "nb10_tasks" | "mi_tasks" | null {
-  if (engine === "legacy-nb10") return "nb10_tasks";
-  if (engine === "legacy-mi") return "mi_tasks";
-  return null;
-}
-
-async function mirrorToLegacy(
-  task: Pick<RegistryTask, "id" | "engine">,
-  patch: { is_active?: boolean; opens_at?: string | null; closes_at?: string | null },
-) {
-  const table = legacyTableFor(task.engine);
-  if (!table) return;
-  const { error } = await supabase
-    .from(table)
-    .update({ ...patch, updated_at: new Date().toISOString() })
-    .eq("id", task.id);
-  if (error) throw error;
-}
-
 export async function setRegistryActive(
   task: Pick<RegistryTask, "id" | "engine">,
   isActive: boolean,
@@ -144,7 +122,6 @@ export async function setRegistryActive(
     .update({ is_active: isActive, updated_at: new Date().toISOString() })
     .eq("id", task.id);
   if (error) throw error;
-  await mirrorToLegacy(task, { is_active: isActive });
 }
 
 export async function setRegistrySchedule(
@@ -159,7 +136,6 @@ export async function setRegistrySchedule(
     .update({ ...patch, updated_at: new Date().toISOString() })
     .eq("id", task.id);
   if (error) throw error;
-  await mirrorToLegacy(task, patch);
 }
 
 export async function setRegistryGradingMode(taskId: string, mode: RegistryGradingMode) {
@@ -249,86 +225,6 @@ const coreBranch: SpaceTaskBranch = {
   },
 };
 
-/** ענף "התחלות חדשות" (nb10_*). מזהה המשימה זהה למזהה ברשם. */
-const newBeginnings10Branch: SpaceTaskBranch = {
-  id: "new-beginnings-10",
-  engine: "legacy-nb10",
-  fetchForClass: async (classSlug) => {
-    const { data: tasks, error } = await supabase
-      .from("nb10_tasks")
-      .select("id")
-      .eq("class_slug", classSlug);
-    if (error) throw error;
-    const taskIds = (tasks ?? []).map((t) => t.id);
-    if (taskIds.length === 0) return [];
-
-    const [{ data: subs, error: sErr }, { data: notes, error: nErr }] = await Promise.all([
-      supabase
-        .from("nb10_submissions")
-        .select("student_id, task_id, submitted_at")
-        .in("task_id", taskIds),
-      supabase
-        .from("nb10_notes")
-        .select("student_id, task_id, score")
-        .in("task_id", taskIds)
-        .is("question_id", null),
-    ]);
-    if (sErr) throw sErr;
-    if (nErr) throw nErr;
-
-    return (subs ?? []).map((s) => ({
-      branchId: "new-beginnings-10",
-      taskId: s.task_id,
-      title: "התחלות חדשות",
-      studentId: s.student_id,
-      submittedAt: s.submitted_at,
-      grade:
-        (notes ?? []).find((n) => n.student_id === s.student_id && n.task_id === s.task_id)
-          ?.score ?? null,
-    }));
-  },
-};
-
-/** ענף "ניסוח רעיון מרכזי — תרגול" (mi_*). מזהה המשימה זהה למזהה ברשם. */
-const mainIdeaBranch: SpaceTaskBranch = {
-  id: "main-idea",
-  engine: "legacy-mi",
-  fetchForClass: async (classSlug) => {
-    const { data: tasks, error } = await supabase
-      .from("mi_tasks")
-      .select("id")
-      .eq("class_slug", classSlug);
-    if (error) throw error;
-    const taskIds = (tasks ?? []).map((t) => t.id);
-    if (taskIds.length === 0) return [];
-
-    const [{ data: subs, error: sErr }, { data: notes, error: nErr }] = await Promise.all([
-      supabase
-        .from("mi_submissions")
-        .select("student_id, task_id, submitted_at")
-        .in("task_id", taskIds),
-      supabase
-        .from("mi_notes")
-        .select("student_id, task_id, score")
-        .in("task_id", taskIds)
-        .is("item_key", null),
-    ]);
-    if (sErr) throw sErr;
-    if (nErr) throw nErr;
-
-    return (subs ?? []).map((s) => ({
-      branchId: "main-idea",
-      taskId: s.task_id,
-      title: "ניסוח רעיון מרכזי — תרגול",
-      studentId: s.student_id,
-      submittedAt: s.submitted_at,
-      grade:
-        (notes ?? []).find((n) => n.student_id === s.student_id && n.task_id === s.task_id)
-          ?.score ?? null,
-    }));
-  },
-};
-
 /** ענף מנוע ה-runner: כל המשימות שמוגדרות כ-JSON חיות ישירות ב-tasks, בלי טבלת ענף. */
 const runnerBranch: SpaceTaskBranch = {
   id: "runner",
@@ -371,12 +267,7 @@ const runnerBranch: SpaceTaskBranch = {
   },
 };
 
-export const SPACE_TASK_BRANCHES: SpaceTaskBranch[] = [
-  coreBranch,
-  newBeginnings10Branch,
-  mainIdeaBranch,
-  runnerBranch,
-];
+export const SPACE_TASK_BRANCHES: SpaceTaskBranch[] = [coreBranch, runnerBranch];
 
 export const SPACE_ROLLUP_KEY = "space-task-rollup";
 
@@ -478,13 +369,9 @@ export async function resetRegistryTaskForStudents(
   }
   if (studentIds.length === 0) return;
   const tables =
-    task.engine === "legacy-nb10"
-      ? (["nb10_answers", "nb10_submissions", "nb10_notes", "nb10_feedback"] as const)
-      : task.engine === "legacy-mi"
-        ? (["mi_answers", "mi_submissions", "mi_notes", "mi_feedback"] as const)
-        : task.engine === "runner"
-          ? (["runner_answers", "runner_submissions", "runner_notes"] as const)
-          : ([] as const);
+    task.engine === "runner"
+      ? (["runner_answers", "runner_submissions", "runner_notes"] as const)
+      : ([] as const);
   for (const table of tables) {
     const { error } = await supabase
       .from(table)

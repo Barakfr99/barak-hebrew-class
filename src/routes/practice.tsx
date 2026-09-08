@@ -26,8 +26,6 @@ import { ProgressSteps } from "@/components/practice/ProgressSteps";
 import { TaskView } from "@/components/practice/TaskView";
 import { PartsOfSpeechTask } from "@/components/practice/PartsOfSpeechTask";
 import { FeedbackForm } from "@/components/practice/FeedbackForm";
-import { NB10TaskCard } from "@/components/tasks/new-beginnings-10/TaskCard";
-import { MITaskCard } from "@/components/tasks/main-idea-10-1/TaskCard";
 import { RunnerTaskCard } from "@/components/task-runner/TaskCard";
 import { useSpaceTaskList } from "@/lib/space-tasks";
 
@@ -192,18 +190,10 @@ function PracticePage() {
         }
         return;
       }
-      if (entry.engine === "runner") {
-        // כל משימת runner היא ישות עצמאית (יכולות להיות כמה באותו מרחב) —
-        // דה-דופ לפי מזהה המשימה, לא לפי המנוע.
-        if (!seen.has(entry.id)) {
-          items.push({ key: entry.id, engine: entry.engine, taskId: entry.id });
-          seen.add(entry.id);
-        }
-        return;
-      }
-      if (!seen.has(entry.engine)) {
-        items.push({ key: entry.id, engine: entry.engine });
-        seen.add(entry.engine);
+      // כל משימת runner היא ישות עצמאית (יכולות להיות כמה באותו מרחב).
+      if (!seen.has(entry.id)) {
+        items.push({ key: entry.id, engine: entry.engine, taskId: entry.id });
+        seen.add(entry.id);
       }
     });
     // משימות ליבה שעדיין לא ברשם (לא אמור לקרות) — בסוף הרשימה.
@@ -212,15 +202,13 @@ function PracticePage() {
     });
     // עד שהרשם נטען — הסדר הישן, כדי שהמסך לא יהיה ריק.
     if (registry.tasks.length === 0 && registry.isLoading) {
-      const fallback: OrderedTaskItem[] = [
-        { key: "nb10", engine: "legacy-nb10" },
-        { key: "mi", engine: "legacy-mi" },
-        ...listTasks.map((task) => ({ key: task.id, engine: "legacy-core", task })),
-      ];
+      const fallback: OrderedTaskItem[] = listTasks.map((task) => ({
+        key: task.id,
+        engine: "legacy-core",
+        task,
+      }));
       return fallback;
     }
-    if (!seen.has("legacy-nb10")) items.push({ key: "nb10", engine: "legacy-nb10" });
-    if (!seen.has("legacy-mi")) items.push({ key: "mi", engine: "legacy-mi" });
     return items;
   }, [registry.tasks, registry.isLoading, listTasks]);
   const openTask = listTasks.find((t) => t.id === openTaskId) ?? null;
@@ -441,16 +429,6 @@ function PracticePage() {
 
       <div className="space-y-3">
         {orderedItems.map((item) => {
-          if (item.engine === "legacy-nb10") {
-            return (
-              <NB10TaskCard key={item.key} classSlug={student?.class_slug} studentId={studentId} />
-            );
-          }
-          if (item.engine === "legacy-mi") {
-            return (
-              <MITaskCard key={item.key} classSlug={student?.class_slug} studentId={studentId} />
-            );
-          }
           if (item.engine === "runner") {
             return <RunnerTaskCard key={item.key} taskId={item.taskId!} studentId={studentId} />;
           }

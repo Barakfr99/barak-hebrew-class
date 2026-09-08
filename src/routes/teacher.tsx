@@ -240,20 +240,16 @@ function TeacherDashboard() {
         queryClient.invalidateQueries({ queryKey: ["teacher-task-grades"] });
         queryClient.invalidateQueries({ queryKey: [SPACE_ROLLUP_KEY] });
       })
-      .on("postgres_changes", { event: "*", schema: "public", table: "nb10_submissions" }, () => {
+      .on("postgres_changes", { event: "*", schema: "public", table: "runner_submissions" }, () => {
         queryClient.invalidateQueries({ queryKey: [SPACE_ROLLUP_KEY] });
-        queryClient.invalidateQueries({ queryKey: ["nb10-submissions"] });
-        queryClient.invalidateQueries({ queryKey: ["nb10-student-submission"] });
+        queryClient.invalidateQueries({ queryKey: ["runner-submission"] });
       })
-      .on("postgres_changes", { event: "*", schema: "public", table: "nb10_notes" }, () => {
+      .on("postgres_changes", { event: "*", schema: "public", table: "runner_notes" }, () => {
         queryClient.invalidateQueries({ queryKey: [SPACE_ROLLUP_KEY] });
-        queryClient.invalidateQueries({ queryKey: ["nb10-student-note"] });
+        queryClient.invalidateQueries({ queryKey: ["runner-notes"] });
       })
-      .on("postgres_changes", { event: "*", schema: "public", table: "mi_submissions" }, () => {
-        queryClient.invalidateQueries({ queryKey: [SPACE_ROLLUP_KEY] });
-      })
-      .on("postgres_changes", { event: "*", schema: "public", table: "mi_notes" }, () => {
-        queryClient.invalidateQueries({ queryKey: [SPACE_ROLLUP_KEY] });
+      .on("postgres_changes", { event: "*", schema: "public", table: "runner_answers" }, () => {
+        queryClient.invalidateQueries({ queryKey: ["runner-answers"] });
       })
       .on("postgres_changes", { event: "*", schema: "public", table: "tasks" }, () => {
         queryClient.invalidateQueries({ queryKey: [SPACE_TASK_LIST_KEY] });

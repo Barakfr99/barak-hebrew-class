@@ -1,13 +1,12 @@
 /**
- * הוכחת היתכנות למנוע ה-runner: אותו תוכן בדיוק כמו המשימה "התחלות חדשות"
- * (src/components/tasks/new-beginnings-10/content.ts), אבל כקובץ JSON תואם-סכימה
- * במקום קוד ייעודי. לא מוצג לתלמידים אמיתיים — רשום כמשימה לא-פעילה לבדיקה בלבד.
+ * הגדרת המשימה "התחלות חדשות" (כיתות י') כחבילת JSON למנוע ה-runner.
+ * זהו התוכן המלא של המשימה — אין לה יותר קוד ייעודי משלה.
  */
-import type { TaskDefinition } from "./types";
+import type { TaskDefinition } from "../types";
 
 const GUIDED_LINES = ["הפסקה עוסקת בעיקר ב:", "והרעיון שהיא רוצה להעביר הוא ש-"];
 
-export const NB10_RUNNER_DEMO_DEFINITION: TaskDefinition = {
+export const NEW_BEGINNINGS_10: TaskDefinition = {
   version: 1,
   articleTitle: "התחלות חדשות",
   paragraphs: [
@@ -161,6 +160,42 @@ export const NB10_RUNNER_DEMO_DEFINITION: TaskDefinition = {
         { kind: "open", id: "sum_success", prompt: "במה חשוב לכם להצליח?", rows: 4 },
         { kind: "open", id: "sum_how", prompt: "כיצד תוכלו לממש את רצונותיכם?", rows: 4 },
       ],
+    },
+  ],
+  feedbackIntro: "עוד שש שאלות קצרות, ואז מגישים את המשימה.",
+  feedbackQuestions: [
+    {
+      kind: "scale",
+      id: "feedback.clarity_scale",
+      prompt: "עד כמה המושגים בפעילות היו ברורים לך?",
+    },
+    {
+      kind: "scale",
+      id: "feedback.learning_scale",
+      prompt: "עד כמה הרגשת שהצלחת ללמוד מהפעילות?",
+    },
+    {
+      kind: "choice",
+      id: "feedback.compare_lesson",
+      prompt: "בהשוואה לשיעור רגיל בכיתה, איך היה לך?",
+      options: ["הבנתי יותר טוב מבשיעור רגיל", "בערך אותו דבר", "הבנתי פחות טוב מבשיעור רגיל"],
+    },
+    {
+      kind: "choice",
+      id: "feedback.help_page_usage",
+      prompt: "האם השתמשת בדף העזרה במהלך הפעילות?",
+      options: ["השתמשתי בו הרבה", "השתמשתי בו קצת", "לא השתמשתי בו בכלל"],
+    },
+    {
+      kind: "scale",
+      id: "feedback.assistant_scale",
+      prompt: "עד כמה העוזר (הצ'אט המלווה) סייע לך להתקדם בפתרון המשימה?",
+    },
+    {
+      kind: "open",
+      id: "feedback.still_unclear",
+      prompt: "דבר אחד שעדיין לא ברור לי הוא...",
+      rows: 3,
     },
   ],
   assistant: {

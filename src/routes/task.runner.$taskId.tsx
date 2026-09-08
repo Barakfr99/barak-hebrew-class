@@ -6,6 +6,7 @@ import { ClearDeviceButton } from "@/components/practice/ClearDeviceButton";
 import { PageNav } from "@/components/layout/PageNav";
 import { rememberClassSlug } from "@/lib/session";
 import { fetchStudent, readDeviceStudentId } from "@/lib/practice";
+import { supabase } from "@/integrations/supabase/client";
 import { fetchRunnerTask, isRunnerTaskOpen } from "@/lib/task-runner/data";
 import { TaskRunnerWizard } from "@/components/task-runner/Wizard";
 
@@ -48,6 +49,23 @@ function RunnerTaskPage() {
     enabled: Boolean(taskId),
   });
 
+  /** הקראה: מותרת רק כשההרשאה הכללית של התלמיד/ה פתוחה וגם הופעלה למשימה הזו. */
+  const speechQuery = useQuery({
+    queryKey: ["runner-speech", taskId, studentId],
+    enabled: Boolean(studentId && taskId),
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("student_task_speech")
+        .select("allowed")
+        .eq("task_id", taskId)
+        .eq("student_id", studentId!)
+        .maybeSingle();
+      if (error) throw error;
+      return data?.allowed ?? false;
+    },
+  });
+  const speechEnabled = Boolean(studentQuery.data?.speech_enabled) && (speechQuery.data ?? false);
+
   const loading = !studentId || studentQuery.isLoading || taskQuery.isLoading;
 
   return (
@@ -83,6 +101,7 @@ function RunnerTaskPage() {
           <TaskRunnerWizard
             task={taskQuery.data}
             studentId={studentId!}
+            speechEnabled={speechEnabled}
             onExit={() => navigate({ to: "/practice" })}
           />
         )}

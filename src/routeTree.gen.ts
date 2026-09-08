@@ -12,12 +12,9 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as PracticeRouteImport } from './routes/practice'
 import { Route as TeacherRouteImport } from './routes/teacher'
-import { Route as ApiNb10AssistantRouteImport } from './routes/api/nb10-assistant'
 import { Route as ApiRunnerAssistantRouteImport } from './routes/api/runner-assistant'
 import { Route as ApiTtsRouteImport } from './routes/api/tts'
 import { Route as ClassSlugRouteImport } from './routes/class.$slug'
-import { Route as TaskMainIdeaRouteImport } from './routes/task.main-idea'
-import { Route as TaskNewBeginnings10RouteImport } from './routes/task.new-beginnings-10'
 import { Route as TaskRunnerTaskIdRouteImport } from './routes/task.runner.$taskId'
 
 const IndexRoute = IndexRouteImport.update({
@@ -35,11 +32,6 @@ const TeacherRoute = TeacherRouteImport.update({
   path: '/teacher',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiNb10AssistantRoute = ApiNb10AssistantRouteImport.update({
-  id: '/api/nb10-assistant',
-  path: '/api/nb10-assistant',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const ApiRunnerAssistantRoute = ApiRunnerAssistantRouteImport.update({
   id: '/api/runner-assistant',
   path: '/api/runner-assistant',
@@ -55,16 +47,6 @@ const ClassSlugRoute = ClassSlugRouteImport.update({
   path: '/class/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
-const TaskMainIdeaRoute = TaskMainIdeaRouteImport.update({
-  id: '/task/main-idea',
-  path: '/task/main-idea',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const TaskNewBeginnings10Route = TaskNewBeginnings10RouteImport.update({
-  id: '/task/new-beginnings-10',
-  path: '/task/new-beginnings-10',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const TaskRunnerTaskIdRoute = TaskRunnerTaskIdRouteImport.update({
   id: '/task/runner/$taskId',
   path: '/task/runner/$taskId',
@@ -75,24 +57,18 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/practice': typeof PracticeRoute
   '/teacher': typeof TeacherRoute
-  '/api/nb10-assistant': typeof ApiNb10AssistantRoute
   '/api/runner-assistant': typeof ApiRunnerAssistantRoute
   '/api/tts': typeof ApiTtsRoute
   '/class/$slug': typeof ClassSlugRoute
-  '/task/main-idea': typeof TaskMainIdeaRoute
-  '/task/new-beginnings-10': typeof TaskNewBeginnings10Route
   '/task/runner/$taskId': typeof TaskRunnerTaskIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/practice': typeof PracticeRoute
   '/teacher': typeof TeacherRoute
-  '/api/nb10-assistant': typeof ApiNb10AssistantRoute
   '/api/runner-assistant': typeof ApiRunnerAssistantRoute
   '/api/tts': typeof ApiTtsRoute
   '/class/$slug': typeof ClassSlugRoute
-  '/task/main-idea': typeof TaskMainIdeaRoute
-  '/task/new-beginnings-10': typeof TaskNewBeginnings10Route
   '/task/runner/$taskId': typeof TaskRunnerTaskIdRoute
 }
 export interface FileRoutesById {
@@ -100,12 +76,9 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/practice': typeof PracticeRoute
   '/teacher': typeof TeacherRoute
-  '/api/nb10-assistant': typeof ApiNb10AssistantRoute
   '/api/runner-assistant': typeof ApiRunnerAssistantRoute
   '/api/tts': typeof ApiTtsRoute
   '/class/$slug': typeof ClassSlugRoute
-  '/task/main-idea': typeof TaskMainIdeaRoute
-  '/task/new-beginnings-10': typeof TaskNewBeginnings10Route
   '/task/runner/$taskId': typeof TaskRunnerTaskIdRoute
 }
 export interface FileRouteTypes {
@@ -114,36 +87,27 @@ export interface FileRouteTypes {
     | '/'
     | '/practice'
     | '/teacher'
-    | '/api/nb10-assistant'
     | '/api/runner-assistant'
     | '/api/tts'
     | '/class/$slug'
-    | '/task/main-idea'
-    | '/task/new-beginnings-10'
     | '/task/runner/$taskId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/practice'
     | '/teacher'
-    | '/api/nb10-assistant'
     | '/api/runner-assistant'
     | '/api/tts'
     | '/class/$slug'
-    | '/task/main-idea'
-    | '/task/new-beginnings-10'
     | '/task/runner/$taskId'
   id:
     | '__root__'
     | '/'
     | '/practice'
     | '/teacher'
-    | '/api/nb10-assistant'
     | '/api/runner-assistant'
     | '/api/tts'
     | '/class/$slug'
-    | '/task/main-idea'
-    | '/task/new-beginnings-10'
     | '/task/runner/$taskId'
   fileRoutesById: FileRoutesById
 }
@@ -151,12 +115,9 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   PracticeRoute: typeof PracticeRoute
   TeacherRoute: typeof TeacherRoute
-  ApiNb10AssistantRoute: typeof ApiNb10AssistantRoute
   ApiRunnerAssistantRoute: typeof ApiRunnerAssistantRoute
   ApiTtsRoute: typeof ApiTtsRoute
   ClassSlugRoute: typeof ClassSlugRoute
-  TaskMainIdeaRoute: typeof TaskMainIdeaRoute
-  TaskNewBeginnings10Route: typeof TaskNewBeginnings10Route
   TaskRunnerTaskIdRoute: typeof TaskRunnerTaskIdRoute
 }
 
@@ -183,13 +144,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TeacherRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/nb10-assistant': {
-      id: '/api/nb10-assistant'
-      path: '/api/nb10-assistant'
-      fullPath: '/api/nb10-assistant'
-      preLoaderRoute: typeof ApiNb10AssistantRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/api/runner-assistant': {
       id: '/api/runner-assistant'
       path: '/api/runner-assistant'
@@ -211,20 +165,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ClassSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/task/main-idea': {
-      id: '/task/main-idea'
-      path: '/task/main-idea'
-      fullPath: '/task/main-idea'
-      preLoaderRoute: typeof TaskMainIdeaRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/task/new-beginnings-10': {
-      id: '/task/new-beginnings-10'
-      path: '/task/new-beginnings-10'
-      fullPath: '/task/new-beginnings-10'
-      preLoaderRoute: typeof TaskNewBeginnings10RouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/task/runner/$taskId': {
       id: '/task/runner/$taskId'
       path: '/task/runner/$taskId'
@@ -239,12 +179,9 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   PracticeRoute: PracticeRoute,
   TeacherRoute: TeacherRoute,
-  ApiNb10AssistantRoute: ApiNb10AssistantRoute,
   ApiRunnerAssistantRoute: ApiRunnerAssistantRoute,
   ApiTtsRoute: ApiTtsRoute,
   ClassSlugRoute: ClassSlugRoute,
-  TaskMainIdeaRoute: TaskMainIdeaRoute,
-  TaskNewBeginnings10Route: TaskNewBeginnings10Route,
   TaskRunnerTaskIdRoute: TaskRunnerTaskIdRoute,
 }
 export const routeTree = rootRouteImport
