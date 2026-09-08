@@ -152,6 +152,9 @@ function PracticePage() {
 
   const student = studentQuery.data;
   const tasks = tasksForClass(tasksQuery.data ?? [], student?.class_slug ?? null);
+  useEffect(() => {
+    rememberClassSlug(student?.class_slug);
+  }, [student?.class_slug]);
   const choiceTasks = tasks.filter((t) => t.kind === "choice");
   const requiredTask = tasks.find((t) => t.kind === "required");
   const completedIds = new Set((completionsQuery.data ?? []).map((c) => c.task_id));

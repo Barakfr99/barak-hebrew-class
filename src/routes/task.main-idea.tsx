@@ -52,6 +52,9 @@ function MainIdeaPage() {
     enabled: Boolean(studentId),
   });
   const classSlug = studentQuery.data?.class_slug ?? null;
+  useEffect(() => {
+    rememberClassSlug(classSlug);
+  }, [classSlug]);
   const taskQuery = useQuery({
     queryKey: ["mi-task", classSlug],
     queryFn: () => fetchMITask(classSlug!),

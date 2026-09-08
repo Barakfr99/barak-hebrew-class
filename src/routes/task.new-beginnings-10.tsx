@@ -51,6 +51,9 @@ function NB10Page() {
     enabled: Boolean(studentId),
   });
   const classSlug = studentQuery.data?.class_slug ?? null;
+  useEffect(() => {
+    rememberClassSlug(classSlug);
+  }, [classSlug]);
   const taskQuery = useQuery({
     queryKey: ["nb10-task", classSlug],
     queryFn: () => fetchNB10Task(classSlug!),
