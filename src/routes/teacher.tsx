@@ -549,9 +549,11 @@ function TeacherDashboard() {
 
         <TabsContent value="tasks" className="mt-6 space-y-8">
           <TaskGradingSettings tasks={classTasks} onChanged={refreshAll} />
+          <SubmissionsOverview classSlug={selectedClass?.slug} students={students} />
           <NB10Panel classSlug={selectedClass?.slug} students={students} />
           <MainIdeaPanel classSlug={selectedClass?.slug} students={students} />
         </TabsContent>
+
 
         <TabsContent value="feedback" className="mt-6">
           <FeedbackDashboard feedback={feedback} tasks={classTasks} studentIds={studentIds} />
