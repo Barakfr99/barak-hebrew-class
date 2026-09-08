@@ -26,7 +26,7 @@ import {
   miViolationsKey,
   miWriteKey,
 } from "@/components/tasks/main-idea-10-1/content";
-import { computeMIEffort, fetchMITask } from "@/components/tasks/main-idea-10-1/data";
+import { computeMIEffort, fetchMITask, saveMINote } from "@/components/tasks/main-idea-10-1/data";
 
 export type MIStudentRow = { id: string; first_name: string; last_name: string };
 
