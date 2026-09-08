@@ -21,13 +21,6 @@ export type Student = {
   must_reset_password: boolean;
   mode: "regular" | "adaptive";
   speech_enabled: boolean;
-  stage: string;
-  choice_slot_1_task_id: string | null;
-  choice_slot_2_task_id: string | null;
-  grade_required: number | null;
-  grade_choice_1: number | null;
-  grade_choice_2: number | null;
-  finished_at: string | null;
   created_at: string;
 };
 
@@ -116,7 +109,6 @@ export async function ensureTeacherTestStudent(cls: {
       class_slug: cls.slug,
       mode: "regular",
       speech_enabled: false,
-      stage: "choice",
     })
     .select("id")
     .single();
@@ -133,19 +125,4 @@ export async function resetTeacherTestStudent(studentId: string) {
   ]);
   const failed = results.find((r) => r.error);
   if (failed?.error) throw failed.error;
-
-  const { error } = await supabase
-    .from("students")
-    .update({
-      stage: "choice",
-      choice_slot_1_task_id: null,
-      choice_slot_2_task_id: null,
-      grade_required: null,
-      grade_choice_1: null,
-      grade_choice_2: null,
-      finished_at: null,
-      updated_at: new Date().toISOString(),
-    })
-    .eq("id", studentId);
-  if (error) throw error;
 }

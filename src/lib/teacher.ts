@@ -45,7 +45,6 @@ export async function createStudentManually(input: {
     class_slug: input.cls.slug,
     mode: "regular",
     speech_enabled: false,
-    stage: "choice",
     must_reset_password: true,
   });
   if (error) throw error;
