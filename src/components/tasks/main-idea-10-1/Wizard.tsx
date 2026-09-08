@@ -533,7 +533,23 @@ export function MainIdeaWizard({
         <div className="mt-6 space-y-5">
           <h2 className="text-2xl font-bold">איך בודקים אם ניסוח טוב?</h2>
 
+          <div className="rounded-3xl border border-primary/30 bg-accent/40 p-5">
+            <div className="flex items-start gap-2">
+              <p className="font-semibold text-primary">הפסקה שעליה מבוססים הניסוחים</p>
+              {speechEnabled && (
+                <SpeakButton
+                  onClick={() => speak("mi:quotes-paragraph", MI_QUOTES_PARAGRAPH)}
+                  active={speech.speakingId === "mi:quotes-paragraph"}
+                  loading={speech.loadingId === "mi:quotes-paragraph"}
+                  label="הקראת הפסקה"
+                />
+              )}
+            </div>
+            <p className="reading-text mt-2">{MI_QUOTES_PARAGRAPH}</p>
+          </div>
+
           <div className="rounded-3xl border border-border bg-card p-5">
+
             <p className="font-semibold text-primary">צ'ק-ליסט</p>
             <ul className="mt-3 space-y-2">
               {MI_CHECKLIST.map((item) => (
