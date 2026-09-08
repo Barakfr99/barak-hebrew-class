@@ -11,7 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
  * הנתונים בטבלאות המשותפות (runner_answers/submissions/notes) — בלי טבלה למשימה.
  */
 
-export type TaskEngine = "legacy-core" | "runner";
+export type TaskEngine = "runner";
 export type RegistryGradingMode = "weighted" | "submission" | "manual";
 
 export type RegistryTask = {
@@ -32,7 +32,6 @@ export type RegistryTask = {
 };
 
 export const ENGINE_LABELS: Record<TaskEngine, string> = {
-  "legacy-core": "משימת שאלות",
   runner: "אשף עמודים (חבילת JSON)",
 };
 
@@ -69,7 +68,7 @@ function toRegistryTask(row: RegistryRow): RegistryTask {
     spaceId: row.space_id,
     title: row.title,
     description: row.description ?? "",
-    engine: (row.engine as TaskEngine) ?? "legacy-core",
+    engine: (row.engine as TaskEngine) ?? "runner",
     kind: row.kind,
     isActive: row.is_active,
     opensAt: row.opens_at,
@@ -187,44 +186,6 @@ export type SpaceTaskBranch = {
   fetchForClass: (classSlug: string) => Promise<BranchTaskState[]>;
 };
 
-/** ענף הליבה (tasks עם questions / task_completions / task_grades). */
-const coreBranch: SpaceTaskBranch = {
-  id: "core-tasks",
-  engine: "legacy-core",
-  fetchForClass: async (classSlug) => {
-    const { data: tasks, error: tasksError } = await supabase
-      .from("tasks")
-      .select("id, title")
-      .eq("class_slug", classSlug)
-      .eq("engine", "legacy-core");
-    if (tasksError) throw tasksError;
-    const taskIds = (tasks ?? []).map((t) => t.id);
-    if (taskIds.length === 0) return [];
-
-    const [{ data: completions, error: cErr }, { data: grades, error: gErr }] = await Promise.all([
-      supabase
-        .from("task_completions")
-        .select("student_id, task_id, completed_at")
-        .in("task_id", taskIds),
-      supabase.from("task_grades").select("student_id, task_id, grade").in("task_id", taskIds),
-    ]);
-    if (cErr) throw cErr;
-    if (gErr) throw gErr;
-
-    const titles = new Map((tasks ?? []).map((t) => [t.id, t.title]));
-    return (completions ?? []).map((c) => ({
-      branchId: "core-tasks",
-      taskId: c.task_id,
-      title: titles.get(c.task_id) ?? "משימה",
-      studentId: c.student_id,
-      submittedAt: c.completed_at,
-      grade:
-        (grades ?? []).find((g) => g.student_id === c.student_id && g.task_id === c.task_id)
-          ?.grade ?? null,
-    }));
-  },
-};
-
 /** ענף מנוע ה-runner: כל המשימות שמוגדרות כ-JSON חיות ישירות ב-tasks, בלי טבלת ענף. */
 const runnerBranch: SpaceTaskBranch = {
   id: "runner",
@@ -267,7 +228,7 @@ const runnerBranch: SpaceTaskBranch = {
   },
 };
 
-export const SPACE_TASK_BRANCHES: SpaceTaskBranch[] = [coreBranch, runnerBranch];
+export const SPACE_TASK_BRANCHES: SpaceTaskBranch[] = [runnerBranch];
 
 export const SPACE_ROLLUP_KEY = "space-task-rollup";
 
@@ -347,31 +308,8 @@ export async function resetRegistryTaskForStudents(
   task: Pick<RegistryTask, "id" | "engine">,
   studentIds: string[],
 ) {
-  if (task.engine === "legacy-core") {
-    for (const table of [
-      "answers",
-      "task_completions",
-      "task_grades",
-      "teacher_notes",
-      "feedback",
-    ] as const) {
-      const { error } = await supabase.from(table).delete().eq("task_id", task.id);
-      if (error) throw error;
-    }
-    if (studentIds.length > 0) {
-      const { error } = await supabase
-        .from("students")
-        .update({ finished_at: null, updated_at: new Date().toISOString() })
-        .in("id", studentIds);
-      if (error) throw error;
-    }
-    return;
-  }
   if (studentIds.length === 0) return;
-  const tables =
-    task.engine === "runner"
-      ? (["runner_answers", "runner_submissions", "runner_notes"] as const)
-      : ([] as const);
+  const tables = ["runner_answers", "runner_submissions", "runner_notes"] as const;
   for (const table of tables) {
     const { error } = await supabase
       .from(table)

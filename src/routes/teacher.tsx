@@ -29,28 +29,24 @@ import { createSpace, findClass, useSpaces } from "@/lib/classes";
 import {
   ensureTeacherTestStudent,
   fetchSettings,
-  fetchTaskGrades,
-  fetchAllTasks,
   fullName,
   isTeacherTestStudent,
-  reopenStudentTasks,
   resetTeacherTestStudent,
-  tasksForClass,
   writeDeviceStudentId,
   type Student,
 } from "@/lib/practice";
-import {
-  createStudentManually,
-  fetchFeedbackRows,
-  fetchTaskSpeech,
-  fetchTeacherNotes,
-  moveStudentClass,
-  setStudentSpeech,
-} from "@/lib/teacher";
+import { createStudentManually, moveStudentClass, setStudentSpeech } from "@/lib/teacher";
 import { StudentDetails } from "@/components/teacher/StudentDetails";
 import { FeedbackDashboard } from "@/components/teacher/FeedbackDashboard";
 import { TaskRegistryPanel } from "@/components/teacher/TaskRegistryPanel";
-import { SPACE_ROLLUP_KEY, SPACE_TASK_LIST_KEY, useSpaceTaskRollup } from "@/lib/space-tasks";
+import {
+  isRegistryTaskOpen,
+  SPACE_ROLLUP_KEY,
+  SPACE_TASK_LIST_KEY,
+  useSpaceTaskList,
+  useSpaceTaskRollup,
+} from "@/lib/space-tasks";
+import { fetchRunnerFeedbackAnswers, fetchRunnerTasksForClass } from "@/lib/task-runner/data";
 
 import { cn } from "@/lib/utils";
 import { useServerFn } from "@tanstack/react-start";
@@ -179,7 +175,6 @@ function TeacherDashboard() {
     }
   };
 
-  const tasksQuery = useQuery({ queryKey: ["teacher-tasks"], queryFn: fetchAllTasks });
   const studentsQuery = useQuery({
     queryKey: ["teacher-students"],
     queryFn: async () => {
@@ -191,30 +186,20 @@ function TeacherDashboard() {
       return (data ?? []) as Student[];
     },
   });
-  const completionsQuery = useQuery({
-    queryKey: ["teacher-completions"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("task_completions")
-        .select("student_id, task_id, completed_at");
-      if (error) throw error;
-      return data ?? [];
-    },
+  const runnerTasksQuery = useQuery({
+    queryKey: ["teacher-runner-tasks", classSlug],
+    queryFn: () => fetchRunnerTasksForClass(classSlug),
+    enabled: Boolean(classSlug),
   });
-  const answersQuery = useQuery({
-    queryKey: ["teacher-answers"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("answers")
-        .select("student_id, task_id, question_id, answer_text");
-      if (error) throw error;
-      return data ?? [];
-    },
+  const classTaskIds = useMemo(
+    () => (runnerTasksQuery.data ?? []).map((t) => t.id),
+    [runnerTasksQuery.data],
+  );
+  const feedbackAnswersQuery = useQuery({
+    queryKey: ["feedback-answers", classTaskIds],
+    queryFn: () => fetchRunnerFeedbackAnswers(classTaskIds),
+    enabled: classTaskIds.length > 0,
   });
-  const gradesQuery = useQuery({ queryKey: ["teacher-task-grades"], queryFn: fetchTaskGrades });
-  const notesQuery = useQuery({ queryKey: ["teacher-notes"], queryFn: fetchTeacherNotes });
-  const speechQuery = useQuery({ queryKey: ["teacher-task-speech"], queryFn: fetchTaskSpeech });
-  const feedbackQuery = useQuery({ queryKey: ["teacher-feedback"], queryFn: fetchFeedbackRows });
 
   const refreshAll = async () => {
     await queryClient.invalidateQueries();
@@ -227,19 +212,6 @@ function TeacherDashboard() {
       .on("postgres_changes", { event: "*", schema: "public", table: "students" }, () =>
         queryClient.invalidateQueries({ queryKey: ["teacher-students"] }),
       )
-      .on("postgres_changes", { event: "*", schema: "public", table: "answers" }, () =>
-        queryClient.invalidateQueries({ queryKey: ["teacher-answers"] }),
-      )
-      .on("postgres_changes", { event: "*", schema: "public", table: "task_completions" }, () =>
-        queryClient.invalidateQueries({ queryKey: ["teacher-completions"] }),
-      )
-      .on("postgres_changes", { event: "*", schema: "public", table: "feedback" }, () =>
-        queryClient.invalidateQueries({ queryKey: ["teacher-feedback"] }),
-      )
-      .on("postgres_changes", { event: "*", schema: "public", table: "task_grades" }, () => {
-        queryClient.invalidateQueries({ queryKey: ["teacher-task-grades"] });
-        queryClient.invalidateQueries({ queryKey: [SPACE_ROLLUP_KEY] });
-      })
       .on("postgres_changes", { event: "*", schema: "public", table: "runner_submissions" }, () => {
         queryClient.invalidateQueries({ queryKey: [SPACE_ROLLUP_KEY] });
         queryClient.invalidateQueries({ queryKey: ["runner-submission"] });
@@ -250,10 +222,11 @@ function TeacherDashboard() {
       })
       .on("postgres_changes", { event: "*", schema: "public", table: "runner_answers" }, () => {
         queryClient.invalidateQueries({ queryKey: ["runner-answers"] });
+        queryClient.invalidateQueries({ queryKey: ["feedback-answers"] });
       })
       .on("postgres_changes", { event: "*", schema: "public", table: "tasks" }, () => {
         queryClient.invalidateQueries({ queryKey: [SPACE_TASK_LIST_KEY] });
-        queryClient.invalidateQueries({ queryKey: ["teacher-tasks"] });
+        queryClient.invalidateQueries({ queryKey: ["teacher-runner-tasks"] });
       })
       .on("postgres_changes", { event: "*", schema: "public", table: "spaces" }, () => {
         queryClient.invalidateQueries({ queryKey: ["spaces"] });
@@ -265,47 +238,43 @@ function TeacherDashboard() {
     };
   }, [queryClient]);
 
-  const allTasks = tasksQuery.data ?? [];
-  const classTasks = useMemo(
-    () => tasksForClass(allTasks, classSlug).filter((t) => t.class_slug === classSlug),
-    [allTasks, classSlug],
-  );
+  const classTasks = runnerTasksQuery.data ?? [];
   const students = (studentsQuery.data ?? []).filter(
     (s) => !isTeacherTestStudent(s) && s.class_slug === classSlug,
   );
   const studentIds = new Set(students.map((s) => s.id));
-  const completions = completionsQuery.data ?? [];
-  const answers = answersQuery.data ?? [];
-  const feedback = feedbackQuery.data ?? [];
-  const taskGrades = gradesQuery.data ?? [];
-  const notes = notesQuery.data ?? [];
-  const taskSpeech = speechQuery.data ?? [];
-
-  const completionsByStudent = useMemo(() => {
-    const map = new Map<string, string[]>();
-    completions.forEach((c) => {
-      map.set(c.student_id, [...(map.get(c.student_id) ?? []), c.task_id]);
-    });
-    return map;
-  }, [completions]);
 
   /** סיכום כל ענפי המשימות של המרחב — מה הוגש ומה כבר קיבל ציון. */
   const rollup = useSpaceTaskRollup(classSlug);
   const pendingByStudent = rollup.pendingByStudent;
 
-  const finishedCount = students.filter((s) => s.finished_at).length;
-  const feedbackCount = feedback.filter((f) => studentIds.has(f.student_id)).length;
+  /** כמה משימות runner פתוחות כרגע במרחב — מגדיר "סיים/ה" כהגשה של כולן. */
+  const registry = useSpaceTaskList(classSlug);
+  const openTaskCount = useMemo(
+    () => registry.tasks.filter((t) => isRegistryTaskOpen(t)).length,
+    [registry.tasks],
+  );
+  const isStudentFinished = (studentId: string) =>
+    openTaskCount > 0 && (rollup.submittedByStudent.get(studentId) ?? 0) >= openTaskCount;
+
+  const finishedCount = students.filter((s) => isStudentFinished(s.id)).length;
+  /** "מילאו משוב" — כמה הגשות משוב יש (משימה+תלמיד/ה) לתלמידי הכיתה. */
+  const feedbackCount = new Set(
+    (feedbackAnswersQuery.data ?? [])
+      .filter((r) => studentIds.has(r.student_id))
+      .map((r) => `${r.task_id}:${r.student_id}`),
+  ).size;
   const pendingTotal = students.reduce((sum, s) => sum + (pendingByStudent.get(s.id) ?? 0), 0);
 
   const filtered = students.filter((s) => {
     const term = search.trim();
     const matches = !term || fullName(s).includes(term);
     if (!matches) return false;
-    const done = completionsByStudent.get(s.id) ?? [];
-    if (filter === "finished") return Boolean(s.finished_at);
-    if (filter === "in_progress") return !s.finished_at;
+    const submitted = rollup.submittedByStudent.get(s.id) ?? 0;
+    if (filter === "finished") return isStudentFinished(s.id);
+    if (filter === "in_progress") return !isStudentFinished(s.id);
     if (filter === "speech") return s.speech_enabled;
-    if (filter === "no_choice") return done.length === 0;
+    if (filter === "no_choice") return submitted === 0;
     if (filter === "pending") return (pendingByStudent.get(s.id) ?? 0) > 0;
     return true;
   });
@@ -462,7 +431,6 @@ function TeacherDashboard() {
                 </thead>
                 <tbody>
                   {filtered.map((student) => {
-                    const done = completionsByStudent.get(student.id) ?? [];
                     const isOpen = expanded === student.id;
                     const submittedCount = rollup.submittedByStudent.get(student.id) ?? 0;
                     const gradesText =
@@ -489,10 +457,8 @@ function TeacherDashboard() {
                             </span>
                           </td>
                           <td className="px-4 py-3 text-sm text-muted-foreground">
-                            {submittedCount > 0
-                              ? `${submittedCount} הוגשו`
-                              : `${done.length} משימות`}
-                            {student.finished_at ? " · סיים/ה" : ""}
+                            {submittedCount > 0 ? `${submittedCount} הוגשו` : "טרם הגיש/ה"}
+                            {isStudentFinished(student.id) ? " · סיים/ה" : ""}
                           </td>
                           <td className="px-4 py-3 text-sm font-semibold">{gradesText}</td>
                           <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
@@ -521,10 +487,6 @@ function TeacherDashboard() {
                                   isOpen && "rotate-180",
                                 )}
                               />
-                              <ReopenTaskButton
-                                student={student}
-                                canReopen={done.length > 0 || Boolean(student.finished_at)}
-                              />
                               <ResetPasswordButton student={student} compact />
                               <DeleteStudentButton student={student} />
                             </div>
@@ -539,14 +501,6 @@ function TeacherDashboard() {
                               <StudentDetails
                                 student={student}
                                 classSlug={selectedClass?.slug ?? student.class_slug}
-                                tasks={classTasks}
-                                answers={answers.filter((a) => a.student_id === student.id)}
-                                notes={notes.filter((n) => n.student_id === student.id)}
-                                taskGrades={taskGrades.filter((g) => g.student_id === student.id)}
-                                feedback={feedback.filter((f) => f.student_id === student.id)}
-                                taskSpeech={taskSpeech.filter((r) => r.student_id === student.id)}
-                                completedTaskIds={new Set(done)}
-                                onChanged={refreshAll}
                               />
                             </td>
                           </tr>
@@ -571,13 +525,12 @@ function TeacherDashboard() {
           <TaskRegistryPanel
             classSlug={selectedClass?.slug ?? classSlug}
             students={students}
-            coreTasks={classTasks}
             onChanged={refreshAll}
           />
         </TabsContent>
 
         <TabsContent value="feedback" className="mt-6">
-          <FeedbackDashboard feedback={feedback} tasks={classTasks} studentIds={studentIds} />
+          <FeedbackDashboard tasks={classTasks} studentIds={studentIds} />
         </TabsContent>
       </Tabs>
     </main>
@@ -835,42 +788,6 @@ function ResetPasswordButton({ student, compact }: { student: Student; compact?:
         </span>
       )}
     </div>
-  );
-}
-
-/** פתיחה מחדש של המשימה לתלמיד/ה — התשובות נשמרות, וניתן לתקן ולהגיש שוב. */
-function ReopenTaskButton({ student, canReopen }: { student: Student; canReopen: boolean }) {
-  const queryClient = useQueryClient();
-  const [pending, setPending] = useState(false);
-
-  if (!canReopen) return null;
-
-  return (
-    <Button
-      variant="outline"
-      size="sm"
-      disabled={pending}
-      onClick={async () => {
-        if (
-          !window.confirm(
-            `לפתוח מחדש את המשימה של ${fullName(student)} להגשה חוזרת? התשובות והציונים נשמרים, והמשוב יימולא שוב בסיום.`,
-          )
-        )
-          return;
-        setPending(true);
-        try {
-          await reopenStudentTasks(student.id);
-          toast.success("המשימה נפתחה מחדש להגשה חוזרת ותיקון");
-          await queryClient.invalidateQueries();
-        } catch {
-          toast.error("לא הצלחתי לפתוח את המשימה מחדש. נסו שוב.");
-        } finally {
-          setPending(false);
-        }
-      }}
-    >
-      <RotateCcw className="size-4" /> פתיחה מחדש
-    </Button>
   );
 }
 

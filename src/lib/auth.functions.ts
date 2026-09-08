@@ -4,12 +4,7 @@ import { z } from "zod";
 /** שמות תלמידים חייבים להיות בעברית (מותרים גם רווח, גרש ומקף). */
 const HEBREW_NAME = /^[\u0590-\u05FF]+(?:[ '"׳״-][\u0590-\u05FF]+)*$/;
 
-const nameSchema = z
-  .string()
-  .trim()
-  .min(2)
-  .max(40)
-  .regex(HEBREW_NAME, "יש להזין את השם בעברית");
+const nameSchema = z.string().trim().min(2).max(40).regex(HEBREW_NAME, "יש להזין את השם בעברית");
 
 /** לקוח צד-שרת עם המפתח הציבורי — כל פעולות הסיסמאות רצות בפונקציות מסד מאובטחות. */
 async function publicClient() {
@@ -159,10 +154,8 @@ export const teacherDeleteStudent = createServerFn({ method: "POST" })
     if (clearError) throw new Error(clearError.message);
     if (!(cleared as RpcResult)?.ok) return { ok: false as const, reason: "bad_code" as const };
 
-    await supabase.from("answers").delete().eq("student_id", data.studentId);
-    await supabase.from("task_completions").delete().eq("student_id", data.studentId);
-    await supabase.from("task_grades").delete().eq("student_id", data.studentId);
-    await supabase.from("feedback").delete().eq("student_id", data.studentId);
+    // כל הנתונים הקשורים (runner_answers/runner_submissions/runner_notes/student_task_speech
+    // וכו') נמחקים אוטומטית דרך ON DELETE CASCADE במפתחות הזרים אל students.
     const { error } = await supabase.from("students").delete().eq("id", data.studentId);
     if (error) throw new Error(error.message);
 

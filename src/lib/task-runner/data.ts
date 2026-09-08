@@ -149,6 +149,25 @@ export async function submitRunnerTask(input: { taskId: string; studentId: strin
   if (error) throw error;
 }
 
+export type FeedbackAnswerRow = {
+  student_id: string;
+  task_id: string;
+  item_key: string;
+  answer_text: string;
+};
+
+/** כל תשובות המשוב (item_key שמתחיל ב-feedback.) לכמה משימות — לניתוח משובים בלוח המורה. */
+export async function fetchRunnerFeedbackAnswers(taskIds: string[]): Promise<FeedbackAnswerRow[]> {
+  if (taskIds.length === 0) return [];
+  const { data, error } = await supabase
+    .from("runner_answers")
+    .select("student_id, task_id, item_key, answer_text")
+    .in("task_id", taskIds)
+    .like("item_key", "feedback.%");
+  if (error) throw error;
+  return data ?? [];
+}
+
 export type RunnerAnswerNote = { note: string; score: number | null };
 
 export async function fetchRunnerNotes(taskId: string, studentId: string) {

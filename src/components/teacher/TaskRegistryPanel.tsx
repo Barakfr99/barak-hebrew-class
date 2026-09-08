@@ -19,7 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { fullName, type Task } from "@/lib/practice";
+import { fullName } from "@/lib/practice";
 import {
   ENGINE_LABELS,
   GRADING_MODE_LABELS,
@@ -34,7 +34,6 @@ import {
   type RegistryGradingMode,
   type RegistryTask,
 } from "@/lib/space-tasks";
-import { CoreTaskAdmin } from "@/components/teacher/TaskGradingSettings";
 
 type StudentRow = { id: string; first_name: string; last_name: string };
 
@@ -69,12 +68,10 @@ function fromLocalInput(value: string): string | null {
 export function TaskRegistryPanel({
   classSlug,
   students,
-  coreTasks,
   onChanged,
 }: {
   classSlug: string | null | undefined;
   students: StudentRow[];
-  coreTasks: Task[];
   onChanged: () => Promise<void> | void;
 }) {
   const { tasks, isLoading } = useSpaceTaskList(classSlug);
@@ -116,8 +113,6 @@ export function TaskRegistryPanel({
             else graded.push({ student, grade: row.grade });
           });
           const status = registryStatus(task);
-          const coreTask =
-            task.engine === "legacy-core" ? coreTasks.find((t) => t.id === task.id) : undefined;
 
           return (
             <AccordionItem
@@ -175,15 +170,7 @@ export function TaskRegistryPanel({
                   בדיקת התשובות, הערות וציון לכל תלמיד/ה — בכרטיס התלמיד/ה בלשונית "כיתות ותלמידים".
                 </p>
 
-                {coreTask && (
-                  <div className="mt-4 border-t border-border pt-4">
-                    <CoreTaskAdmin task={coreTask} onChanged={changed} hideControls />
-                  </div>
-                )}
-
-                {!coreTask && (
-                  <TaskDangerZone task={task} studentIds={[...studentIds]} onChanged={changed} />
-                )}
+                <TaskDangerZone task={task} studentIds={[...studentIds]} onChanged={changed} />
               </AccordionContent>
             </AccordionItem>
           );
@@ -204,11 +191,7 @@ function TaskControls({
   const queryClient = useQueryClient();
   const [busy, setBusy] = useState(false);
   const invalidateStudentSide = async () => {
-    // הכרטיסים בעמוד התלמיד קוראים עדיין מטבלאות הענף.
-    await queryClient.invalidateQueries({ queryKey: ["nb10-task"] });
-    await queryClient.invalidateQueries({ queryKey: ["nb10-task-admin"] });
-    await queryClient.invalidateQueries({ queryKey: ["mi-task"] });
-    await queryClient.invalidateQueries({ queryKey: ["teacher-tasks"] });
+    await queryClient.invalidateQueries({ queryKey: ["runner-task"] });
   };
 
   return (
@@ -270,7 +253,7 @@ function TaskControls({
           </SelectTrigger>
           <SelectContent dir="rtl">
             {(Object.keys(GRADING_MODE_LABELS) as RegistryGradingMode[])
-              .filter((mode) => mode !== "weighted" || task.engine === "legacy-core")
+              .filter((mode) => mode !== "weighted")
               .map((mode) => (
                 <SelectItem key={mode} value={mode}>
                   {GRADING_MODE_LABELS[mode]}
