@@ -1,7 +1,7 @@
 import { createFileRoute, Link, notFound, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ChevronRight, KeyRound, UserPlus } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CLASSES, findClass } from "@/lib/classes";
+import { rememberClassSlug } from "@/lib/session";
 import { fetchSettings, isTeacherTestStudent, writeDeviceStudentId } from "@/lib/practice";
 import {
   listClassStudents,
@@ -60,6 +61,9 @@ export const Route = createFileRoute("/class/$slug")({
 
 function ClassPage() {
   const { schoolClass } = Route.useLoaderData();
+  useEffect(() => {
+    rememberClassSlug(schoolClass.slug);
+  }, [schoolClass.slug]);
   const navigate = useNavigate();
   const { data: settings } = useQuery({ queryKey: ["settings"], queryFn: fetchSettings });
   const speechMode = settings?.speech_mode ?? "two_tracks";

@@ -21,6 +21,7 @@ import {
 import { isPartComplete } from "@/lib/task-parts";
 import { ClearDeviceButton } from "@/components/practice/ClearDeviceButton";
 import { PageNav } from "@/components/layout/PageNav";
+import { rememberClassSlug } from "@/lib/session";
 import { ProgressSteps } from "@/components/practice/ProgressSteps";
 import { TaskView } from "@/components/practice/TaskView";
 import { PartsOfSpeechTask } from "@/components/practice/PartsOfSpeechTask";

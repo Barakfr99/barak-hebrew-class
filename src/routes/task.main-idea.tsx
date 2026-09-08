@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ClearDeviceButton } from "@/components/practice/ClearDeviceButton";
 import { PageNav } from "@/components/layout/PageNav";
+import { rememberClassSlug } from "@/lib/session";
 import { fetchStudent, readDeviceStudentId } from "@/lib/practice";
 import { supabase } from "@/integrations/supabase/client";
 import { MI_TASK_TITLE } from "@/components/tasks/main-idea-10-1/content";
