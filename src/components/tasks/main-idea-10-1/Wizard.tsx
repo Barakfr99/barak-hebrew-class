@@ -631,24 +631,22 @@ export function MainIdeaWizard({
         </div>
       )}
 
-      {/* ===== עמוד 3 ===== */}
-      {pageIndex === 2 && (
+      {/* ===== עמוד 4 ===== */}
+      {pageIndex === 3 && (
         <div className="mt-6 space-y-5">
           <h2 className="text-2xl font-bold">עכשיו תורכם — ניסוח עצמאי</h2>
 
-          {!gate3 && !readOnly ? (
-            <InstructionsGate
-              title="הוראות הניסוח העצמאי"
-              lines={MI_INSTRUCTIONS_PAGE3}
-              onConfirm={() => setGate3(true)}
-            />
-          ) : (
-            <>
-              <div className="rounded-2xl bg-secondary/60 p-4 text-sm">
-                נוסחו {effort.page3} מתוך {MI_TOTAL_PAGE3} פסקאות · נדרש {MI_REQUIRED_PAGE3}.
-                {effort.page3 > MI_REQUIRED_PAGE3 && " ניסחת יותר מהנדרש — מאמץ נוסף!"}
-              </div>
-              {MI_WRITE_ITEMS.map((item) => {
+          <InstructionsGate
+            open={!gate3 && !readOnly}
+            title="הוראות הניסוח העצמאי"
+            lines={MI_INSTRUCTIONS_PAGE3}
+            onConfirm={() => setGate3(true)}
+          />
+          <div className="rounded-2xl bg-secondary/60 p-4 text-sm">
+            נוסחו {effort.page3} מתוך {MI_TOTAL_PAGE3} פסקאות · נדרש {MI_REQUIRED_PAGE3}.
+            {effort.page3 > MI_REQUIRED_PAGE3 && " ניסחת יותר מהנדרש — מאמץ נוסף!"}
+          </div>
+          {MI_WRITE_ITEMS.map((item) => {
                 const key = miWriteKey(item.id);
                 return (
                   <div key={item.id} className="rounded-3xl border border-border bg-card p-5">
@@ -680,8 +678,6 @@ export function MainIdeaWizard({
                   </div>
                 );
               })}
-            </>
-          )}
         </div>
       )}
 
