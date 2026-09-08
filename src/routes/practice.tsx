@@ -21,6 +21,7 @@ import {
 import { isPartComplete } from "@/lib/task-parts";
 import { ClearDeviceButton } from "@/components/practice/ClearDeviceButton";
 import { PageNav } from "@/components/layout/PageNav";
+import { rememberClassSlug } from "@/lib/session";
 import { ProgressSteps } from "@/components/practice/ProgressSteps";
 import { TaskView } from "@/components/practice/TaskView";
 import { PartsOfSpeechTask } from "@/components/practice/PartsOfSpeechTask";
@@ -151,6 +152,9 @@ function PracticePage() {
 
   const student = studentQuery.data;
   const tasks = tasksForClass(tasksQuery.data ?? [], student?.class_slug ?? null);
+  useEffect(() => {
+    rememberClassSlug(student?.class_slug);
+  }, [student?.class_slug]);
   const choiceTasks = tasks.filter((t) => t.kind === "choice");
   const requiredTask = tasks.find((t) => t.kind === "required");
   const completedIds = new Set((completionsQuery.data ?? []).map((c) => c.task_id));

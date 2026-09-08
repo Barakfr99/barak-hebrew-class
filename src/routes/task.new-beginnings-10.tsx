@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ClearDeviceButton } from "@/components/practice/ClearDeviceButton";
 import { PageNav } from "@/components/layout/PageNav";
+import { rememberClassSlug } from "@/lib/session";
 import { fetchStudent, readDeviceStudentId } from "@/lib/practice";
 import { NB10_TASK_TITLE } from "@/components/tasks/new-beginnings-10/content";
 import { fetchNB10Task, isNB10Open } from "@/components/tasks/new-beginnings-10/data";
@@ -50,6 +51,9 @@ function NB10Page() {
     enabled: Boolean(studentId),
   });
   const classSlug = studentQuery.data?.class_slug ?? null;
+  useEffect(() => {
+    rememberClassSlug(classSlug);
+  }, [classSlug]);
   const taskQuery = useQuery({
     queryKey: ["nb10-task", classSlug],
     queryFn: () => fetchNB10Task(classSlug!),

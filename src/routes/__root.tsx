@@ -11,6 +11,7 @@ import {
 import { useEffect, type ReactNode } from "react";
 
 import { Toaster } from "@/components/ui/sonner";
+import { HomeButton } from "@/components/layout/HomeButton";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 
@@ -125,6 +126,7 @@ function RootComponent() {
     <DirectionProvider dir="rtl">
       <QueryClientProvider client={queryClient}>
         {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
+        <HomeButton />
         <Outlet />
         <Toaster position="top-center" richColors />
       </QueryClientProvider>
