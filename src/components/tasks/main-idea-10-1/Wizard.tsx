@@ -64,7 +64,9 @@ import {
 } from "./data";
 import { InstructionsGate } from "./InstructionsGate";
 import { MIFeedbackStep } from "./FeedbackStep";
+import { MinimumWarningDialog } from "./MinimumWarningDialog";
 import { SubmitConfirmDialog } from "./SubmitConfirmDialog";
+
 
 export type MIStudentNote = { note: string; score: number | null };
 
@@ -161,7 +163,9 @@ export function MainIdeaWizard({
   const [gate1, setGate1] = useState(false);
   const [gate3, setGate3] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [minWarnOpen, setMinWarnOpen] = useState(false);
   const [blockNote, setBlockNote] = useState<string | null>(null);
+
   const timers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
   const speech = useSpeech();
 
@@ -285,12 +289,12 @@ export function MainIdeaWizard({
 
   const goNext = async () => {
     if (!readOnly && pageIndex === 1 && effort.page1Missing > 0) {
-      toast.warning(
-        `לא עמדת במינימום הנדרש בעמוד הזה: נדרש ${MI_REQUIRED_PAGE1} פסקאות, מולאו ${effort.page1}. אפשר להמשיך, אבל כדאי לחזור ולהשלים.`,
-      );
+      setMinWarnOpen(true);
+      return;
     }
     await goTo(pageIndex + 1);
   };
+
 
   const trySubmit = async () => {
     await flush();
@@ -716,6 +720,17 @@ export function MainIdeaWizard({
         )}
       </div>
 
+      <MinimumWarningDialog
+        open={minWarnOpen}
+        onOpenChange={setMinWarnOpen}
+        title="לא עמדת במינימום הנדרש בעמוד הזה"
+        message={`נדרשו ${MI_REQUIRED_PAGE1} פסקאות לפחות, ומולאו ${effort.page1}. אפשר להמשיך בכל זאת, אבל כדאי להשלים את המינימום כדי לקבל משוב וציון מלא.`}
+        onConfirm={() => {
+          setMinWarnOpen(false);
+          void goTo(pageIndex + 1);
+        }}
+      />
+
       <SubmitConfirmDialog
         open={confirmOpen}
         onOpenChange={setConfirmOpen}
@@ -730,3 +745,4 @@ export function MainIdeaWizard({
     </div>
   );
 }
+
