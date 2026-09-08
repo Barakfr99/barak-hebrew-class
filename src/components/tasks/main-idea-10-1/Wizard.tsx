@@ -426,7 +426,10 @@ export function MainIdeaWizard({
             <p className="reading-text">
               יש הבדל בין <InfoTerm note={{ kind: "info", ...MI_TERMS.topic }} text="נושא" /> —{" "}
               על מה מדובר, לבין <InfoTerm note={{ kind: "info", ...MI_TERMS.message }} text="מסר" />{" "}
-              — מה נאמר על זה. אפשר ללחוץ על המילים המודגשות להסבר.
+              — מה נאמר על זה.
+            </p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              (אפשר ללחוץ על המילים המודגשות להסבר)
             </p>
             <div className="mt-4 rounded-2xl bg-secondary/50 p-4">
               <p className="text-sm font-semibold text-primary">תרגיל זיהוי מודגם (עם התשובות)</p>
