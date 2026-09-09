@@ -210,14 +210,23 @@ export function RunnerReviewDialog({
             {student.first_name} {student.last_name} · {task.title}
           </DialogTitle>
         </DialogHeader>
-        <RunnerStudentReview task={task} student={student} />
+        <RunnerStudentReview task={task} student={student} onOpenChange={onOpenChange} />
       </DialogContent>
     </Dialog>
   );
 }
 
 /** חלון הבדיקה: כל התשובות לפי הגדרת המשימה, עם הערה וניקוד לכל פריט. */
-function RunnerStudentReview({ task, student }: { task: RunnerTask; student: StudentRow }) {
+function RunnerStudentReview({
+  task,
+  student,
+  onOpenChange,
+}: {
+  task: RunnerTask;
+  student: StudentRow;
+  /** לסגירת חלון הבדיקה אחרי שמירת הציון וההערה הכלליים. */
+  onOpenChange: (open: boolean) => void;
+}) {
   const queryClient = useQueryClient();
   const def: TaskDefinition = task.definition;
 
@@ -233,6 +242,7 @@ function RunnerStudentReview({ task, student }: { task: RunnerTask; student: Stu
   const answers = answersQuery.data ?? {};
   const notes = notesQuery.data?.map ?? {};
   const general = notesQuery.data?.general ?? { note: "", score: null };
+  const effort = useMemo(() => computeEffort(def, answers), [def, answers]);
 
   const [generalNote, setGeneralNote] = useState<string | null>(null);
   const [generalScore, setGeneralScore] = useState<string | null>(null);
@@ -256,6 +266,7 @@ function RunnerStudentReview({ task, student }: { task: RunnerTask; student: Stu
         queryClient.invalidateQueries({ queryKey: ["space-task-rollup"] }),
       ]);
       toast.success("ההערה והציון נשמרו.");
+      onOpenChange(false);
     },
     onError: () => toast.error("לא הצלחנו לשמור."),
   });
@@ -266,6 +277,11 @@ function RunnerStudentReview({ task, student }: { task: RunnerTask; student: Stu
     <div className="space-y-6">
       <section className="rounded-2xl border border-primary/30 bg-accent/30 p-4">
         <p className="font-semibold">ציון והערה למשימה כולה</p>
+        {effort.hasExtra && (
+          <p className="mt-2 inline-flex items-center gap-1 rounded-full bg-accent px-3 py-1 text-xs font-semibold text-primary">
+            <Sparkles className="size-3" /> ענה/תה על {effort.extra} מעבר לנדרש — שקול/י בונוס
+          </p>
+        )}
         <div className="mt-2 flex flex-wrap items-end gap-3">
           <div className="w-28">
             <Input

@@ -433,10 +433,17 @@ function TeacherDashboard() {
                   {filtered.map((student) => {
                     const isOpen = expanded === student.id;
                     const submittedCount = rollup.submittedByStudent.get(student.id) ?? 0;
+                    const grades = rollup.gradesByStudent.get(student.id) ?? [];
                     const gradesText =
-                      (rollup.gradesByStudent.get(student.id) ?? [])
-                        .map((g) => `${g.title}: ${g.grade}`)
-                        .join(" · ") || "—";
+                      grades.length > 0
+                        ? `ממוצע ${formatAverage(grades.reduce((sum, g) => sum + g.grade, 0) / grades.length)}`
+                        : "—";
+                    const progressText =
+                      openTaskCount > 0
+                        ? `${submittedCount} מתוך ${openTaskCount} הוגשו`
+                        : submittedCount > 0
+                          ? `${submittedCount} הוגשו`
+                          : "טרם הגיש/ה";
                     return (
                       <Fragment key={student.id}>
                         <tr
@@ -457,7 +464,7 @@ function TeacherDashboard() {
                             </span>
                           </td>
                           <td className="px-4 py-3 text-sm text-muted-foreground">
-                            {submittedCount > 0 ? `${submittedCount} הוגשו` : "טרם הגיש/ה"}
+                            {progressText}
                             {isStudentFinished(student.id) ? " · סיים/ה" : ""}
                           </td>
                           <td className="px-4 py-3 text-sm font-semibold">{gradesText}</td>
@@ -536,6 +543,12 @@ function TeacherDashboard() {
       </Tabs>
     </main>
   );
+}
+
+/** ממוצע ציונים: מספר שלם כשאפשר, אחרת ספרה עשרונית אחת. */
+function formatAverage(value: number): string {
+  const rounded = Math.round(value * 10) / 10;
+  return Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(1);
 }
 
 function StatCard({ label, value }: { label: string; value: number }) {
