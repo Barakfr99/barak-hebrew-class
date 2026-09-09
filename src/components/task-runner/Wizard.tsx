@@ -429,7 +429,7 @@ export function TaskRunnerWizard({
                       )}
                     </div>
                   </div>
-                  {item.text && <p className="reading-text mt-2">{item.text}</p>}
+                  {item.text && <p className="reading-text mt-2 whitespace-pre-wrap">{item.text}</p>}
                   <div className="mt-4 space-y-4">{renderQuestions(item.questions)}</div>
                 </section>
               );
