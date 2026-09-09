@@ -525,6 +525,7 @@ function TeacherDashboard() {
           <TaskRegistryPanel
             classSlug={selectedClass?.slug ?? classSlug}
             students={students}
+            runnerTasks={classTasks}
             onChanged={refreshAll}
           />
         </TabsContent>

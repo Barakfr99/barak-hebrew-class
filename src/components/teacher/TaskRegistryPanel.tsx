@@ -34,8 +34,8 @@ import {
   type RegistryGradingMode,
   type RegistryTask,
 } from "@/lib/space-tasks";
-
-type StudentRow = { id: string; first_name: string; last_name: string };
+import { RunnerReviewDialog, type StudentRow } from "@/components/teacher/RunnerStudentCard";
+import type { RunnerTask } from "@/lib/task-runner/data";
 
 function formatDate(value: string | null) {
   if (!value) return "";
@@ -68,15 +68,21 @@ function fromLocalInput(value: string): string | null {
 export function TaskRegistryPanel({
   classSlug,
   students,
+  runnerTasks,
   onChanged,
 }: {
   classSlug: string | null | undefined;
   students: StudentRow[];
+  /** משימות ה-runner עם ההגדרה (definition) — כדי לפתוח את חלון הבדיקה ישירות מכאן. */
+  runnerTasks: RunnerTask[];
   onChanged: () => Promise<void> | void;
 }) {
   const { tasks, isLoading } = useSpaceTaskList(classSlug);
   const { rows, refresh } = useSpaceTaskRollup(classSlug);
   const studentIds = useMemo(() => new Set(students.map((s) => s.id)), [students]);
+  const runnerTaskById = useMemo(() => new Map(runnerTasks.map((t) => [t.id, t])), [runnerTasks]);
+  const [reviewing, setReviewing] = useState<{ taskId: string; student: StudentRow } | null>(null);
+  const reviewingTask = reviewing ? runnerTaskById.get(reviewing.taskId) : undefined;
 
   const changed = async () => {
     refresh();
@@ -145,7 +151,18 @@ export function TaskRegistryPanel({
                       <Empty />
                     ) : (
                       pending.map(({ student, at }) => (
-                        <Line key={student.id} name={fullName(student)} note={formatDate(at)} />
+                        <Line
+                          key={student.id}
+                          name={fullName(student)}
+                          note={formatDate(at)}
+                          onClick={() => {
+                            if (!runnerTaskById.has(task.id)) {
+                              toast.error("המשימה עוד נטענת — נסו שוב בעוד רגע.");
+                              return;
+                            }
+                            setReviewing({ taskId: task.id, student });
+                          }}
+                        />
                       ))
                     )}
                   </Group>
@@ -167,7 +184,8 @@ export function TaskRegistryPanel({
                   </Group>
                 </div>
                 <p className="mt-2 text-xs text-muted-foreground">
-                  בדיקת התשובות, הערות וציון לכל תלמיד/ה — בכרטיס התלמיד/ה בלשונית "כיתות ותלמידים".
+                  לחיצה על שם בקבוצת "מחכות לבדיקה" פותחת את חלון הבדיקה ישירות. אפשר גם דרך כרטיס
+                  התלמיד/ה בלשונית "כיתות ותלמידים".
                 </p>
 
                 <TaskDangerZone task={task} studentIds={[...studentIds]} onChanged={changed} />
@@ -176,6 +194,17 @@ export function TaskRegistryPanel({
           );
         })}
       </Accordion>
+
+      {reviewing && reviewingTask && (
+        <RunnerReviewDialog
+          task={reviewingTask}
+          student={reviewing.student}
+          open={true}
+          onOpenChange={(next) => {
+            if (!next) setReviewing(null);
+          }}
+        />
+      )}
     </section>
   );
 }
@@ -379,7 +408,19 @@ function Group({ title, children }: { title: string; children: React.ReactNode }
   );
 }
 
-function Line({ name, note }: { name: string; note?: string }) {
+function Line({ name, note, onClick }: { name: string; note?: string; onClick?: () => void }) {
+  if (onClick) {
+    return (
+      <button
+        type="button"
+        onClick={onClick}
+        className="flex w-full items-center justify-between gap-2 rounded-lg px-1 py-0.5 text-start text-sm hover:bg-secondary/60 hover:underline"
+      >
+        <span>{name}</span>
+        {note && <span className="text-xs text-muted-foreground">{note}</span>}
+      </button>
+    );
+  }
   return (
     <div className="flex items-center justify-between gap-2 text-sm">
       <span>{name}</span>

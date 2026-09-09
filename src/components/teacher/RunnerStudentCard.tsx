@@ -5,13 +5,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
@@ -34,7 +28,7 @@ import {
   type TaskDefinition,
 } from "@/lib/task-runner/types";
 
-type StudentRow = { id: string; first_name: string; last_name: string };
+export type StudentRow = { id: string; first_name: string; last_name: string };
 
 /** כל כרטיסי משימות ה-runner של התלמיד/ה — נבנים מהרשם, בלי קוד לכל משימה. */
 export function RunnerStudentCards({
@@ -174,19 +168,10 @@ function RunnerStudentCard({ task, student }: { task: RunnerTask; student: Stude
       </label>
 
       <div className="mt-3 flex flex-wrap gap-2">
-        <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild>
-            <Button size="sm">פתיחת חלון בדיקה</Button>
-          </DialogTrigger>
-          <DialogContent dir="rtl" className="max-h-[85vh] max-w-4xl overflow-y-auto text-start">
-            <DialogHeader>
-              <DialogTitle>
-                {student.first_name} {student.last_name} · {task.title}
-              </DialogTitle>
-            </DialogHeader>
-            <RunnerStudentReview task={task} student={student} />
-          </DialogContent>
-        </Dialog>
+        <Button size="sm" onClick={() => setOpen(true)}>
+          פתיחת חלון בדיקה
+        </Button>
+        <RunnerReviewDialog task={task} student={student} open={open} onOpenChange={setOpen} />
         {submittedAt && (
           <Button
             size="sm"
@@ -199,6 +184,35 @@ function RunnerStudentCard({ task, student }: { task: RunnerTask; student: Stude
         )}
       </div>
     </div>
+  );
+}
+
+/**
+ * חלון בדיקה מבוקר-מבחוץ (open/onOpenChange) — כדי שאותו חלון ייפתח גם מכרטיס
+ * התלמיד/ה וגם מרשימת "מחכות לבדיקה" בניהול המשימות, בלי לשכפל את התוכן.
+ */
+export function RunnerReviewDialog({
+  task,
+  student,
+  open,
+  onOpenChange,
+}: {
+  task: RunnerTask;
+  student: StudentRow;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent dir="rtl" className="max-h-[85vh] max-w-4xl overflow-y-auto text-start">
+        <DialogHeader>
+          <DialogTitle>
+            {student.first_name} {student.last_name} · {task.title}
+          </DialogTitle>
+        </DialogHeader>
+        <RunnerStudentReview task={task} student={student} />
+      </DialogContent>
+    </Dialog>
   );
 }
 
